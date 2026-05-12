@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drug Inventory</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="../records/index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Pharmacy</div>
+                    <a href="index.html" class="nav-item"><i data-lucide="pill"></i>Pharmacy</a>
+                    <a href="inventory.html" class="nav-item active"><i data-lucide="package"></i>Inventory</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
+                    <div class="page-title"><h1>Drug Inventory</h1><p>Manage medication stock</p></div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="openDrugModal()"><i data-lucide="plus"></i> Add Medication</button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Inventory List</h3>
+                        <div class="search-bar"><i data-lucide="search"></i><input type="text" placeholder="Search medications..." id="searchInventory"></div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Medication</th><th>Category</th><th>Quantity</th><th>Unit</th><th>Expiry Date</th><th>Stock Level</th><th>Actions</th></tr></thead>
+                            <tbody id="inventoryTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal-overlay" id="drugModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Medication</h3>
+                <button class="modal-close" onclick="closeDrugModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="drugForm">
+                    <div class="form-group"><label for="drugName">Medication Name</label><input type="text" id="drugName" placeholder="e.g., Paracetamol 500mg" required></div>
+                    <div class="form-group">
+                        <label for="drugCategory">Category</label>
+                        <select id="drugCategory" required>
+                            <option value="">Select category</option>
+                            <option value="painkiller">Painkiller</option>
+                            <option value="antibiotic">Antibiotic</option>
+                            <option value="antihistamine">Antihistamine</option>
+                            <option value="anti-inflammatory">Anti-inflammatory</option>
+                            <option value="vitamin">Vitamin/Supplement</option>
+                            <option value="antimalarial">Antimalarial</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="drugQuantity">Quantity</label><input type="number" id="drugQuantity" min="0" required></div>
+                        <div class="form-group">
+                            <label for="drugUnit">Unit</label>
+                            <select id="drugUnit">
+                                <option value="tablets">Tablets</option>
+                                <option value="capsules">Capsules</option>
+                                <option value="bottles">Bottles</option>
+                                <option value="sachets">Sachets</option>
+                                <option value="tubes">Tubes</option>
+                                <option value="injections">Injections</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group"><label for="drugExpiry">Expiry Date</label><input type="date" id="drugExpiry" required></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeDrugModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveDrug()">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="inventory.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() { await guardPage(); })();
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarToggle').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+</body>
+</html>

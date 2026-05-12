@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitals Tracking - Koladeisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand">
+                    <h2>Health Records</h2>
+                    <p>Koladeisi University</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="../records/index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
+                    <a href="prescriptions.html" class="nav-item"><i data-lucide="pill"></i>Prescriptions</a>
+                    <a href="lab-results.html" class="nav-item"><i data-lucide="flask-conical"></i>Lab Results</a>
+                    <a href="vitals.html" class="nav-item active"><i data-lucide="activity"></i>Vitals</a>
+                    <a href="visit-workflow.html" class="nav-item"><i data-lucide="git-branch"></i>Visit Workflow</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Vitals Tracking</h1>
+                        <p>Monitor patient vitals</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="openVitalsModal()"><i data-lucide="plus"></i> Record Vitals</button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Date</th>
+                                    <th>Temp (°C)</th>
+                                    <th>Pulse (bpm)</th>
+                                    <th>Resp (/min)</th>
+                                    <th>BP (mmHg)</th>
+                                    <th>SpO2 (%)</th>
+                                    <th>Plan</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vitalsTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal-overlay" id="vitalsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Vitals</h3>
+                <button class="modal-close" onclick="closeVitalsModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="vitalsForm">
+                    <div class="form-group">
+                        <label>Patient</label>
+                        <select id="vitalsPatient" required><option value="">Select patient</option></select>
+                    </div>
+                    <div class="form-grid-4">
+                        <div class="form-group">
+                            <label>Temperature (°C)</label>
+                            <input type="number" step="0.1" id="temperature" placeholder="36.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Pulse (bpm)</label>
+                            <input type="number" id="pulse" placeholder="72">
+                        </div>
+                        <div class="form-group">
+                            <label>Respiration (/min)</label>
+                            <input type="number" id="respiration" placeholder="16">
+                        </div>
+                        <div class="form-group">
+                            <label>SpO2 (%)</label>
+                            <input type="number" id="spo2" placeholder="98">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Blood Pressure Systolic</label>
+                            <input type="number" id="bpSystolic" placeholder="120">
+                        </div>
+                        <div class="form-group">
+                            <label>Blood Pressure Diastolic</label>
+                            <input type="number" id="bpDiastolic" placeholder="80">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Plan / Notes</label>
+                        <textarea id="plan" rows="3" placeholder="Enter treatment plan or notes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeVitalsModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveVitals()">Save Vitals</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="modal-overlay" id="viewVitalsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Vitals Details</h3>
+                <button class="modal-close" onclick="document.getElementById('viewVitalsModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="viewVitalsContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="document.getElementById('viewVitalsModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .form-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 768px) {
+            .form-grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="vitals.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() { await guardPage(); })();
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('sidebar-hidden');
+            toggleBtn.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.classList.toggle('sidebar-open');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="../records/index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                    <a href="index.html" class="nav-item active"><i data-lucide="calendar-days"></i>Appointments</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Appointments</h1>
+                        <p>Manage appointments</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="openCreateAppointment()"><i data-lucide="plus"></i> New Appointment</button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon green"><i data-lucide="calendar-check"></i></div><div class="stat-value" id="totalAppointments">0</div><div class="stat-label">Total</div></div>
+                    <div class="stat-card"><div class="stat-icon blue"><i data-lucide="clock"></i></div><div class="stat-value" id="pendingAppointments">0</div><div class="stat-label">Pending</div></div>
+                    <div class="stat-card"><div class="stat-icon orange"><i data-lucide="check-circle"></i></div><div class="stat-value" id="confirmedAppointments">0</div><div class="stat-label">Confirmed</div></div>
+                    <div class="stat-card"><div class="stat-icon red"><i data-lucide="x-circle"></i></div><div class="stat-value" id="cancelledAppointments">0</div><div class="stat-label">Cancelled</div></div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">All Appointments</h3>
+                        <select id="filterAppointmentStatus" style="padding:8px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary)">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody id="appointmentsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal-overlay" id="appointmentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="appointmentModalTitle">Book Appointment</h3>
+                <button class="modal-close" onclick="closeAppointmentModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="appointmentForm">
+                    <div class="form-group" id="patientField">
+                        <label for="appointmentPatient">Patient</label>
+                        <select id="appointmentPatient"><option value="">Select patient</option></select>
+                    </div>
+                    <div class="form-group" id="doctorField">
+                        <label for="appointmentDoctor">Doctor</label>
+                        <select id="appointmentDoctor" required><option value="">Select doctor</option></select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="appointmentDate">Date</label><input type="date" id="appointmentDate" required></div>
+                        <div class="form-group"><label for="appointmentTime">Time</label><input type="time" id="appointmentTime" required></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentType">Type</label>
+                        <select id="appointmentType" required>
+                            <option value="">Select type</option>
+                            <option value="consultation">General Consultation</option>
+                            <option value="follow-up">Follow-up</option>
+                            <option value="emergency">Emergency</option>
+                            <option value="lab-test">Lab Test</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentReason">Reason for Visit</label>
+                        <textarea id="appointmentReason" rows="3" placeholder="Reason for visit..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeAppointmentModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="bookAppointment()">Book Appointment</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="modal-overlay" id="viewAppointmentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Appointment Details</h3>
+                <button class="modal-close" onclick="document.getElementById('viewAppointmentModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="viewAppointmentContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="document.getElementById('viewAppointmentModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="appointments.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+        })();
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('sidebar-open');
+            toggleBtn.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

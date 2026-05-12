@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Koladaisi University Health Records</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <style>
+        .status-timeline { display: flex; justify-content: space-between; margin-top: 16px; position: relative; }
+        .status-timeline::before { content: ''; position: absolute; top: 20px; left: 10%; right: 10%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; }
+        .status-step { text-align: center; position: relative; z-index: 1; flex: 1; }
+        .status-dot { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.3); border: 3px solid rgba(255,255,255,0.5); margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .status-step.completed .status-dot { background: #22c55e; border-color: #22c55e; color: white; }
+        .status-step.active .status-dot { background: #3b82f6; border-color: #fff; color: white; animation: pulse 2s infinite; }
+        .status-label { font-size: 11px; color: rgba(255,255,255,0.9); font-weight: 500; }
+        .status-step.active .status-label { color: white; font-weight: 600; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); } 50% { box-shadow: 0 0 0 8px rgba(255,255,255,0); } }
+        .activeVisitBanner { background: linear-gradient(135deg, var(--primary-500), var(--primary-700)); }
+        @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+    </style>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth.js"></script>
+</head>
+<body>
+    <div class="dashboard" id="app" style="display:none">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand">
+                    <h2>Health Records</h2>
+                    <p>Koladaisi University</p>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+                    <div class="sidebar-search" style="padding:16px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;">
+                        <div style="position:relative;">
+                            <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.5);width:16px;height:16px;"></i>
+                            <input type="text" placeholder="Search..." id="globalSearch" style="width:100%;padding:8px 12px 8px 36px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;background:rgba(255,255,255,0.1);color:white;font-size:13px;">
+                        </div>
+                    </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-role" id="userRole">Role</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                 <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1 id="pageTitle">Dashboard</h1>
+                        <p>Welcome back, <span id="welcomeName">User</span></p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-actions">
+                        <button class="header-btn" onclick="toggleNotifications()" title="Notifications"><i data-lucide="bell"></i><span class="notification-dot" id="notifDot" style="display:none"></span></button>
+                        <button class="header-btn" onclick="toggleChat()" title="Chat Assistant"><i data-lucide="message-square"></i></button>
+                        <button class="header-btn" onclick="toggleEmergencySidebar()" title="Emergency" style="color: #dc2626;"><i data-lucide="alert-triangle"></i></button>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content" id="dashboardContent"></div>
+        </main>
+    </div>
+    
+    <div class="notification-panel" id="notificationPanel">
+        <div class="notification-header"><h3>Notifications</h3><button onclick="toggleNotifications()"><i data-lucide="x"></i></button></div>
+        <div class="notification-list" id="notificationList"></div>
+    </div>
+    
+    <div class="chat-widget" id="chatWidget" style="display:none">
+        <div class="chat-header"><h3><i data-lucide="bot"></i> Health Assistant</h3><button onclick="toggleChat()"><i data-lucide="x"></i></button></div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input"><input type="text" id="chatInput" placeholder="Type your message..."><button onclick="sendMessage()"><i data-lucide="send"></i></button></div>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <script src="../js/theme.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../components/emergency-sidebar.js"></script>
+    <script src="../components/enhanced-chat.js"></script>
+    <script src="../messages/notification-center.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        const NAV_ITEMS = {
+            student: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: 'index.html', active: true },
+                    { icon: 'file-text', label: 'My Records', href: '../records/my-records.html' },
+                    { icon: 'git-branch', label: 'My Visits', href: '../records/my-visits.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html', badge: 'appointmentBadge' },
+                    { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'pill', label: 'Prescriptions', href: '../records/my-prescriptions.html' },
+                    { icon: 'activity', label: 'My Vitals', href: '../records/my-vitals.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'user-circle', label: 'My Profile', href: '../settings/profile-form.html' },
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            doctor: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: 'index.html', active: true },
+                    { icon: 'file-text', label: 'Health Records', href: '../records/index.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html', badge: 'appointmentBadge' },
+                    { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'git-branch', label: 'Visit Workflow', href: '../records/visit-workflow.html' },
+                    { icon: 'users', label: 'My Patients', href: '../records/patient-list.html' },
+                    { icon: 'pill', label: 'Prescriptions', href: '../records/prescriptions.html' },
+                    { icon: 'flask-conical', label: 'Lab Results', href: '../records/lab-results.html' },
+                    { icon: 'activity', label: 'Vitals', href: '../records/vitals.html' },
+                ]},
+                { section: 'Pharmacy', items: [
+                    { icon: 'pill', label: 'Pharmacy', href: '../pharmacy/index.html' },
+                    { icon: 'package', label: 'Inventory', href: '../pharmacy/inventory.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'user-circle', label: 'My Profile', href: '../settings/profile-form.html' },
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            nurse: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: 'index.html', active: true },
+                    { icon: 'file-text', label: 'Health Records', href: '../records/index.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html', badge: 'appointmentBadge' },
+                    { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'git-branch', label: 'Visit Workflow', href: '../records/visit-workflow.html' },
+                    { icon: 'activity', label: 'Record Vitals', href: '../records/vitals.html' },
+                    { icon: 'flask-conical', label: 'Lab Results', href: '../records/lab-results.html' },
+                    { icon: 'list-todo', label: 'Tasks', href: '../records/tasks.html' },
+                ]},
+                { section: 'Pharmacy', items: [
+                    { icon: 'pill', label: 'Pharmacy', href: '../pharmacy/index.html' },
+                    { icon: 'package', label: 'Inventory', href: '../pharmacy/inventory.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'user-circle', label: 'My Profile', href: '../settings/profile-form.html' },
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            admin: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: 'index.html', active: true },
+                    { icon: 'file-text', label: 'Health Records', href: '../records/index.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'users', label: 'Patient List', href: '../records/patient-list.html' },
+                    { icon: 'pill', label: 'Prescriptions', href: '../records/prescriptions.html' },
+                    { icon: 'flask-conical', label: 'Lab Results', href: '../records/lab-results.html' },
+                    { icon: 'activity', label: 'Vitals', href: '../records/vitals.html' },
+                ]},
+                { section: 'Pharmacy', items: [
+                    { icon: 'pill', label: 'Pharmacy', href: '../pharmacy/index.html' },
+                    { icon: 'package', label: 'Inventory', href: '../pharmacy/inventory.html' },
+                ]},
+                { section: 'Administration', items: [
+                    { icon: 'user-cog', label: 'User Management', href: '../admin/users.html' },
+                    { icon: 'bar-chart-3', label: 'Reports', href: '../admin/reports.html' },
+                    { icon: 'clipboard-list', label: 'Activity Logs', href: '../admin/logs.html' },
+                    { icon: 'settings', label: 'System Settings', href: '../admin/settings.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'user-circle', label: 'My Profile', href: '../settings/profile-form.html' },
+                    { icon: 'settings-2', label: 'Profile Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+        };
+        
+        const ROLE_LABELS = { student: 'Student', doctor: 'Doctor', nurse: 'Nurse', admin: 'Administrator' };
+        
+        let currentUser = null;
+        let userData = null;
+        let currentRole = 'patient';
+        let dashUnsubs = [];
+        
+        function renderSidebar(role) {
+            const nav = document.getElementById('sidebarNav');
+            const items = NAV_ITEMS[role];
+            if (!items) return;
+            
+            nav.innerHTML = items.map(section => `
+                <div class="nav-section">
+                    <div class="nav-section-title">${section.section}</div>
+                    ${section.items.map(item => `
+                        <a href="${item.href}" class="nav-item ${item.active ? 'active' : ''}" ${item.action ? `onclick="${item.action}(); return false;"` : ''}>
+                            <i data-lucide="${item.icon}"></i>
+                            ${item.label}
+                            ${item.badge ? `<span class="nav-badge" id="${item.badge}" style="display:none">0</span>` : ''}
+                        </a>
+                    `).join('')}
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+        
+        function renderDashboard(role) {
+            const content = document.getElementById('dashboardContent');
+            
+            if (role === 'student') {
+                content.innerHTML = `
+                    <div id="activeVisitBanner" style="display:none;margin-bottom:20px">
+                        <div style="background:linear-gradient(135deg,var(--primary-500),var(--primary-700));color:white;padding:16px 20px;border-radius:var(--radius-lg)">
+                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+                                <div>
+                                    <h3 style="margin:0 0 4px 0;font-size:16px"><i data-lucide="git-branch" style="width:18px;height:18px;display:inline;margin-right:8px"></i>You have an active visit in progress</h3>
+                                    <p style="margin:0;font-size:13px;opacity:0.9" id="activeVisitInfo">Loading...</p>
+                                </div>
+                                <a href="../records/my-visits.html" class="btn" style="background:white;color:var(--primary-700)"><i data-lucide="eye" style="width:16px;height:16px"></i> View Progress</a>
+                            </div>
+                            <div class="status-timeline" style="margin-top:16px">
+                                <div class="status-step" id="step-arrival"><div class="status-dot"><i data-lucide="log-in" style="width:16px;height:16px"></i></div><div class="status-label">Arrival</div></div>
+                                <div class="status-step" id="step-triage"><div class="status-dot"><i data-lucide="activity" style="width:16px;height:16px"></i></div><div class="status-label">Triage</div></div>
+                                <div class="status-step" id="step-consultation"><div class="status-dot"><i data-lucide="stethoscope" style="width:16px;height:16px"></i></div><div class="status-label">Consultation</div></div>
+                                <div class="status-step" id="step-treatment"><div class="status-dot"><i data-lucide="pill" style="width:16px;height:16px"></i></div><div class="status-label">Treatment</div></div>
+                                <div class="status-step" id="step-discharge"><div class="status-dot"><i data-lucide="log-out" style="width:16px;height:16px"></i></div><div class="status-label">Discharge</div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card" onclick="location.href='../records/my-records.html'">
+                            <div class="stat-header"><div class="stat-icon blue"><i data-lucide="file-text"></i></div></div>
+                            <div class="stat-value" id="statRecords">0</div>
+                            <div class="stat-label">Medical Records</div>
+                        </div>
+                        <div class="stat-card" onclick="location.href='../appointments/index.html'">
+                            <div class="stat-header"><div class="stat-icon green"><i data-lucide="calendar-check"></i></div></div>
+                            <div class="stat-value" id="statAppointments">0</div>
+                            <div class="stat-label">Upcoming Appointments</div>
+                        </div>
+                        <div class="stat-card" onclick="location.href='../records/my-prescriptions.html'">
+                            <div class="stat-header"><div class="stat-icon orange"><i data-lucide="pill"></i></div></div>
+                            <div class="stat-value" id="statPrescriptions">0</div>
+                            <div class="stat-label">Active Prescriptions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><div class="stat-icon purple"><i data-lucide="graduation-cap"></i></div></div>
+                            <div class="stat-value" id="statLevel">N/A</div>
+                            <div class="stat-label">Academic Level</div>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Upcoming Appointments</h3>
+                                <a href="../appointments/create.html" class="btn btn-sm btn-primary">Book New</a>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+                                    <tbody id="appointmentsTable"></tbody>
+                                </table>
+                            </div>
+                            <div id="appointmentsEmpty" style="display:none;padding:20px;text-align:center;color:var(--text-muted);">
+                                <p>No upcoming appointments</p>
+                                <a href="../appointments/create.html" class="btn btn-sm btn-primary" style="margin-top:10px;">Book Now</a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Quick Actions</h3></div>
+                            <div class="quick-actions">
+                                <a href="../appointments/create.html" class="quick-action-btn"><i data-lucide="calendar-plus"></i><span class="quick-action-label">Book Appointment</span></a>
+                                <a href="../records/my-records.html" class="quick-action-btn"><i data-lucide="file-text"></i><span class="quick-action-label">View Records</span></a>
+                                <a href="../records/my-prescriptions.html" class="quick-action-btn"><i data-lucide="pill"></i><span class="quick-action-label">Prescriptions</span></a>
+                                <a href="../records/vitals.html" class="quick-action-btn"><i data-lucide="activity"></i><span class="quick-action-label">My Vitals</span></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Activity</h3>
+                            <span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span>
+                        </div>
+                        <ul class="activity-list" id="activityList"></ul>
+                    </div>
+                `;
+            } else if (role === 'doctor') {
+                content.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card" onclick="location.href='../records/patient-list.html'">
+                            <div class="stat-header"><div class="stat-icon blue"><i data-lucide="users"></i></div></div>
+                            <div class="stat-value" id="statPatients">0</div>
+                            <div class="stat-label">My Patients</div>
+                        </div>
+                        <div class="stat-card" onclick="location.href='../appointments/index.html'">
+                            <div class="stat-header"><div class="stat-icon green"><i data-lucide="calendar-check"></i></div></div>
+                            <div class="stat-value" id="statAppointments">0</div>
+                            <div class="stat-label">Today's Appointments</div>
+                        </div>
+                        <div class="stat-card" onclick="location.href='../records/prescriptions.html'">
+                            <div class="stat-header"><div class="stat-icon orange"><i data-lucide="pill"></i></div></div>
+                            <div class="stat-value" id="statPrescriptions">0</div>
+                            <div class="stat-label">Pending Prescriptions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><div class="stat-icon purple"><i data-lucide="stethoscope"></i></div></div>
+                            <div class="stat-value" id="statSpecialization">N/A</div>
+                            <div class="stat-label">Specialization</div>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Today's Appointments</h3>
+                                <a href="../appointments/index.html" class="btn btn-sm btn-outline">View All</a>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>Patient</th><th>Time</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+                                    <tbody id="appointmentsTable"></tbody>
+                                </table>
+                            </div>
+                            <div id="appointmentsEmpty" style="display:none;padding:20px;text-align:center;color:var(--text-muted);">
+                                <p>No appointments today</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Quick Actions</h3></div>
+                            <div class="quick-actions">
+                                <a href="../records/index.html" class="quick-action-btn"><i data-lucide="file-plus"></i><span class="quick-action-label">Add Record</span></a>
+                                <a href="../records/prescriptions.html" class="quick-action-btn"><i data-lucide="pill"></i><span class="quick-action-label">New Prescription</span></a>
+                                <a href="../records/patient-list.html" class="quick-action-btn"><i data-lucide="users"></i><span class="quick-action-label">Patient List</span></a>
+                                <a href="../records/lab-results.html" class="quick-action-btn"><i data-lucide="flask-conical"></i><span class="quick-action-label">Lab Results</span></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Activity</h3>
+                            <span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span>
+                        </div>
+                        <ul class="activity-list" id="activityList"></ul>
+                    </div>
+                `;
+            } else if (role === 'nurse') {
+                content.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card" onclick="location.href='../records/vitals.html'">
+                            <div class="stat-header"><div class="stat-icon blue"><i data-lucide="activity"></i></div></div>
+                            <div class="stat-value" id="statVitals">0</div>
+                            <div class="stat-label">Vitals Today</div>
+                        </div>
+                        <div class="stat-card" onclick="location.href='../records/tasks.html'">
+                            <div class="stat-header"><div class="stat-icon green"><i data-lucide="check-circle"></i></div></div>
+                            <div class="stat-value" id="statTasks">0</div>
+                            <div class="stat-label">Pending Tasks</div>
+                        </div>
+                        <div class="stat-card" onclick="location.href='../appointments/index.html'">
+                            <div class="stat-header"><div class="stat-icon orange"><i data-lucide="calendar-days"></i></div></div>
+                            <div class="stat-value" id="statAppointments">0</div>
+                            <div class="stat-label">Today's Appointments</div>
+                        </div>
+                        <div class="stat-card" onclick="location.href='../records/lab-results.html'">
+                            <div class="stat-header"><div class="stat-icon red"><i data-lucide="flask-conical"></i></div></div>
+                            <div class="stat-value" id="statLab">0</div>
+                            <div class="stat-label">Pending Lab Results</div>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Today's Appointments</h3>
+                                <a href="../appointments/index.html" class="btn btn-sm btn-outline">View All</a>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>Patient</th><th>Time</th><th>Type</th><th>Status</th></tr></thead>
+                                    <tbody id="appointmentsTable"></tbody>
+                                </table>
+                            </div>
+                            <div id="appointmentsEmpty" style="display:none;padding:20px;text-align:center;color:var(--text-muted);">
+                                <p>No appointments today</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Quick Actions</h3></div>
+                            <div class="quick-actions">
+                                <a href="../records/vitals.html" class="quick-action-btn"><i data-lucide="activity"></i><span class="quick-action-label">Record Vitals</span></a>
+                                <a href="../records/lab-results.html" class="quick-action-btn"><i data-lucide="flask-conical"></i><span class="quick-action-label">Lab Results</span></a>
+                                <a href="../records/tasks.html" class="quick-action-btn"><i data-lucide="list-todo"></i><span class="quick-action-label">My Tasks</span></a>
+                                <a href="../pharmacy/inventory.html" class="quick-action-btn"><i data-lucide="package"></i><span class="quick-action-label">Inventory</span></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Activity</h3>
+                            <span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span>
+                        </div>
+                        <ul class="activity-list" id="activityList"></ul>
+                    </div>
+                `;
+            } else if (role === 'admin') {
+                content.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-header"><div class="stat-icon blue"><i data-lucide="users"></i></div></div><div class="stat-value" id="statUsers">0</div><div class="stat-label">Total Users</div></div>
+                        <div class="stat-card"><div class="stat-header"><div class="stat-icon green"><i data-lucide="graduation-cap"></i></div></div><div class="stat-value" id="statStudents">0</div><div class="stat-label">Students</div></div>
+                        <div class="stat-card"><div class="stat-header"><div class="stat-icon orange"><i data-lucide="stethoscope"></i></div></div><div class="stat-value" id="statStaff">0</div><div class="stat-label">Medical Staff</div></div>
+                        <div class="stat-card"><div class="stat-header"><div class="stat-icon red"><i data-lucide="hourglass"></i></div></div><div class="stat-value" id="statPending">0</div><div class="stat-label">Pending Approvals</div></div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Recent Users</h3><a href="../admin/users.html" class="btn btn-sm btn-primary">View All</a></div>
+                            <div class="table-container"><table><thead><tr><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody id="recentUsersTable"></tbody></table></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title">Quick Actions</h3></div>
+                            <div class="quick-actions">
+                                <a href="../admin/users.html" class="quick-action-btn"><i data-lucide="user-plus"></i><span class="quick-action-label">Manage Users</span></a>
+                                <a href="../admin/reports.html" class="quick-action-btn"><i data-lucide="bar-chart-3"></i><span class="quick-action-label">View Reports</span></a>
+                                <a href="../records/index.html" class="quick-action-btn"><i data-lucide="file-text"></i><span class="quick-action-label">All Records</span></a>
+                                <a href="../settings/index.html" class="quick-action-btn"><i data-lucide="settings-2"></i><span class="quick-action-label">Settings</span></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card"><div class="card-header"><h3 class="card-title">Recent Activity</h3></div><ul class="activity-list" id="activityList"></ul></div>
+                `;
+            }
+            lucide.createIcons();
+        }
+        
+        function subscribeActiveVisit() {
+            const banner = document.getElementById('activeVisitBanner');
+            if (!banner) return;
+            
+            const unsub = db.collection('visits')
+                .where('patientId', '==', currentUser.uid)
+                .where('status', 'in', ['waiting', 'in-progress'])
+                .limit(1)
+                .onSnapshot(snap => {
+                    try {
+                        if (!snap.empty) {
+                            const visit = snap.docs[0].data();
+                            document.getElementById('activeVisitInfo').textContent = `${visit.visitType || 'Consultation'} - Current stage: ${visit.currentStage}`;
+                            banner.style.display = 'block';
+                            
+                            const stages = ['arrival', 'triage', 'consultation', 'diagnosis', 'treatment', 'discharge'];
+                            const currentIndex = stages.indexOf(visit.currentStage);
+                            
+                            stages.forEach((stage, index) => {
+                                const step = document.getElementById(`step-${stage}`);
+                                if (step) {
+                                    if (index < currentIndex) step.className = 'status-step completed';
+                                    else if (index === currentIndex) step.className = 'status-step active';
+                                    else step.className = 'status-step pending';
+                                }
+                            });
+                            
+                            lucide.createIcons();
+                        } else {
+                            banner.style.display = 'none';
+                        }
+                    } catch (error) {
+                        console.error('Error in visit subscription:', error);
+                    }
+                }, error => console.error('Visit subscription error:', error));
+            
+            dashUnsubs.push(unsub);
+        }
+        
+        function cleanupSubs() {
+            dashUnsubs.forEach(u => { if (typeof u === 'function') u(); });
+            dashUnsubs = [];
+        }
+        
+        function loadDashboardData() {
+            cleanupSubs();
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (currentRole === 'student') {
+                dashUnsubs.push(
+                    db.collection('health_records').where('patientId', '==', currentUser.uid)
+                        .onSnapshot(snap => { document.getElementById('statRecords').textContent = snap.size; }),
+                    db.collection('appointments').where('patientId', '==', currentUser.uid).where('date', '>=', today)
+                        .onSnapshot(snap => {
+                            const upcoming = snap.docs.filter(d => ['pending', 'confirmed'].includes(d.data().status));
+                            document.getElementById('statAppointments').textContent = upcoming.length;
+                            loadPatientAppointments(snap);
+                        }),
+                    db.collection('prescriptions').where('patientId', '==', currentUser.uid).where('status', '==', 'pending')
+                        .onSnapshot(snap => { document.getElementById('statPrescriptions').textContent = snap.size; })
+                );
+                document.getElementById('statLevel').textContent = userData.level || 'N/A';
+                subscribeActivity(currentUser.uid);
+                subscribeActiveVisit();
+                
+            } else if (currentRole === 'doctor') {
+                dashUnsubs.push(
+                    db.collection('users').where('assignedDoctorId', '==', currentUser.uid)
+                        .onSnapshot(snap => { document.getElementById('statPatients').textContent = snap.size; }),
+                    db.collection('appointments').where('doctorId', '==', currentUser.uid).where('date', '==', today)
+                        .onSnapshot(snap => {
+                            document.getElementById('statAppointments').textContent = snap.size;
+                            loadDoctorAppointments(snap);
+                        }),
+                    db.collection('prescriptions').where('createdBy', '==', currentUser.uid).where('status', '==', 'pending')
+                        .onSnapshot(snap => { document.getElementById('statPrescriptions').textContent = snap.size; })
+                );
+                document.getElementById('statSpecialization').textContent = userData.specialization || 'General';
+                subscribeActivity(currentUser.uid);
+                
+            } else if (currentRole === 'nurse') {
+                dashUnsubs.push(
+                    db.collection('vitals').where('recordedBy', '==', currentUser.uid).where('date', '>=', today)
+                        .onSnapshot(snap => { document.getElementById('statVitals').textContent = snap.size; }),
+                    db.collection('tasks').where('assignedTo', '==', currentUser.uid).where('status', '==', 'pending')
+                        .onSnapshot(snap => { document.getElementById('statTasks').textContent = snap.size; }),
+                    db.collection('appointments').where('date', '==', today)
+                        .onSnapshot(snap => {
+                            document.getElementById('statAppointments').textContent = snap.size;
+                            loadNurseAppointments(snap);
+                        }),
+                    db.collection('lab_results').where('status', '==', 'pending')
+                        .onSnapshot(snap => { document.getElementById('statLab').textContent = snap.size; })
+                );
+                subscribeActivity(currentUser.uid);
+                
+            } else if (currentRole === 'admin') {
+                dashUnsubs.push(
+                    db.collection('users')
+                        .onSnapshot(snap => {
+                            const users = snap.docs.map(d => d.data());
+                            const students = users.filter(d => d.role === 'student').length;
+                            const doctors = users.filter(d => d.role === 'doctor').length;
+                            const nurses = users.filter(d => d.role === 'nurse').length;
+                            const pending = users.filter(d => d.status === 'pending_approval').length;
+                            
+                            document.getElementById('statUsers').textContent = snap.size;
+                            document.getElementById('statStudents').textContent = students;
+                            document.getElementById('statStaff').textContent = doctors + nurses;
+                            document.getElementById('statPending').textContent = pending;
+                            
+                            const recent = snap.docs.sort((a, b) => (b.data().createdAt?.seconds || 0) - (a.data().createdAt?.seconds || 0)).slice(0, 5);
+                            document.getElementById('recentUsersTable').innerHTML = recent.map(doc => {
+                                const u = doc.data();
+                                const cls = u.status === 'active' ? 'success' : u.status === 'suspended' ? 'danger' : 'warning';
+                                return `<tr><td><strong>${u.firstName} ${u.lastName}</strong></td><td><span class="badge badge-primary">${u.role}</span></td><td><span class="badge badge-${cls}">${u.status}</span></td></tr>`;
+                            }).join('');
+                            lucide.createIcons();
+                        })
+                );
+                subscribeAdminActivity();
+            }
+        }
+        
+        function loadPatientAppointments(snapshot) {
+            const tbody = document.getElementById('appointmentsTable');
+            const emptyDiv = document.getElementById('appointmentsEmpty');
+            const upcoming = snapshot.docs.filter(d => ['pending', 'confirmed'].includes(d.data().status));
+            
+            if (upcoming.length === 0) { 
+                if (tbody) tbody.innerHTML = ''; 
+                if (emptyDiv) emptyDiv.style.display = 'block';
+                return; 
+            }
+            
+            if (emptyDiv) emptyDiv.style.display = 'none';
+            if (tbody) tbody.innerHTML = upcoming.slice(0, 5).map(doc => {
+                const a = doc.data();
+                return `<tr><td>Dr. ${a.doctorName || 'N/A'}</td><td>${formatDate(a.date)}</td><td>${a.time || 'N/A'}</td><td><span class="badge badge-${a.status === 'confirmed' ? 'success' : 'warning'}">${a.status}</span></td></tr>`;
+            }).join('');
+        }
+        
+        function loadDoctorAppointments(snapshot) {
+            const tbody = document.getElementById('appointmentsTable');
+            const emptyDiv = document.getElementById('appointmentsEmpty');
+            if (snapshot.docs.length === 0) { 
+                tbody.innerHTML = ''; 
+                if (emptyDiv) emptyDiv.style.display = 'block';
+                return; 
+            }
+            if (emptyDiv) emptyDiv.style.display = 'none';
+            tbody.innerHTML = snapshot.docs.map(doc => {
+                const a = doc.data();
+                const cls = a.status === 'confirmed' ? 'success' : a.status === 'pending' ? 'warning' : 'danger';
+                return `<tr><td>${a.patientName || 'Unknown'}</td><td>${a.time || 'N/A'}</td><td>${a.type || 'Consultation'}</td><td><span class="badge badge-${cls}">${a.status}</span></td><td><button class="btn btn-sm btn-outline">View</button></td></tr>`;
+            }).join('');
+        }
+        
+        function loadNurseAppointments(snapshot) {
+            const tbody = document.getElementById('appointmentsTable');
+            const emptyDiv = document.getElementById('appointmentsEmpty');
+            if (snapshot.docs.length === 0) { 
+                tbody.innerHTML = ''; 
+                if (emptyDiv) emptyDiv.style.display = 'block';
+                return; 
+            }
+            if (emptyDiv) emptyDiv.style.display = 'none';
+            tbody.innerHTML = snapshot.docs.map(doc => {
+                const a = doc.data();
+                const cls = a.status === 'confirmed' ? 'success' : a.status === 'pending' ? 'warning' : 'danger';
+                return `<tr><td>${a.patientName || 'Unknown'}</td><td>${a.time || 'N/A'}</td><td>${a.type || 'Consultation'}</td><td><span class="badge badge-${cls}">${a.status}</span></td></tr>`;
+            }).join('');
+        }
+        
+        function subscribeActivity(userId) {
+            const list = document.getElementById('activityList');
+            if (!list) return;
+            const unsub = db.collection('activity_logs').where('userId', '==', userId).orderBy('timestamp', 'desc').limit(5)
+                .onSnapshot(snap => {
+                    if (snap.empty) { list.innerHTML = '<li class="activity-item"><div class="empty-state"><p>No recent activity</p></div></li>'; return; }
+                    list.innerHTML = snap.docs.map(doc => {
+                        const d = doc.data();
+                        return `<li class="activity-item"><div class="activity-avatar"><i data-lucide="${getActivityIcon(d.type)}"></i></div><div class="activity-content"><div class="activity-text">${d.description}</div><div class="activity-time">${formatTimestamp(d.timestamp)}</div></div></li>`;
+                    }).join('');
+                    lucide.createIcons();
+                }, () => {});
+            dashUnsubs.push(unsub);
+        }
+        
+        function subscribeAdminActivity() {
+            const list = document.getElementById('activityList');
+            if (!list) return;
+            const unsub = db.collection('activity_logs').orderBy('timestamp', 'desc').limit(5)
+                .onSnapshot(snap => {
+                    if (snap.empty) { list.innerHTML = '<li class="activity-item"><div class="empty-state"><p>No recent activity</p></div></li>'; return; }
+                    list.innerHTML = snap.docs.map(doc => {
+                        const d = doc.data();
+                        return `<li class="activity-item"><div class="activity-avatar"><i data-lucide="${getActivityIcon(d.type)}"></i></div><div class="activity-content"><div class="activity-text">${d.description}</div><div class="activity-time">${formatTimestamp(d.timestamp)}</div></div></li>`;
+                    }).join('');
+                    lucide.createIcons();
+                }, () => {});
+            dashUnsubs.push(unsub);
+        }
+        
+        function getActivityIcon(type) {
+            return { login: 'log-in', signup: 'user-plus', 'appointment-book': 'calendar-plus', 'record-create': 'file-plus', logout: 'log-out' }[type] || 'file-text';
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('sidebar-open');
+            toggleBtn.classList.toggle('active');
+            if (overlay) overlay.classList.toggle('active');
+        }
+        
+        function toggleNotifications() { document.getElementById('notificationPanel').classList.toggle('active'); }
+        function toggleChat() { const w = document.getElementById('chatWidget'); w.style.display = w.style.display === 'none' ? 'flex' : 'none'; }
+        function sendMessage() { sendEnhancedMessage(); }
+        setTimeout(() => { showChatSuggestions(); }, 500);
+        
+        initTheme();
+        
+        auth.onAuthStateChanged(async (user) => {
+            try {
+                if (!user) { window.location.href = '../auth/login.html'; return; }
+                currentUser = user;
+                const doc = await db.collection('users').doc(user.uid).get();
+                if (!doc.exists) { window.location.href = '../auth/login.html'; return; }
+                userData = doc.data();
+                currentRole = userData.role;
+                
+                document.getElementById('welcomeName').textContent = userData.firstName || '';
+                document.getElementById('userName').textContent = `${userData.firstName || ''} ${userData.lastName || ''}`;
+                document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+                document.getElementById('userRole').textContent = ROLE_LABELS[currentRole] || currentRole || '';
+                
+                renderSidebar(currentRole);
+                renderDashboard(currentRole);
+                loadDashboardData();
+                
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.add('sidebar-hidden');
+                }
+                
+                if (!userData.bioCompleted) {
+                    const content = document.getElementById('dashboardContent');
+                    const reminder = document.createElement('div');
+                    reminder.id = 'profileReminder';
+                    reminder.style.cssText = 'background:linear-gradient(135deg,var(--primary-50),var(--primary-100));border:1px solid var(--primary-200);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;animation:slideDown 0.4s ease';
+                    reminder.innerHTML = `
+                        <div style="display:flex;align-items:center;gap:12px">
+                            <div style="width:40px;height:40px;background:var(--primary-200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                <i data-lucide="user-circle" style="width:20px;height:20px;color:var(--primary-700)"></i>
+                            </div>
+                            <div>
+                                <strong style="font-size:14px;color:var(--primary-900)">Complete Your Profile</strong>
+                                <p style="font-size:12px;color:var(--primary-700);margin:2px 0 0">Add medical info and emergency contacts for better care</p>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <a href="../settings/profile-form.html" class="btn btn-primary" style="font-size:13px;padding:8px 16px"><i data-lucide="edit-3" style="width:14px;height:14px"></i> Complete Profile</a>
+                            <button onclick="dismissReminder()" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--primary-500)" title="Dismiss">
+                                <i data-lucide="x" style="width:16px;height:16px"></i>
+                            </button>
+                        </div>
+                    `;
+                    content.prepend(reminder);
+                    lucide.createIcons();
+                }
+                
+                document.getElementById('app').style.display = 'flex';
+            } catch (error) {
+                console.error('Dashboard init error:', error);
+                document.getElementById('app').style.display = 'flex';
+                const content = document.getElementById('dashboardContent');
+                content.innerHTML = `<div class="card" style="padding:40px;text-align:center;margin-top:20px">
+                    <div style="width:64px;height:64px;background:var(--danger-100);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+                        <i data-lucide="alert-circle" style="width:32px;height:32px;color:var(--danger-600)"></i>
+                    </div>
+                    <h3 style="margin-bottom:8px">Could not load dashboard</h3>
+                    <p style="color:var(--text-muted);margin-bottom:20px">Please try refreshing the page. If the problem persists, contact support.</p>
+                    <button class="btn btn-primary" onclick="location.reload()"><i data-lucide="refresh-cw"></i> Refresh Page</button>
+                    <a href="../auth/login.html" class="btn btn-outline" style="margin-left:8px">Back to Login</a>
+                </div>`;
+                lucide.createIcons();
+            }
+        });
+        
+        function dismissReminder() {
+            const el = document.getElementById('profileReminder');
+            if (el) {
+                el.style.transition = 'opacity 0.3s, transform 0.3s';
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                setTimeout(() => el.remove(), 300);
+            }
+        }
+    </script>
+</body>
+</html>

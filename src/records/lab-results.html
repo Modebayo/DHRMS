@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Results - Doctor</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladeisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
+                    <a href="prescriptions.html" class="nav-item"><i data-lucide="pill"></i>Prescriptions</a>
+                    <a href="lab-results.html" class="nav-item active"><i data-lucide="flask-conical"></i>Lab Results</a>
+                    <a href="vitals.html" class="nav-item"><i data-lucide="activity"></i>Vitals</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Lab Results</h1>
+                        <p>Manage lab results</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="openLabModal()"><i data-lucide="plus"></i> Add Result</button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Patient</th><th>Test Type</th><th>Result</th><th>Notes</th><th>Date</th><th>Status</th></tr></thead>
+                            <tbody id="labTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal-overlay" id="labModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Lab Result</h3>
+                <button class="modal-close" onclick="closeLabModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="labForm">
+                    <div class="form-group">
+                        <label>Patient</label>
+                        <select id="labPatient" required><option value="">Select</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Test Type</label>
+                        <select id="labTest" required>
+                            <option value="">Select test</option>
+                            <option value="blood-count">Full Blood Count</option>
+                            <option value="urinalysis">Urinalysis</option>
+                            <option value="blood-sugar">Blood Sugar</option>
+                            <option value="malaria">Malaria Test</option>
+                            <option value="typhoid">Typhoid Test</option>
+                            <option value="hepatitis">Hepatitis Screening</option>
+                            <option value="hiv">HIV Screening</option>
+                            <option value="pregnancy">Pregnancy Test</option>
+                            <option value="x-ray">X-Ray</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Result</label>
+                        <textarea id="labResult" rows="3" placeholder="Enter results..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="labNotes" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="labStatus">
+                            <option value="normal">Normal</option>
+                            <option value="abnormal">Abnormal</option>
+                            <option value="critical">Critical</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeLabModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveLabResult()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="modal-overlay" id="viewLabModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Lab Result Details</h3>
+                <button class="modal-close" onclick="document.getElementById('viewLabModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="viewLabContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="document.getElementById('viewLabModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="lab-results.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() { await guardPage(); })();
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('sidebar-hidden');
+            toggleBtn.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.classList.toggle('sidebar-open');
+        }
+    </script>
+</body>
+</html>

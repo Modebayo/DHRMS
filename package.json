@@ -1,0 +1,14 @@
+{
+  "name": "ku-health-records",
+  "version": "1.0.0",
+  "description": "Digital Health Records Management System for Koladaisi University",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 3000 -o",
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage:rules"
+  },
+  "keywords": ["health", "records", "university", "firebase"],
+  "license": "MIT"
+}

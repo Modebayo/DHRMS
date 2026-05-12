@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isDoctor() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+    }
+    
+    function isNurse() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'nurse';
+    }
+    
+    function isMedicalStaff() {
+      return isDoctor() || isNurse() || isAdmin();
+    }
+    
+    function isStudent() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+    
+    // Validate required string fields
+    function hasValidString(data, field, maxLength) {
+      return data[field] is string && data[field].size() <= maxLength;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        isOwner(userId) || 
+        isAdmin() || 
+        isDoctor() || 
+        isNurse()
+      );
+      
+      allow create: if isAdmin() || (
+        // Users can create their own profile during signup
+        isOwner(userId) && 
+        request.resource.data.keys().hasAll(['email', 'role', 'firstName', 'lastName']) &&
+        hasValidString(request.resource.data, 'firstName', 50) &&
+        hasValidString(request.resource.data, 'lastName', 50) &&
+        request.resource.data.role in ['student', 'doctor', 'nurse', 'admin']
+      );
+      
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Health records
+    match /health_records/{recordId} {
+      allow read: if isAuthenticated();
+      allow create: if isMedicalStaff() && (
+        hasValidString(request.resource.data, 'diagnosis', 500) &&
+        hasValidString(request.resource.data, 'symptoms', 1000)
+      );
+      allow update: if isMedicalStaff();
+      allow delete: if isAdmin();
+    }
+    
+    // Appointments
+    match /appointments/{appointmentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        request.resource.data.keys().hasAll(['patientId', 'doctorId', 'date', 'time']) &&
+        request.resource.data.status == 'pending'
+      );
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // Prescriptions
+    match /prescriptions/{prescriptionId} {
+      allow read: if isAuthenticated();
+      allow create: if isMedicalStaff() && (
+        hasValidString(request.resource.data, 'medication', 200) &&
+        hasValidString(request.resource.data, 'dosage', 100)
+      );
+      allow update: if isMedicalStaff();
+      allow delete: if isAdmin();
+    }
+    
+    // Lab results
+    match /lab_results/{labId} {
+      allow read: if isAuthenticated();
+      allow create: if isMedicalStaff() && (
+        hasValidString(request.resource.data, 'result', 2000)
+      );
+      allow update: if isMedicalStaff();
+      allow delete: if isAdmin();
+    }
+    
+    // Vitals
+    match /vitals/{vitalId} {
+      allow read: if isAuthenticated();
+      allow create: if isMedicalStaff();
+      allow update: if isMedicalStaff();
+      allow delete: if isAdmin();
+    }
+    
+    // Tasks
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create: if isMedicalStaff() && (
+        hasValidString(request.resource.data, 'description', 500)
+      );
+      allow update: if isMedicalStaff();
+      allow delete: if isAdmin();
+    }
+    
+    // Inventory
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated();
+      allow create: if isMedicalStaff() && (
+        hasValidString(request.resource.data, 'name', 200) &&
+        request.resource.data.quantity is int &&
+        request.resource.data.quantity >= 0
+      );
+      allow update: if isMedicalStaff();
+      allow delete: if isAdmin();
+    }
+    
+    // Activity logs
+    match /activity_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+    
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // System settings
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

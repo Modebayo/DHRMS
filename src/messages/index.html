@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <style>
+        .messages-container { display: flex; height: calc(100vh - 80px); gap: 0; }
+        .messages-list { width: 350px; border-right: 1px solid var(--border-color); overflow-y: auto; }
+        .messages-list-header { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .conversation-item { padding: 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 12px; }
+        .conversation-item:hover { background: var(--bg-secondary); }
+        .conversation-item.active { background: var(--primary-50); border-left: 3px solid var(--primary-600); }
+        .conversation-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--primary-100); display: flex; align-items: center; justify-content: center; color: var(--primary-600); font-weight: 600; }
+        .conversation-info { flex: 1; min-width: 0; }
+        .conversation-name { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+        .conversation-role { font-size: 11px; color: var(--text-muted); }
+        .conversation-preview { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conversation-time { font-size: 11px; color: var(--text-muted); }
+        .conversation-badge { width: 20px; height: 20px; border-radius: 50%; background: var(--primary-600); color: white; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+        .message-area { flex: 1; display: flex; flex-direction: column; }
+        .message-header { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; }
+        .message-header-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary-100); display: flex; align-items: center; justify-content: center; color: var(--primary-600); font-weight: 600; font-size: 14px; }
+        .messages-content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+        .message-bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px; position: relative; }
+        .message-bubble.sent { align-self: flex-end; background: var(--primary-600); color: white; border-bottom-right-radius: 4px; }
+        .message-bubble.received { align-self: flex-start; background: var(--bg-secondary); color: var(--text-primary); border-bottom-left-radius: 4px; }
+        .message-text { font-size: 14px; line-height: 1.5; }
+        .message-time { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+        .message-input-area { padding: 16px; border-top: 1px solid var(--border-color); display: flex; gap: 12px; align-items: flex-end; }
+        .message-input-area textarea { flex: 1; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 24px; resize: none; min-height: 48px; max-height: 120px; font-family: inherit; }
+        .message-input-area textarea:focus { outline: none; border-color: var(--primary-500); }
+        .no-conversation { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); }
+        .no-conversation i { width: 64px; height: 64px; margin-bottom: 16px; }
+        .compose-section { padding: 16px; border-top: 1px solid var(--border-color); }
+        .compose-section select { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 12px; }
+        .context-card { background: var(--primary-50); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px; font-size: 13px; }
+        .context-card strong { color: var(--primary-700); }
+        .urgent-badge { background: var(--danger-500); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+        @media (max-width: 768px) {
+            .messages-container { flex-direction: column; }
+            .messages-list { width: 100%; height: 40vh; }
+            .message-area { height: 60vh; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-role" id="userRole">Role</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Messages</h1>
+                        <p id="conversationTitle">Communication Center</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="openComposeModal()"><i data-lucide="edit-3"></i> New Message</button>
+                </div>
+            </header>
+            
+            <div class="messages-container">
+                <div class="messages-list">
+                    <div class="messages-list-header">
+                        <h3 style="font-size:16px;font-weight:600">Conversations</h3>
+                        <select id="filterConversations" onchange="filterConversations(this.value)" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:var(--radius-md);font-size:12px">
+                            <option value="all">All</option>
+                            <option value="unread">Unread</option>
+                            <option value="doctors">Doctors</option>
+                            <option value="nurses">Nurses</option>
+                            <option value="patients">Patients</option>
+                        </select>
+                    </div>
+                    <div id="conversationsList"></div>
+                </div>
+                
+                <div class="message-area">
+                    <div id="messageHeader" style="display:none">
+                        <div class="message-header">
+                            <div class="message-header-avatar" id="recipientAvatar">D</div>
+                            <div>
+                                <div style="font-weight:600" id="recipientName">Dr. Name</div>
+                                <div style="font-size:12px;color:var(--text-muted)" id="recipientRole">Doctor</div>
+                            </div>
+                            <div style="margin-left:auto">
+                                <button class="btn btn-sm btn-outline" onclick="openAppointmentRequest()"><i data-lucide="calendar-plus"></i> Request Appointment</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="messages-content" id="messagesContent">
+                        <div class="no-conversation">
+                            <i data-lucide="message-circle"></i>
+                            <p>Select a conversation or start a new message</p>
+                        </div>
+                    </div>
+                    
+                    <div id="messageInputArea" style="display:none">
+                        <div class="context-card" id="contextCard" style="display:none"></div>
+                        <div class="message-input-area">
+                            <textarea id="messageText" placeholder="Type your message..." rows="1" onkeydown="handleMessageKeydown(event)"></textarea>
+                            <button class="btn btn-primary" onclick="sendMessage()"><i data-lucide="send"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <div class="modal-overlay" id="composeModal">
+        <div class="modal" style="max-width:500px">
+            <div class="modal-header">
+                <h3 class="modal-title">New Message</h3>
+                <button class="modal-close" onclick="closeComposeModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Recipient</label>
+                    <select id="messageRecipient" onchange="onRecipientChange(this.value)">
+                        <option value="">Select recipient...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" id="messageSubject" placeholder="Brief subject">
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="composeMessageText" rows="4" placeholder="Type your message..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeComposeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="sendNewMessage()"><i data-lucide="send"></i> Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="appointmentModal">
+        <div class="modal" style="max-width:500px">
+            <div class="modal-header">
+                <h3 class="modal-title">Request Appointment</h3>
+                <button class="modal-close" onclick="closeAppointmentModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Preferred Date</label>
+                    <input type="date" id="apptDate">
+                </div>
+                <div class="form-group">
+                    <label>Preferred Time</label>
+                    <select id="apptTime">
+                        <option value="">Select time</option>
+                        <option value="08:00">08:00 AM</option>
+                        <option value="09:00">09:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="14:00">02:00 PM</option>
+                        <option value="15:00">03:00 PM</option>
+                        <option value="16:00">04:00 PM</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Reason</label>
+                    <textarea id="apptReason" rows="3" placeholder="Brief reason for appointment"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeAppointmentModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="sendAppointmentRequest()">Send Request</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let currentUser = null;
+        let userData = null;
+        let conversations = [];
+        let currentConversationId = null;
+        let currentRecipient = null;
+        let recipientDoc = null;
+        let conversationsUnsub = null;
+        let messagesUnsub = null;
+        
+        const NAV_ITEMS = {
+            student: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: 'index.html', active: true },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'file-text', label: 'My Records', href: '../records/my-records.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            doctor: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: 'index.html', active: true },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'git-branch', label: 'Visit Workflow', href: '../records/visit-workflow.html' },
+                    { icon: 'users', label: 'My Patients', href: '../records/patient-list.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            nurse: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: 'index.html', active: true },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'git-branch', label: 'Visit Workflow', href: '../records/visit-workflow.html' },
+                    { icon: 'activity', label: 'Record Vitals', href: '../records/vitals.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            admin: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: 'index.html', active: true },
+                ]},
+                { section: 'Administration', items: [
+                    { icon: 'user-cog', label: 'User Management', href: '../admin/users.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+        };
+        
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            
+            initTheme();
+            renderSidebar(userData.role);
+            subscribeConversations();
+            
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            document.getElementById('userRole').textContent = userData.role;
+            
+            lucide.createIcons();
+        })();
+        
+        function renderSidebar(role) {
+            const nav = document.getElementById('sidebarNav');
+            const items = NAV_ITEMS[role];
+            if (!items) return;
+            
+            nav.innerHTML = items.map(section => `
+                <div class="nav-section">
+                    <div class="nav-section-title">${section.section}</div>
+                    ${section.items.map(item => `
+                        <a href="${item.href}" class="nav-item ${item.active ? 'active' : ''}" ${item.action ? `onclick="${item.action}(); return false;"` : ''}>
+                            <i data-lucide="${item.icon}"></i>
+                            ${item.label}
+                        </a>
+                    `).join('')}
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        
+        function subscribeConversations() {
+            if (conversationsUnsub) conversationsUnsub();
+            const list = document.getElementById('conversationsList');
+            
+            conversationsUnsub = db.collection('conversations')
+                .where('participants', 'array-contains', currentUser.uid)
+                .orderBy('lastMessageTime', 'desc')
+                .onSnapshot(async (snapshot) => {
+                    try {
+                        if (snapshot.empty) {
+                            list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)"><p>No conversations yet</p></div>';
+                            return;
+                        }
+                        
+                        conversations = snapshot.docs;
+                        list.innerHTML = '';
+                        
+                        for (const doc of conversations) {
+                            const conv = doc.data();
+                            const otherUserId = conv.participants.find(p => p !== currentUser.uid);
+                            const userDoc = await db.collection('users').doc(otherUserId).get();
+                            const user = userDoc.exists ? userDoc.data() : null;
+                            const name = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+                            const initials = user ? getInitials(user.firstName, user.lastName) : '?';
+                            const isUnread = conv.lastMessageBy !== currentUser.uid && conv.lastMessageTime > (userData.lastReadTime || 0);
+                            
+                            list.innerHTML += `
+                                <div class="conversation-item ${currentConversationId === doc.id ? 'active' : ''}" onclick="openConversation('${doc.id}', '${otherUserId}')">
+                                    <div class="conversation-avatar">${initials}</div>
+                                    <div class="conversation-info">
+                                        <div style="display:flex;justify-content:space-between;align-items:center">
+                                            <span class="conversation-name">${name}</span>
+                                            <span class="conversation-time">${formatMessageTime(conv.lastMessageTime)}</span>
+                                        </div>
+                                        <div class="conversation-role">${user?.role || 'Unknown'}</div>
+                                        <div class="conversation-preview">${conv.lastMessage || 'No messages yet'}</div>
+                                    </div>
+                                    ${isUnread ? '<div class="conversation-badge"></div>' : ''}
+                                </div>
+                            `;
+                        }
+                        
+                        lucide.createIcons();
+                    } catch (error) {
+                        console.error('Error loading conversations:', error);
+                        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger-500)">Error loading conversations</div>';
+                    }
+                }, (error) => {
+                    console.error('Conversations subscription error:', error);
+                });
+        }
+        
+        async function openConversation(convId, otherUserId) {
+            currentConversationId = convId;
+            currentRecipient = otherUserId;
+            
+            const userDoc = await db.collection('users').doc(otherUserId).get();
+            recipientDoc = userDoc.exists ? userDoc.data() : null;
+            
+            document.getElementById('recipientAvatar').textContent = recipientDoc ? getInitials(recipientDoc.firstName, recipientDoc.lastName) : '?';
+            document.getElementById('recipientName').textContent = recipientDoc ? `${recipientDoc.firstName} ${recipientDoc.lastName}` : 'Unknown';
+            document.getElementById('recipientRole').textContent = recipientDoc?.role || 'Unknown';
+            
+            document.getElementById('messageHeader').style.display = 'block';
+            document.getElementById('messageInputArea').style.display = 'block';
+            
+            subscribeMessages(convId);
+        }
+        
+        function subscribeMessages(convId) {
+            if (messagesUnsub) messagesUnsub();
+            const content = document.getElementById('messagesContent');
+            
+            messagesUnsub = db.collection('conversations').doc(convId).collection('messages')
+                .orderBy('createdAt', 'asc')
+                .onSnapshot((snapshot) => {
+                    try {
+                        if (snapshot.empty) {
+                            content.innerHTML = '<div class="no-conversation"><p>No messages yet</p></div>';
+                            return;
+                        }
+                        
+                        content.innerHTML = '';
+                        snapshot.forEach(doc => {
+                            const msg = doc.data();
+                            const isSent = msg.senderId === currentUser.uid;
+                            content.innerHTML += `
+                                <div class="message-bubble ${isSent ? 'sent' : 'received'}">
+                                    <div class="message-text">${escapeHtml(msg.text)}</div>
+                                    <div class="message-time">${formatMessageTime(msg.createdAt)}</div>
+                                </div>
+                            `;
+                        });
+                        
+                        content.scrollTop = content.scrollHeight;
+                    } catch (error) {
+                        console.error('Error loading messages:', error);
+                    }
+                }, (error) => {
+                    console.error('Messages subscription error:', error);
+                });
+        }
+        
+        async function sendMessage() {
+            const text = document.getElementById('messageText').value.trim();
+            if (!text || !currentConversationId) return;
+            
+            try {
+                await db.collection('conversations').doc(currentConversationId).collection('messages').add({
+                    senderId: currentUser.uid,
+                    text: text,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await db.collection('conversations').doc(currentConversationId).update({
+                    lastMessage: text,
+                    lastMessageBy: currentUser.uid,
+                    lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                document.getElementById('messageText').value = '';
+                
+                if (currentRecipient) {
+                    await notifyUser(currentRecipient, 'message', `${userData.firstName} sent you a message: ${text.substring(0, 100)}`);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showToast('Error sending message', 'error');
+            }
+        }
+        
+        function handleMessageKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        async function openComposeModal() {
+            const select = document.getElementById('messageRecipient');
+            select.innerHTML = '<option value="">Select recipient...</option>';
+            
+            let roleFilter = [];
+            if (userData.role === 'student') {
+                roleFilter = ['doctor', 'nurse'];
+            } else if (userData.role === 'doctor') {
+                roleFilter = ['student', 'nurse'];
+            } else if (userData.role === 'nurse') {
+                roleFilter = ['student', 'doctor'];
+            } else if (userData.role === 'admin') {
+                roleFilter = ['student', 'doctor', 'nurse'];
+            }
+            
+            for (const role of roleFilter) {
+                const snapshot = await db.collection('users').where('role', '==', role).where('status', '==', 'active').get();
+                snapshot.forEach(doc => {
+                    const u = doc.data();
+                    if (doc.id !== currentUser.uid) {
+                        select.innerHTML += `<option value="${doc.id}">${u.firstName} ${u.lastName} (${role})</option>`;
+                    }
+                });
+            }
+            
+            document.getElementById('composeModal').classList.add('active');
+        }
+        
+        function closeComposeModal() {
+            document.getElementById('composeModal').classList.remove('active');
+        }
+        
+        function onRecipientChange(userId) {
+            currentRecipient = userId;
+        }
+        
+        async function sendNewMessage() {
+            const recipientId = document.getElementById('messageRecipient').value;
+            const subject = document.getElementById('messageSubject').value.trim();
+            const text = document.getElementById('composeMessageText').value.trim();
+            
+            if (!recipientId || !text) {
+                showToast('Please select recipient and enter message', 'warning');
+                return;
+            }
+            
+            try {
+                const convRef = await db.collection('conversations').add({
+                    participants: [currentUser.uid, recipientId].sort(),
+                    subject: subject,
+                    lastMessage: text,
+                    lastMessageBy: currentUser.uid,
+                    lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await convRef.collection('messages').add({
+                    senderId: currentUser.uid,
+                    text: text,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await notifyUser(recipientId, 'message', `${userData.firstName} sent you a message: ${text.substring(0, 100)}`);
+                
+                showToast('Message sent!', 'success');
+                closeComposeModal();
+                
+                openConversation(convRef.id, recipientId);
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showToast('Error sending message', 'error');
+            }
+        }
+        
+        function openAppointmentRequest() {
+            document.getElementById('appointmentModal').classList.add('active');
+        }
+        
+        function closeAppointmentModal() {
+            document.getElementById('appointmentModal').classList.remove('active');
+        }
+        
+        async function sendAppointmentRequest() {
+            const date = document.getElementById('apptDate').value;
+            const time = document.getElementById('apptTime').value;
+            const reason = document.getElementById('apptReason').value.trim();
+            
+            if (!date || !time) {
+                showToast('Please select date and time', 'warning');
+                return;
+            }
+            
+            try {
+                await db.collection('appointments').add({
+                    patientId: currentUser.uid,
+                    patientName: `${userData.firstName} ${userData.lastName}`,
+                    doctorId: currentRecipient,
+                    date: date,
+                    time: time,
+                    reason: reason || 'Appointment requested via message',
+                    status: 'pending',
+                    requestedVia: 'message',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await db.collection('conversations').doc(currentConversationId).collection('messages').add({
+                    senderId: currentUser.uid,
+                    text: `📅 Appointment requested for ${date} at ${time}. Reason: ${reason || 'Not specified'}`,
+                    type: 'appointment_request',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showToast('Appointment request sent!', 'success');
+                closeAppointmentModal();
+            } catch (error) {
+                console.error('Error sending appointment request:', error);
+                showToast('Error sending request', 'error');
+            }
+        }
+        
+        async function notifyUser(userId, type, message) {
+            await db.collection('notifications').add({
+                userId: userId,
+                type: type,
+                title: type === 'message' ? 'New Message' : 'Appointment Update',
+                message: message,
+                read: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        
+        function formatMessageTime(timestamp) {
+            if (!timestamp) return '';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+            if (diff < 86400000) return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        function filterConversations(filter) {
+            loadConversations();
+        }
+    </script>
+</body>
+</html>

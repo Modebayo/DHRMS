@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Visits - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <style>
+        .visit-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+        }
+        .visit-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .visit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+        .visit-timeline {
+            position: relative;
+            padding-left: 24px;
+            margin: 16px 0;
+        }
+        .visit-timeline::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+        .timeline-item {
+            position: relative;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary-500);
+            border: 2px solid var(--bg-primary);
+        }
+        .timeline-item.completed::before {
+            background: var(--success-500);
+        }
+        .vitals-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .vital-item {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            text-align: center;
+        }
+        .vital-value { font-size: 20px; font-weight: 600; }
+        .vital-label { font-size: 11px; color: var(--text-muted); }
+        .discharge-badge {
+            background: linear-gradient(135deg, var(--success-500), var(--success-700));
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>My Visits</h1>
+                        <p>View your visit history</p>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card" style="margin-bottom:20px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px">
+                        <div>
+                            <h3 style="margin:0 0 4px 0">Visit Flow</h3>
+                            <p style="margin:0;font-size:13px;color:var(--text-muted)">How your clinic visit works</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:0 16px 16px;flex-wrap:wrap;gap:8px">
+                        <div style="flex:1;min-width:120px;text-align:center;padding:12px;background:var(--primary-50);border-radius:var(--radius-md)">
+                            <div style="font-size:24px;margin-bottom:4px">1️⃣</div>
+                            <strong>Check In</strong>
+                            <p style="font-size:11px;margin:4px 0 0;color:var(--text-muted)">Arrive at clinic</p>
+                        </div>
+                        <div style="flex:1;min-width:120px;text-align:center;padding:12px;background:var(--info-50);border-radius:var(--radius-md)">
+                            <div style="font-size:24px;margin-bottom:4px">2️⃣</div>
+                            <strong>Triage</strong>
+                            <p style="font-size:11px;margin:4px 0 0;color:var(--text-muted)">Vitals recorded</p>
+                        </div>
+                        <div style="flex:1;min-width:120px;text-align:center;padding:12px;background:var(--warning-50);border-radius:var(--radius-md)">
+                            <div style="font-size:24px;margin-bottom:4px">3️⃣</div>
+                            <strong>Consultation</strong>
+                            <p style="font-size:11px;margin:4px 0 0;color:var(--text-muted)">See doctor</p>
+                        </div>
+                        <div style="flex:1;min-width:120px;text-align:center;padding:12px;background:var(--success-50);border-radius:var(--radius-md)">
+                            <div style="font-size:24px;margin-bottom:4px">4️⃣</div>
+                            <strong>Treatment</strong>
+                            <p style="font-size:11px;margin:4px 0 0;color:var(--text-muted)">Get care</p>
+                        </div>
+                        <div style="flex:1;min-width:120px;text-align:center;padding:12px;background:var(--success-100);border-radius:var(--radius-md)">
+                            <div style="font-size:24px;margin-bottom:4px">5️⃣</div>
+                            <strong>Discharge</strong>
+                            <p style="font-size:11px;margin:4px 0 0;color:var(--text-muted)">Go home</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Visit History</h3>
+                        <select id="visitFilter" style="padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md)">
+                            <option value="all">All Visits</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <div id="visitsList" style="padding:20px"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal-overlay" id="visitDetailModal">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="visitDetailTitle">Visit Details</h3>
+                <button class="modal-close" onclick="document.getElementById('visitDetailModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="visitDetailContent"></div>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let currentUser = null;
+        let userData = null;
+        let allVisits = [];
+        
+        const WORKFLOW_STAGES = [
+            { id: 'arrival', name: 'Patient Arrival', icon: 'log-in' },
+            { id: 'triage', name: 'Triage & Vitals', icon: 'activity' },
+            { id: 'consultation', name: 'Doctor Consultation', icon: 'stethoscope' },
+            { id: 'diagnosis', name: 'Diagnosis & Plan', icon: 'clipboard-list' },
+            { id: 'treatment', name: 'Treatment', icon: 'pill' },
+            { id: 'discharge', name: 'Discharge', icon: 'log-out' }
+        ];
+        
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            
+            initTheme();
+            loadVisits();
+            
+            document.getElementById('visitFilter').addEventListener('change', filterVisits);
+        })();
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        
+        async function loadVisits() {
+            const snapshot = await db.collection('visits')
+                .where('patientId', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .get();
+            
+            allVisits = snapshot.docs;
+            renderVisits(allVisits);
+        }
+        
+        function filterVisits() {
+            const filter = document.getElementById('visitFilter').value;
+            let filtered = allVisits;
+            
+            if (filter === 'completed') {
+                filtered = allVisits.filter(d => d.data().status === 'completed');
+            } else if (filter === 'pending') {
+                filtered = allVisits.filter(d => d.data().status !== 'completed');
+            }
+            
+            renderVisits(filtered);
+        }
+        
+        function renderVisits(visits) {
+            const list = document.getElementById('visitsList');
+            
+            if (visits.length === 0) {
+                list.innerHTML = `
+                    <div style="text-align:center;padding:40px;color:var(--text-muted)">
+                        <i data-lucide="file-text" style="width:48px;height:48px;margin-bottom:16px"></i>
+                        <h3>No Visits Found</h3>
+                        <p>Your visit history will appear here</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            list.innerHTML = visits.map(doc => {
+                const v = doc.data();
+                const currentIndex = WORKFLOW_STAGES.findIndex(s => s.id === v.currentStage);
+                const isCompleted = v.status === 'completed';
+                
+                return `
+                    <div class="visit-card" onclick="viewVisitDetail('${doc.id}')">
+                        <div class="visit-header">
+                            <div>
+                                <h4 style="margin:0 0 4px 0">${v.visitType || 'Consultation'}</h4>
+                                <p style="margin:0;font-size:13px;color:var(--text-muted)">${formatDate(v.date)}</p>
+                            </div>
+                            ${isCompleted ? 
+                                '<span class="discharge-badge"><i data-lucide="check" style="width:12px;height:12px;display:inline;margin-right:4px"></i> Discharged</span>' : 
+                                `<span class="badge badge-${v.status === 'in-progress' ? 'info' : 'warning'}">${v.status}</span>`
+                            }
+                        </div>
+                        ${v.chiefComplaint ? `<p style="margin:0 0 12px;font-size:14px;color:var(--text-secondary)"><strong>Reason:</strong> ${v.chiefComplaint}</p>` : ''}
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <div style="font-size:12px;color:var(--text-muted)">
+                                Current: <strong>${v.currentStage || 'Arrival'}</strong>
+                            </div>
+                            <button class="btn btn-sm btn-outline"><i data-lucide="eye" style="width:14px;height:14px"></i> View Details</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+        
+        async function viewVisitDetail(visitId) {
+            const doc = await db.collection('visits').doc(visitId).get();
+            if (!doc.exists) return;
+            
+            const v = doc.data();
+            const currentIndex = WORKFLOW_STAGES.findIndex(s => s.id === v.currentStage);
+            
+            document.getElementById('visitDetailTitle').textContent = `Visit - ${formatDate(v.date)}`;
+            document.getElementById('visitDetailContent').innerHTML = `
+                <div style="margin-bottom:20px">
+                    <h4 style="margin:0 0 8px 0"><i data-lucide="info" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Visit Information</h4>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+                        <div style="background:var(--bg-secondary);padding:12px;border-radius:var(--radius-md)">
+                            <label style="font-size:12px;color:var(--text-muted)">Visit Type</label>
+                            <p style="margin:4px 0 0;font-weight:500;text-transform:capitalize">${v.visitType || 'Consultation'}</p>
+                        </div>
+                        <div style="background:var(--bg-secondary);padding:12px;border-radius:var(--radius-md)">
+                            <label style="font-size:12px;color:var(--text-muted)">Status</label>
+                            <p style="margin:4px 0 0;font-weight:500">${v.status === 'completed' ? 'Discharged' : v.status}</p>
+                        </div>
+                    </div>
+                    ${v.chiefComplaint ? `
+                        <div style="background:var(--bg-secondary);padding:12px;border-radius:var(--radius-md);margin-top:12px">
+                            <label style="font-size:12px;color:var(--text-muted)">Reason for Visit</label>
+                            <p style="margin:4px 0 0">${v.chiefComplaint}</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div style="margin-bottom:20px">
+                    <h4 style="margin:0 0 8px 0"><i data-lucide="activity" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Your Vitals (Recorded during visit)</h4>
+                    ${v.vitals ? `
+                        <div class="vitals-grid">
+                            <div class="vital-item">
+                                <div class="vital-value">${v.vitals.temperature || 'N/A'}</div>
+                                <div class="vital-label">Temp (°C)</div>
+                            </div>
+                            <div class="vital-item">
+                                <div class="vital-value">${v.vitals.pulse || 'N/A'}</div>
+                                <div class="vital-label">Pulse (bpm)</div>
+                            </div>
+                            <div class="vital-item">
+                                <div class="vital-value">${v.vitals.bpSystolic || 'N/A'}/${v.vitals.bpDiastolic || 'N/A'}</div>
+                                <div class="vital-label">BP (mmHg)</div>
+                            </div>
+                            <div class="vital-item">
+                                <div class="vital-value">${v.vitals.spo2 || 'N/A'}</div>
+                                <div class="vital-label">SpO2 (%)</div>
+                            </div>
+                        </div>
+                    ` : '<p style="color:var(--text-muted)">No vitals recorded for this visit</p>'}
+                </div>
+                
+                <div style="margin-bottom:20px">
+                    <h4 style="margin:0 0 8px 0"><i data-lucide="git-branch" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Visit Progress</h4>
+                    <div class="visit-timeline">
+                        ${WORKFLOW_STAGES.map((stage, index) => {
+                            let status = 'pending';
+                            if (index < currentIndex) status = 'completed';
+                            else if (index === currentIndex) status = 'current';
+                            
+                            return `
+                                <div class="timeline-item ${status === 'completed' ? 'completed' : ''}" style="${status === 'current' ? 'font-weight:600' : ''}">
+                                    <i data-lucide="${stage.icon}" style="width:14px;height:14px;display:inline;margin-right:8px"></i>
+                                    ${stage.name}
+                                    ${status === 'current' ? '<span class="badge badge-primary" style="margin-left:8px">Current</span>' : ''}
+                                    ${status === 'completed' && v.stageData && v.stageData[stage.id] ? `<span style="font-size:11px;color:var(--text-muted);margin-left:8px">✓</span>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+                
+                ${v.dischargeData ? `
+                    <div style="background:var(--success-50);border:1px solid var(--success-200);padding:20px;border-radius:var(--radius-lg)">
+                        <h4 style="margin:0 0 12px 0;color:var(--success-700)"><i data-lucide="check-circle" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Discharge Summary</h4>
+                        
+                        <div style="margin-bottom:16px">
+                            <label style="font-size:12px;color:var(--success-600)">Final Diagnosis</label>
+                            <p style="margin:4px 0 0;font-weight:500">${v.dischargeData.diagnosis}</p>
+                        </div>
+                        
+                        ${v.dischargeData.treatmentSummary ? `
+                            <div style="margin-bottom:16px">
+                                <label style="font-size:12px;color:var(--success-600)">Treatment Summary</label>
+                                <p style="margin:4px 0 0">${v.dischargeData.treatmentSummary}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${v.dischargeData.prescription ? `
+                            <div style="background:white;padding:12px;border-radius:var(--radius-md);margin-bottom:16px">
+                                <label style="font-size:12px;color:var(--primary-600)">Prescription</label>
+                                <p style="margin:4px 0 0;font-weight:500">${v.dischargeData.prescription}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                            <label style="font-size:12px;color:var(--success-600)">Condition at Discharge:</label>
+                            ${v.dischargeData.conditions.map(c => `<span class="badge badge-success">${c}</span>`).join('')}
+                        </div>
+                        
+                        ${v.dischargeData.followUpRequired !== 'no' ? `
+                            <div style="background:var(--warning-50);padding:12px;border-radius:var(--radius-md)">
+                                <label style="font-size:12px;color:var(--warning-600)">Follow-up Required</label>
+                                <p style="margin:4px 0 0">
+                                    ${v.dischargeData.followUpRequired === '1-week' ? '1 Week' : 
+                                      v.dischargeData.followUpRequired === '2-weeks' ? '2 Weeks' : 
+                                      v.dischargeData.followUpRequired === '1-month' ? '1 Month' : 'As Needed'}
+                                </p>
+                            </div>
+                        ` : ''}
+                        
+                        ${v.dischargeData.specialInstructions ? `
+                            <div style="margin-top:12px">
+                                <label style="font-size:12px;color:var(--success-600)">Special Instructions</label>
+                                <p style="margin:4px 0 0">${v.dischargeData.specialInstructions}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                
+                <div style="margin-top:20px;text-align:center">
+                    <button class="btn btn-outline" onclick="printVisitSummary('${visitId}')"><i data-lucide="printer" style="width:16px;height:16px"></i> Print Summary</button>
+                </div>
+            `;
+            
+            document.getElementById('visitDetailModal').classList.add('active');
+            lucide.createIcons();
+        }
+        
+        function printVisitSummary(visitId) {
+            const content = document.getElementById('visitDetailContent').innerHTML;
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html><head><title>Visit Summary</title>
+                <style>body{font-family:Arial;padding:20px}.visit-timeline{padding-left:24px}.timeline-item{padding:8px 0}label{color:#666}</style>
+                </head><body>${content}</body></html>
+            `);
+            win.document.close();
+            win.print();
+        }
+    </script>
+</body>
+</html>

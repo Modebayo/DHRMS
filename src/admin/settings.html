@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Settings</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    </head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section"><a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a></div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Administration</div>
+                    <a href="users.html" class="nav-item"><i data-lucide="users"></i>User Management</a>
+                    <a href="reports.html" class="nav-item"><i data-lucide="bar-chart-3"></i>Reports</a>
+                    <a href="logs.html" class="nav-item"><i data-lucide="clipboard-list"></i>Activity Logs</a>
+                    <a href="settings.html" class="nav-item active"><i data-lucide="settings"></i>Settings</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Profile</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
+                    <div class="page-title"><h1>System Settings</h1><p>Configure system preferences</p></div>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card" style="margin-bottom:20px">
+                    <div class="card-header"><h3 class="card-title"><i data-lucide="building" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px"></i>General Settings</h3></div>
+                    <form id="generalSettingsForm">
+                        <div class="form-group"><label>Institution Name</label><input type="text" id="institutionName" value="Koladeisi University"></div>
+                        <div class="form-group"><label>Health Center Name</label><input type="text" id="healthCenterName" value="University Health Records Center"></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Contact Email</label><input type="email" id="contactEmail" value="health@koladeisi.edu"></div>
+                            <div class="form-group"><label>Contact Phone</label><input type="tel" id="contactPhone" value="+234 800 000 0000"></div>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="saveGeneralSettings()">Save Changes</button>
+                    </form>
+                </div>
+                
+                <div class="card" style="margin-bottom:20px">
+                    <div class="card-header"><h3 class="card-title"><i data-lucide="shield-check" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px"></i>Security Settings</h3></div>
+                    <form id="securitySettingsForm">
+                        <div class="form-group"><label class="checkbox"><input type="checkbox" id="emailVerification" checked><span>Require email verification for new accounts</span></label></div>
+                        <div class="form-group"><label class="checkbox"><input type="checkbox" id="approvalRequired" checked><span>Staff accounts require admin approval</span></label></div>
+                        <div class="form-group"><label class="checkbox"><input type="checkbox" id="sessionTimeout"><span>Enable session timeout</span></label></div>
+                        <div class="form-group"><label>Session Timeout Duration (minutes)</label><input type="number" id="timeoutDuration" value="30" min="5" max="120"></div>
+                        <button type="button" class="btn btn-primary" onclick="saveSecuritySettings()">Save Security Settings</button>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title"><i data-lucide="database" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px"></i>Backup & Data</h3></div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap">
+                        <button class="btn btn-primary" onclick="exportAllData()"><i data-lucide="download"></i> Export All Data</button>
+                        <button class="btn btn-danger" onclick="clearCache()"><i data-lucide="trash-2"></i> Clear Cache</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="admin-settings.js"></script>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarToggle').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        lucide.createIcons();
+    </script>
+</body>
+</html>

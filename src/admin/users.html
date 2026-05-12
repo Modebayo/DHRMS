@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Admin Panel</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar sidebar-hidden" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="shield-check"></i></div>
+                <div class="sidebar-brand"><h2>Admin Panel</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section"><a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a></div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Administration</div>
+                    <a href="users.html" class="nav-item active"><i data-lucide="users"></i>User Management</a>
+                    <a href="reports.html" class="nav-item"><i data-lucide="bar-chart-3"></i>Reports</a>
+                    <a href="logs.html" class="nav-item"><i data-lucide="clipboard-list"></i>Activity Logs</a>
+                    <a href="settings.html" class="nav-item"><i data-lucide="settings"></i>Settings</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Profile</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>User Management</h1>
+                        <p>Manage all system users</p>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon blue"><i data-lucide="users"></i></div><div class="stat-value" id="totalUsers">0</div><div class="stat-label">Total Users</div></div>
+                    <div class="stat-card"><div class="stat-icon green"><i data-lucide="graduation-cap"></i></div><div class="stat-value" id="totalStudents">0</div><div class="stat-label">Students</div></div>
+                    <div class="stat-card"><div class="stat-icon orange"><i data-lucide="stethoscope"></i></div><div class="stat-value" id="totalStaff">0</div><div class="stat-label">Medical Staff</div></div>
+                    <div class="stat-card"><div class="stat-icon red"><i data-lucide="hourglass"></i></div><div class="stat-value" id="pendingApproval">0</div><div class="stat-label">Pending Approval</div></div>
+                    <div class="stat-card"><div class="stat-icon green"><i data-lucide="check-circle"></i></div><div class="stat-value" id="activeUsers">0</div><div class="stat-label">Active</div></div>
+                    <div class="stat-card"><div class="stat-icon danger"><i data-lucide="ban"></i></div><div class="stat-value" id="suspendedUsers">0</div><div class="stat-label">Suspended</div></div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">All Users</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openCreateModal()"><i data-lucide="user-plus" style="width:16px;height:16px"></i> Create User</button>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                        <div class="search-bar" style="flex:1;min-width:200px;">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="searchUsers" placeholder="Search by name or email...">
+                        </div>
+                        <select id="filterRole" style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);font-size:14px;background:var(--bg-primary);min-width:140px;">
+                            <option value="">All Roles</option>
+                            <option value="student">Student</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="nurse">Nurse</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <select id="filterStatus" style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);font-size:14px;background:var(--bg-primary);min-width:140px;">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="pending_approval">Pending</option>
+                        </select>
+                    </div>
+                    <div id="bulkActions" style="display:none;padding:12px;background:var(--primary-50);border-radius:var(--radius-md);margin-bottom:16px;align-items:center;gap:12px;">
+                        <span style="font-size:14px;font-weight:500;"><span id="bulkCount">0</span> selected</span>
+                        <button class="btn btn-sm btn-success" onclick="bulkApprove()"><i data-lucide="check"></i> Approve</button>
+                        <button class="btn btn-sm btn-warning" onclick="bulkSuspend()"><i data-lucide="ban"></i> Suspend</button>
+                        <button class="btn btn-sm btn-danger" onclick="bulkDelete()"><i data-lucide="trash-2"></i> Delete</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;"><input type="checkbox" id="selectAll"></th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>ID</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Edit User Modal -->
+    <div class="modal-overlay" id="userModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit User</h3>
+                <button class="modal-close" onclick="closeUserModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="form-row">
+                        <div class="form-group"><label>First Name</label><input type="text" id="editFirstName" required></div>
+                        <div class="form-group"><label>Last Name</label><input type="text" id="editLastName" required></div>
+                    </div>
+                    <div class="form-group"><label>Email</label><input type="email" id="editEmail" disabled></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Role</label>
+                            <select id="editRole" onchange="toggleEditRoleFields()">
+                                <option value="student">Student</option>
+                                <option value="doctor">Doctor</option>
+                                <option value="nurse">Nurse</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Status</label>
+                            <select id="editStatus">
+                                <option value="active">Active</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="pending_approval">Pending Approval</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="editStudentFields">
+                        <div class="form-row">
+                            <div class="form-group"><label>Student ID</label><input type="text" id="editStudentId"></div>
+                            <div class="form-group"><label>Department</label>
+                                <select id="editDepartment">
+                                    <option value="">Select Department</option>
+                                    <option value="Medicine and Surgery">Medicine and Surgery</option>
+                                    <option value="Nursing Science">Nursing Science</option>
+                                    <option value="Computer Science">Computer Science</option>
+                                    <option value="Microbiology">Microbiology</option>
+                                    <option value="Pharmacy">Pharmacy</option>
+                                    <option value="Electrical Engineering">Electrical Engineering</option>
+                                    <option value="Economics">Economics</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="editStaffFields" style="display:none;">
+                        <div class="form-row">
+                            <div class="form-group"><label>Staff ID</label><input type="text" id="editStaffId"></div>
+                            <div class="form-group"><label>Specialization</label><input type="text" id="editSpecialization"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeUserModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="updateUser()"><i data-lucide="save" style="width:16px;height:16px"></i> Update User</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create User Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New User</h3>
+                <button class="modal-close" onclick="closeCreateModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    <div class="form-row">
+                        <div class="form-group"><label>First Name *</label><input type="text" id="createFirstName" placeholder="Enter first name" required></div>
+                        <div class="form-group"><label>Last Name *</label><input type="text" id="createLastName" placeholder="Enter last name" required></div>
+                    </div>
+                    <div class="form-group"><label>Email Address *</label><input type="email" id="createEmail" placeholder="user@example.com" required></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Password *</label><input type="password" id="createPassword" placeholder="Min 8 chars" required></div>
+                        <div class="form-group"><label>Confirm Password *</label><input type="password" id="createConfirmPassword" placeholder="Confirm password" required></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Role *</label>
+                        <select id="createRole" onchange="toggleRoleFields()" style="padding:12px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);font-size:14px;width:100%;">
+                            <option value="student">Student</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="nurse">Nurse</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div id="createStudentFields">
+                        <div class="form-row">
+                            <div class="form-group"><label>Student ID</label><input type="text" id="createStudentId" placeholder="e.g., KU/2024/001"></div>
+                            <div class="form-group"><label>Department</label>
+                                <select id="createDepartment">
+                                    <option value="">Select Department</option>
+                                    <option value="Medicine and Surgery">Medicine and Surgery</option>
+                                    <option value="Nursing Science">Nursing Science</option>
+                                    <option value="Computer Science">Computer Science</option>
+                                    <option value="Microbiology">Microbiology</option>
+                                    <option value="Pharmacy">Pharmacy</option>
+                                    <option value="Electrical Engineering">Electrical Engineering</option>
+                                    <option value="Economics">Economics</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group"><label>Level</label>
+                            <select id="createLevel" style="padding:10px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);width:100%;">
+                                <option value="UTME-100">100 Level</option>
+                                <option value="UTME-200">200 Level</option>
+                                <option value="UTME-300">300 Level</option>
+                                <option value="UTME-400">400 Level</option>
+                                <option value="UTME-500">500 Level</option>
+                                <option value="DE-200">Direct Entry 200</option>
+                                <option value="DE-300">Direct Entry 300</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="createStaffFields" style="display:none;">
+                        <div class="form-row">
+                            <div class="form-group"><label>Staff ID</label><input type="text" id="createStaffId" placeholder="e.g., STF/001"></div>
+                            <div class="form-group"><label>Specialization</label><input type="text" id="createSpecialization" placeholder="e.g., General Practice"></div>
+                        </div>
+                    </div>
+                </form>
+                <div id="createAlert" class="alert" style="display:none;"></div>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">* Required fields. Student accounts are active immediately; staff accounts require approval.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeCreateModal()">Cancel</button>
+                <button class="btn btn-primary" id="createUserBtn" onclick="createUser()"><i data-lucide="user-plus" style="width:16px;height:16px"></i> Create User</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View User Modal -->
+    <div class="modal-overlay" id="viewUserModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">User Profile</h3>
+                <button class="modal-close" onclick="closeViewModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="viewUserContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeViewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="admin-users.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() { await guardPage(); })();
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarToggle').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

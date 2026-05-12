@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Activity Logs - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/records.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+</head>
+<body>
+    <div class="dashboard" id="app" style="display:none">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="shield-check"></i></div>
+                <div class="sidebar-brand">
+                    <h2>Admin Panel</h2>
+                    <p>Koladaisi University</p>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Overview</div>
+                    <a href="../dashboard/index.html" class="nav-item">
+                        <i data-lucide="layout-dashboard"></i>Dashboard
+                    </a>
+                    <a href="index.html" class="nav-item">
+                        <i data-lucide="monitor"></i>Control Panel
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Management</div>
+                    <a href="users.html" class="nav-item">
+                        <i data-lucide="users"></i>User Management
+                    </a>
+                    <a href="../records/index.html" class="nav-item">
+                        <i data-lucide="file-text"></i>All Health Records
+                    </a>
+                    <a href="../appointments/index.html" class="nav-item">
+                        <i data-lucide="calendar-days"></i>All Appointments
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Logs & Reports</div>
+                    <a href="logs.html" class="nav-item active">
+                        <i data-lucide="clipboard-list"></i>Activity Logs
+                    </a>
+                    <a href="reports.html" class="nav-item">
+                        <i data-lucide="bar-chart-3"></i>Reports
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">System</div>
+                    <a href="settings.html" class="nav-item">
+                        <i data-lucide="settings"></i>System Settings
+                    </a>
+                    <a href="../settings/index.html" class="nav-item">
+                        <i data-lucide="user-cog"></i>My Profile
+                    </a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;">
+                        <i data-lucide="log-out"></i>Logout
+                    </a>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Admin Activity Logs</h1>
+                        <p>Real-time system activity monitoring</p>
+                    </div>
+                </div>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn" onclick="exportLogs()" title="Export Logs">
+                        <i data-lucide="download"></i>
+                    </button>
+                    <button class="header-btn" onclick="clearFilters()" title="Clear Filters">
+                        <i data-lucide="rotate-ccw"></i>
+                    </button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <!-- Stats -->
+                <div class="stats-grid" style="margin-bottom:24px;">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon blue"><i data-lucide="clipboard-list"></i></div>
+                        </div>
+                        <div class="stat-value" id="totalLogs">0</div>
+                        <div class="stat-label">Total Logs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon green"><i data-lucide="shield-check"></i></div>
+                        </div>
+                        <div class="stat-value" id="adminLogins">0</div>
+                        <div class="stat-label">Admin Logins</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon orange"><i data-lucide="user-cog"></i></div>
+                        </div>
+                        <div class="stat-value" id="adminActions">0</div>
+                        <div class="stat-label">Admin Actions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon red"><i data-lucide="alert-triangle"></i></div>
+                        </div>
+                        <div class="stat-value" id="criticalEvents">0</div>
+                        <div class="stat-label">Critical Events</div>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                        <select id="filterType" onchange="filterLogs()" style="padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md);font-size:13px;">
+                            <option value="">All Types</option>
+                            <option value="admin-login">Admin Login</option>
+                            <option value="admin-action">Admin Action</option>
+                            <option value="login">User Login</option>
+                            <option value="signup">User Signup</option>
+                            <option value="record-create">Record Create</option>
+                            <option value="appointment-book">Appointment Book</option>
+                        </select>
+                        
+                        <select id="filterRole" onchange="filterLogs()" style="padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md);font-size:13px;">
+                            <option value="">All Roles</option>
+                            <option value="admin">Admin</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="nurse">Nurse</option>
+                            <option value="student">Student</option>
+                        </select>
+                        
+                        <input type="date" id="filterDate" onchange="filterLogs()" style="padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md);font-size:13px;">
+                        
+                        <button class="btn btn-sm btn-outline" onclick="filterLogs()">
+                            <i data-lucide="search" style="width:14px;height:14px;"></i> Filter
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Logs Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i data-lucide="activity" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i>
+                            All Activity Logs (Real-time)
+                        </h3>
+                        <div style="display:flex;gap:8px;">
+                            <span class="badge badge-info" id="realtimeStatus">● Live</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>IP Address</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTable">
+                                <tr>
+                                    <td colspan="7" class="empty-state">
+                                        <div class="empty-state-icon">📋</div>
+                                        <h3>Loading logs...</h3>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Log Details Modal -->
+    <div class="modal-overlay" id="logDetailsModal">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h3 class="modal-title">Log Details</h3>
+                <button class="modal-close" onclick="closeLogDetails()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="logDetailsContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeLogDetails()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        lucide.createIcons();
+        
+        let currentUser = null;
+        let allLogs = [];
+        let unsubscribe = null;
+        
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) { window.location.href = '../auth/login.html'; return; }
+            
+            currentUser = user;
+            const doc = await db.collection('users').doc(user.uid).get();
+            
+            if (!doc.exists || doc.data().role !== 'admin') {
+                window.location.href = '../dashboard/index.html';
+                return;
+            }
+            
+            const userData = doc.data();
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            
+            document.getElementById('app').style.display = 'flex';
+            
+            // Load logs with real-time listener
+            loadLogsRealtime();
+        });
+        
+        function loadLogsRealtime() {
+            if (unsubscribe) unsubscribe();
+            
+            unsubscribe = db.collection('activity_logs')
+                .orderBy('timestamp', 'desc')
+                .limit(200)
+                .onSnapshot((snapshot) => {
+                    allLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderLogsTable(allLogs);
+                    updateLogStats(allLogs);
+                }, (error) => {
+                    console.error('Error loading logs:', error);
+                    showToast('Error loading logs', 'error');
+                });
+        }
+        
+        function renderLogsTable(logs) {
+            const tbody = document.getElementById('logsTable');
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">📋</div><h3>No logs found</h3></td></tr>';
+                return;
+            }
+            
+            // Cache users for display
+            const userIds = [...new Set(logs.map(l => l.userId))];
+            const usersCache = {};
+            
+            Promise.all(userIds.map(id => 
+                db.collection('users').doc(id).get().then(doc => {
+                    if (doc.exists) usersCache[id] = doc.data();
+                })
+            )).then(() => {
+                tbody.innerHTML = logs.map(log => {
+                    const user = usersCache[log.userId];
+                    const typeClass = getLogTypeClass(log.type);
+                    const role = log.role || (user ? user.role : 'unknown');
+                    
+                    return `
+                        <tr style="${log.type.includes('admin') ? 'background:rgba(220, 38, 38, 0.05);' : ''}">
+                            <td>${log.timestamp ? formatTimestamp(log.timestamp) : 'N/A'}</td>
+                            <td>
+                                <strong>${user ? `${user.firstName} ${user.lastName}` : 'Unknown'}</strong><br>
+                                <small style="color:var(--text-muted);">${log.userId ? log.userId.substring(0, 8) + '...' : 'N/A'}</small>
+                            </td>
+                            <td><span class="badge badge-${role === 'admin' ? 'danger' : 'primary'}">${role}</span></td>
+                            <td><span class="badge badge-${typeClass}">${log.type}</span></td>
+                            <td>${log.description || 'N/A'}</td>
+                            <td><small>${log.ipAddress || 'N/A'}</small></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline" onclick="viewLogDetails('${log.id}')">
+                                    <i data-lucide="eye" style="width:14px;height:14px;"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteLog('${log.id}')">
+                                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            });
+        }
+        
+        function updateLogStats(logs) {
+            document.getElementById('totalLogs').textContent = logs.length;
+            
+            const adminLogins = logs.filter(l => l.type === 'admin-login').length;
+            document.getElementById('adminLogins').textContent = adminLogins;
+            
+            const adminActions = logs.filter(l => l.type === 'admin-action').length;
+            document.getElementById('adminActions').textContent = adminActions;
+            
+            const critical = logs.filter(l => l.type.includes('delete') || l.type.includes('suspend')).length;
+            document.getElementById('criticalEvents').textContent = critical;
+        }
+        
+        function filterLogs() {
+            const typeFilter = document.getElementById('filterType').value;
+            const roleFilter = document.getElementById('filterRole').value;
+            const dateFilter = document.getElementById('filterDate').value;
+            
+            let filtered = allLogs;
+            
+            if (typeFilter) {
+                filtered = filtered.filter(l => l.type === typeFilter);
+            }
+            
+            if (roleFilter) {
+                filtered = filtered.filter(l => {
+                    if (l.role) return l.role === roleFilter;
+                    return false;
+                });
+            }
+            
+            if (dateFilter) {
+                filtered = filtered.filter(l => {
+                    if (!l.timestamp) return false;
+                    const logDate = new Date(l.timestamp.toDate ? l.timestamp.toDate() : l.timestamp);
+                    const filterDate = new Date(dateFilter);
+                    return logDate.toDateString() === filterDate.toDateString();
+                });
+            }
+            
+            renderLogsTable(filtered);
+        }
+        
+        function clearFilters() {
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterRole').value = '';
+            document.getElementById('filterDate').value = '';
+            renderLogsTable(allLogs);
+        }
+        
+        async function viewLogDetails(logId) {
+            try {
+                const doc = await db.collection('activity_logs').doc(logId).get();
+                if (!doc.exists) return;
+                
+                const log = doc.data();
+                const userDoc = await db.collection('users').doc(log.userId).get();
+                const user = userDoc.exists ? userDoc.data() : null;
+                
+                document.getElementById('logDetailsContent').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                        <div>
+                            <h4 style="margin-bottom:12px;">Log Information</h4>
+                            <p><strong>Type:</strong> <span class="badge badge-${getLogTypeClass(log.type)}">${log.type}</span></p>
+                            <p><strong>Description:</strong> ${log.description || 'N/A'}</p>
+                            <p><strong>Timestamp:</strong> ${log.timestamp ? formatTimestamp(log.timestamp) : 'N/A'}</p>
+                            <p><strong>User ID:</strong> <code style="font-size:12px;">${log.userId || 'N/A'}</code></p>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom:12px;">User Details</h4>
+                            ${user ? `
+                                <p><strong>Name:</strong> ${user.firstName} ${user.lastName}</p>
+                                <p><strong>Email:</strong> ${user.email}</p>
+                                <p><strong>Role:</strong> <span class="badge badge-${user.role === 'admin' ? 'danger' : 'primary'}">${user.role}</span></p>
+                            ` : '<p>User not found</p>'}
+                            <p><strong>IP Address:</strong> ${log.ipAddress || 'N/A'}</p>
+                            <p><strong>User Agent:</strong> <small>${log.userAgent || 'N/A'}</small></p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border-light);">
+                        <h4 style="margin-bottom:12px;">Raw Data (JSON)</h4>
+                        <pre style="background:var(--bg-secondary);padding:16px;border-radius:var(--radius-md);font-size:12px;overflow-x:auto;white-space:pre-wrap;">${JSON.stringify(log, null, 2)}</pre>
+                    </div>
+                `;
+                
+                document.getElementById('logDetailsModal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading log details:', error);
+                showToast('Error loading log details', 'error');
+            }
+        }
+        
+        function closeLogDetails() {
+            document.getElementById('logDetailsModal').classList.remove('active');
+        }
+        
+        async function deleteLog(logId) {
+            if (!confirm('Delete this log entry?')) return;
+            
+            try {
+                await db.collection('activity_logs').doc(logId).delete();
+                showToast('Log deleted', 'success');
+                closeLogDetails();
+            } catch (error) {
+                showToast('Error deleting log', 'error');
+            }
+        }
+        
+        async function exportLogs() {
+            showToast('Exporting logs...', 'info');
+            
+            try {
+                const snapshot = await db.collection('activity_logs').orderBy('timestamp', 'desc').get();
+                
+                let csv = 'Timestamp,User,Role,Type,Description,IP Address\n';
+                
+                snapshot.forEach(doc => {
+                    const log = doc.data();
+                    const timestamp = log.timestamp ? formatTimestamp(log.timestamp) : 'N/A';
+                    const row = [
+                        timestamp,
+                        log.userId || 'N/A',
+                        log.role || 'N/A',
+                        log.type || 'N/A',
+                        (log.description || 'N/A').replace(/"/g, '""'),
+                        log.ipAddress || 'N/A'
+                    ];
+                    csv += row.map(v => `"${v}"`).join(',') + '\n';
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `admin_logs_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showToast('Logs exported successfully', 'success');
+            } catch (error) {
+                console.error('Error exporting logs:', error);
+                showToast('Error exporting logs', 'error');
+            }
+        }
+        
+        function getLogTypeClass(type) {
+            if (type === 'admin-login' || type === 'admin-action') return 'danger';
+            if (type === 'login' || type === 'signup') return 'success';
+            if (type.includes('record')) return 'info';
+            if (type.includes('appointment')) return 'warning';
+            return 'primary';
+        }
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarToggle').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribe) unsubscribe();
+        });
+    </script>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+</body>
+</html>

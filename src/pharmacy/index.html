@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="../records/index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Pharmacy</div>
+                    <a href="index.html" class="nav-item active"><i data-lucide="pill"></i>Pharmacy</a>
+                    <a href="inventory.html" class="nav-item"><i data-lucide="package"></i>Inventory</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Pharmacy</h1>
+                        <p>Manage prescriptions and inventory</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="openPrescriptionModal()"><i data-lucide="plus"></i> New Prescription</button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon blue"><i data-lucide="pill"></i></div><div class="stat-value" id="totalPrescriptions">0</div><div class="stat-label">Total Prescriptions</div></div>
+                    <div class="stat-card"><div class="stat-icon green"><i data-lucide="check-circle"></i></div><div class="stat-value" id="dispensedCount">0</div><div class="stat-label">Dispensed</div></div>
+                    <div class="stat-card"><div class="stat-icon orange"><i data-lucide="clock"></i></div><div class="stat-value" id="pendingCount">0</div><div class="stat-label">Pending</div></div>
+                    <div class="stat-card"><div class="stat-icon red"><i data-lucide="alert-triangle"></i></div><div class="stat-value" id="lowStockCount">0</div><div class="stat-label">Low Stock Items</div></div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Prescriptions</h3>
+                        <div class="search-bar"><i data-lucide="search"></i><input type="text" placeholder="Search prescriptions..." id="searchPrescriptions"></div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Patient</th><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Prescribed By</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody id="prescriptionsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal-overlay" id="prescriptionModal">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h3 class="modal-title">New Prescription</h3>
+                <button class="modal-close" onclick="closePrescriptionModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="prescriptionForm">
+                    <div class="form-group" id="prescPatientField">
+                        <label for="prescPatient">Patient</label>
+                        <select id="prescPatient" required><option value="">Select patient</option></select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="medication">Medication</label>
+                            <select id="medication" required>
+                                <option value="">Select medication</option>
+                                <option value="Paracetamol">Paracetamol 500mg</option>
+                                <option value="Ibuprofen">Ibuprofen 400mg</option>
+                                <option value="Amoxicillin">Amoxicillin 250mg</option>
+                                <option value="Ciprofloxacin">Ciprofloxacin 500mg</option>
+                                <option value="Metformin">Metformin 500mg</option>
+                                <option value="Omeprazole">Omeprazole 20mg</option>
+                                <option value="Cetirizine">Cetirizine 10mg</option>
+                                <option value="Diclofenac">Diclofenac 50mg</option>
+                                <option value="Vitamin-C">Vitamin C 1000mg</option>
+                                <option value="ORS">Oral Rehydration Salts</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label for="dosage">Dosage</label><input type="text" id="dosage" placeholder="e.g., 1 tablet" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="frequency">Frequency</label>
+                            <select id="frequency" required>
+                                <option value="">Select</option>
+                                <option value="once-daily">Once Daily</option>
+                                <option value="twice-daily">Twice Daily</option>
+                                <option value="three-times-daily">Three Times Daily</option>
+                                <option value="as-needed">As Needed</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label for="duration">Duration</label><input type="text" id="duration" placeholder="e.g., 5 days" required></div>
+                    </div>
+                    <div class="form-group"><label for="prescNotes">Instructions</label><textarea id="prescNotes" rows="2" placeholder="Special instructions..."></textarea></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closePrescriptionModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="savePrescription()">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="pharmacy.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+        })();
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarToggle').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

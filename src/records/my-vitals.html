@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Vitals - Koladeisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand">
+                    <h2>Health Records</h2>
+                    <p>Koladeisi University</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="../records/my-records.html" class="nav-item"><i data-lucide="file-text"></i>My Records</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                    <a href="../records/my-prescriptions.html" class="nav-item"><i data-lucide="pill"></i>Prescriptions</a>
+                    <a href="my-vitals.html" class="nav-item active"><i data-lucide="activity"></i>My Vitals</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>My Vitals</h1>
+                        <p>View your vital signs history</p>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="stats-grid-4">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i data-lucide="thermometer"></i></div>
+                        <div class="stat-value" id="latestTemp">--</div>
+                        <div class="stat-label">Temperature (°C)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red"><i data-lucide="heart-pulse"></i></div>
+                        <div class="stat-value" id="latestPulse">--</div>
+                        <div class="stat-label">Pulse (bpm)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i data-lucide="wind"></i></div>
+                        <div class="stat-value" id="latestResp">--</div>
+                        <div class="stat-label">Respiration (/min)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange"><i data-lucide="activity"></i></div>
+                        <div class="stat-value" id="latestBP">--</div>
+                        <div class="stat-label">BP (mmHg)</div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top:24px">
+                    <div class="card-header">
+                        <h3 class="card-title">Vitals History</h3>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Temp (°C)</th>
+                                    <th>Pulse (bpm)</th>
+                                    <th>Resp (/min)</th>
+                                    <th>BP (mmHg)</th>
+                                    <th>SpO2 (%)</th>
+                                    <th>Plan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vitalsTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <style>
+        .stats-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 992px) {
+            .stats-grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 576px) {
+            .stats-grid-4 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let currentUser = null;
+        
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+            currentUser = result.user;
+            
+            initTheme();
+            loadMyVitals();
+        })();
+        
+        async function loadMyVitals() {
+            const tbody = document.getElementById('vitalsTable');
+            
+            try {
+                const snapshot = await db.collection('vitals')
+                    .where('patientId', '==', currentUser.uid)
+                    .orderBy('createdAt', 'desc')
+                    .get();
+                
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="activity" style="width:48px;height:48px;color:var(--gray-300)"></i><h3>No Vitals Recorded</h3><p>Your vitals will appear here when recorded by medical staff</p></td></tr>';
+                    lucide.createIcons();
+                    return;
+                }
+                
+                const latest = snapshot.docs[0].data();
+                document.getElementById('latestTemp').textContent = latest.temperature ? latest.temperature + '°C' : '--';
+                document.getElementById('latestPulse').textContent = latest.pulse || '--';
+                document.getElementById('latestResp').textContent = latest.respiration || '--';
+                document.getElementById('latestBP').textContent = (latest.bpSystolic && latest.bpDiastolic) ? `${latest.bpSystolic}/${latest.bpDiastolic}` : '--';
+                
+                tbody.innerHTML = snapshot.docs.map(doc => {
+                    const v = doc.data();
+                    const bp = (v.bpSystolic && v.bpDiastolic) ? `${v.bpSystolic}/${v.bpDiastolic}` : 'N/A';
+                    const planPreview = v.plan ? (v.plan.length > 25 ? v.plan.substring(0, 25) + '...' : v.plan) : 'N/A';
+                    
+                    return `<tr>
+                        <td>${formatDate(v.date)}</td>
+                        <td>${v.temperature ? v.temperature + '°C' : 'N/A'}</td>
+                        <td>${v.pulse || 'N/A'}</td>
+                        <td>${v.respiration || 'N/A'}</td>
+                        <td>${bp}</td>
+                        <td>${v.spo2 ? v.spo2 + '%' : 'N/A'}</td>
+                        <td style="max-width:120px;font-size:12px">${escapeHtml(planPreview)}</td>
+                    </tr>`;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading vitals:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><h3>Error loading vitals</h3></td></tr>';
+            }
+        }
+        
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            const d = date.toDate ? date.toDate() : new Date(date);
+            return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

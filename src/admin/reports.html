@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Analytics</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    </head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar sidebar-hidden" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section"><a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a></div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Administration</div>
+                    <a href="users.html" class="nav-item"><i data-lucide="users"></i>User Management</a>
+                    <a href="reports.html" class="nav-item active"><i data-lucide="bar-chart-3"></i>Reports</a>
+                    <a href="logs.html" class="nav-item"><i data-lucide="clipboard-list"></i>Activity Logs</a>
+                    <a href="settings.html" class="nav-item"><i data-lucide="settings"></i>Settings</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Profile</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Reports & Analytics</h1>
+                        <p>System analytics and reports</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="exportReport()"><i data-lucide="download"></i> Export Report</button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon blue"><i data-lucide="users"></i></div><div class="stat-value" id="rTotalUsers">0</div><div class="stat-label">Total Users</div></div>
+                    <div class="stat-card"><div class="stat-icon green"><i data-lucide="file-text"></i></div><div class="stat-value" id="rTotalRecords">0</div><div class="stat-label">Health Records</div></div>
+                    <div class="stat-card"><div class="stat-icon orange"><i data-lucide="calendar-days"></i></div><div class="stat-value" id="rTotalAppointments">0</div><div class="stat-label">Appointments</div></div>
+                    <div class="stat-card"><div class="stat-icon red"><i data-lucide="pill"></i></div><div class="stat-value" id="rTotalPrescriptions">0</div><div class="stat-label">Prescriptions</div></div>
+                    <div class="stat-card"><div class="stat-icon purple"><i data-lucide="clipboard-list"></i></div><div class="stat-value" id="rThisMonth">0</div><div class="stat-label">This Month Logs</div></div>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Users by Role</h3></div>
+                        <div id="roleChart"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Department Distribution</h3></div>
+                        <div id="deptChart"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">User Status</h3></div>
+                        <div id="statusChart"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Appointment Status</h3></div>
+                        <div id="aptChart"></div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Monthly Activity Summary</h3></div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+                            <tbody id="summaryTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="reports.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+        })();
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarToggle').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

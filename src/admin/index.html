@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Control Panel - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/records.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/emergency-sidebar.js"></script>
+    <script src="../components/enhanced-chat.js"></script>
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="dashboard" id="app" style="display:none">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="shield-check"></i></div>
+                <div class="sidebar-brand">
+                    <h2>Admin Panel</h2>
+                    <p>Koladaisi University</p>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Overview</div>
+                    <a href="../dashboard/index.html" class="nav-item">
+                        <i data-lucide="layout-dashboard"></i>Dashboard
+                    </a>
+                    <a href="index.html" class="nav-item active">
+                        <i data-lucide="monitor"></i>Control Panel
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Management</div>
+                    <a href="users.html" class="nav-item">
+                        <i data-lucide="users"></i>User Management
+                    </a>
+                    <a href="../appointments/index.html" class="nav-item">
+                        <i data-lucide="calendar-days"></i>All Appointments
+                    </a>
+                    <a href="../records/index.html" class="nav-item">
+                        <i data-lucide="file-text"></i>All Health Records
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Data & Reports</div>
+                    <a href="reports.html" class="nav-item">
+                        <i data-lucide="bar-chart-3"></i>Reports
+                    </a>
+                    <a href="logs.html" class="nav-item">
+                        <i data-lucide="clipboard-list"></i>Activity Logs
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">System</div>
+                    <a href="settings.html" class="nav-item">
+                        <i data-lucide="settings"></i>System Settings
+                    </a>
+                    <a href="../settings/index.html" class="nav-item">
+                        <i data-lucide="user-cog"></i>My Profile
+                    </a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;">
+                        <i data-lucide="log-out"></i>Logout
+                    </a>
+                </div>
+            </nav>
+            
+            <div class="sidebar-search" style="padding:16px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;">
+                <div style="position:relative;">
+                    <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.5);width:16px;height:16px;"></i>
+                    <input type="text" placeholder="Search users..." id="globalSearch" style="width:100%;padding:8px 12px 8px 36px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;background:rgba(255,255,255,0.1);color:white;font-size:13px;">
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Admin Control Panel</h1>
+                        <p>System overview and management</p>
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <div class="header-actions">
+                        <button class="header-btn" onclick="toggleNotifications()" title="Notifications"><i data-lucide="bell"></i><span class="notification-dot" id="notifDot" style="display:none"></span></button>
+                        <button class="header-btn" onclick="toggleChat()" title="Chat Assistant"><i data-lucide="message-square"></i></button>
+                        <button class="header-btn" onclick="toggleEmergencySidebar()" title="Emergency" style="color: #dc2626;"><i data-lucide="alert-triangle"></i></button>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="stats-grid">
+                    <div class="stat-card" onclick="location.href='users.html'">
+                        <div class="stat-header"><div class="stat-icon blue"><i data-lucide="users"></i></div></div>
+                        <div class="stat-value" id="totalUsers">0</div>
+                        <div class="stat-label">Total Users</div>
+                        <div class="stat-trend" style="font-size:11px;color:var(--text-muted);margin-top:4px;">Click to view</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><div class="stat-icon green"><i data-lucide="file-text"></i></div></div>
+                        <div class="stat-value" id="totalRecords">0</div>
+                        <div class="stat-label">Health Records</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><div class="stat-icon orange"><i data-lucide="calendar-days"></i></div></div>
+                        <div class="stat-value" id="totalAppointments">0</div>
+                        <div class="stat-label">Appointments</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><div class="stat-icon purple"><i data-lucide="pill"></i></div></div>
+                        <div class="stat-value" id="totalPrescriptions">0</div>
+                        <div class="stat-label">Prescriptions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><div class="stat-icon red"><i data-lucide="flask-conical"></i></div></div>
+                        <div class="stat-value" id="totalLabResults">0</div>
+                        <div class="stat-label">Lab Results</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><div class="stat-icon teal"><i data-lucide="activity"></i></div></div>
+                        <div class="stat-value" id="totalVitals">0</div>
+                        <div class="stat-label">Vitals Recorded</div>
+                    </div>
+                </div>
+                
+                <div class="grid-2" style="margin-top:24px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Quick Actions</h3>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+                            <a href="users.html" class="quick-action-btn"><i data-lucide="user-plus"></i><span>Create User</span></a>
+                            <a href="../records/index.html" class="quick-action-btn"><i data-lucide="file-plus"></i><span>Add Record</span></a>
+                            <a href="logs.html" class="quick-action-btn"><i data-lucide="clipboard-list"></i><span>View Logs</span></a>
+                            <a href="reports.html" class="quick-action-btn"><i data-lucide="bar-chart-3"></i><span>View Reports</span></a>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">System Status</h3>
+                        </div>
+                        <div style="display:grid;gap:12px;">
+                            <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);">
+                                <span>Database</span>
+                                <span class="badge badge-success" id="dbStatus">Connected</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);">
+                                <span>Authentication</span>
+                                <span class="badge badge-success">Active</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);">
+                                <span>Last Backup</span>
+                                <span class="badge badge-info" id="lastBackup">Never</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top:24px;">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Activity</h3>
+                        <a href="logs.html" class="btn btn-sm btn-outline">View All</a>
+                    </div>
+                    <ul class="activity-list" id="recentActivity"></ul>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        lucide.createIcons();
+        
+        let currentUser = null;
+        let allUsersData = [];
+        let selectedUserId = null;
+        
+        // Auth check
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) { window.location.href = '../auth/login.html'; return; }
+            
+            currentUser = user;
+            const doc = await db.collection('users').doc(user.uid).get();
+            
+            if (!doc.exists || doc.data().role !== 'admin') {
+                window.location.href = '../dashboard/index.html';
+                return;
+            }
+            
+            const userData = doc.data();
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            
+            document.getElementById('app').style.display = 'flex';
+            
+            // Load all data
+            loadAllData();
+            
+            // Set up real-time listeners
+            setupRealtimeListeners();
+        });
+        
+        async function loadAllData() {
+            await Promise.all([
+                loadStats(),
+                loadAllUsers(),
+                loadRecentActivity()
+            ]);
+        }
+        
+        async function loadStats() {
+            try {
+                const [usersSnap, recordsSnap, aptSnap, prescSnap, labSnap, vitalsSnap] = await Promise.all([
+                    db.collection('users').get(),
+                    db.collection('health_records').get(),
+                    db.collection('appointments').get(),
+                    db.collection('prescriptions').get(),
+                    db.collection('lab_results').get(),
+                    db.collection('vitals').get()
+                ]);
+                
+                document.getElementById('totalUsers').textContent = usersSnap.size;
+                document.getElementById('totalRecords').textContent = recordsSnap.size;
+                document.getElementById('totalAppointments').textContent = aptSnap.size;
+                document.getElementById('totalPrescriptions').textContent = prescSnap.size;
+                document.getElementById('totalLabResults').textContent = labSnap.size;
+                document.getElementById('totalVitals').textContent = vitalsSnap.size;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadAllUsers() {
+            try {
+                const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+                allUsersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderUsersTable(allUsersData);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showToast('Error loading users', 'error');
+            }
+        }
+        
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('allUsersTable');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">📋</div><h3>No users found</h3></td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(doc => {
+                const user = doc;
+                const statusClass = user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : 'warning';
+                const roleClass = user.role === 'admin' ? 'danger' : user.role === 'doctor' ? 'primary' : user.role === 'nurse' ? 'info' : 'success';
+                
+                return `
+                    <tr>
+                        <td><strong>${user.firstName || ''} ${user.lastName || ''}</strong></td>
+                        <td>${user.email || 'N/A'}</td>
+                        <td><span class="badge badge-${roleClass}">${user.role || 'N/A'}</span></td>
+                        <td>${user.studentId || user.staffId || 'N/A'}</td>
+                        <td><span class="badge badge-${statusClass}">${user.status || 'N/A'}</span></td>
+                        <td>${user.lastLogin ? formatTimestamp(user.lastLogin) : 'Never'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline" onclick="viewUserDetails('${doc.id}')">
+                                <i data-lucide="eye" style="width:14px;height:14px;"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="editUser('${doc.id}')">
+                                <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                            </button>
+                            ${user.status !== 'suspended' ? `
+                                <button class="btn btn-sm btn-warning" onclick="suspendUser('${doc.id}')">
+                                    <i data-lucide="ban" style="width:14px;height:14px;"></i>
+                                </button>
+                            ` : `
+                                <button class="btn btn-sm btn-success" onclick="activateUser('${doc.id}')">
+                                    <i data-lucide="check" style="width:14px;height:14px;"></i>
+                                </button>
+                            `}
+                            <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser('${doc.id}')">
+                                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        
+        function filterUsers() {
+            const roleFilter = document.getElementById('filterRole').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            
+            let filtered = allUsersData;
+            
+            if (roleFilter) {
+                filtered = filtered.filter(u => u.role === roleFilter);
+            }
+            
+            if (statusFilter) {
+                filtered = filtered.filter(u => u.status === statusFilter);
+            }
+            
+            renderUsersTable(filtered);
+        }
+        
+        async function viewUserDetails(userId) {
+            try {
+                const doc = await db.collection('users').doc(userId).get();
+                if (!doc.exists) return;
+                
+                selectedUserId = userId;
+                const user = doc.data();
+                
+                // Get user's records count
+                const recordsSnap = await db.collection('health_records').where('patientId', '==', userId).get();
+                const aptSnap = await db.collection('appointments').where('patientId', '==', userId).get();
+                const prescSnap = await db.collection('prescriptions').where('patientId', '==', userId).get();
+                
+                document.getElementById('userDetailsContent').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                        <div>
+                            <h4 style="margin-bottom:12px;">User Information</h4>
+                            <p><strong>Name:</strong> ${user.firstName} ${user.lastName}</p>
+                            <p><strong>Email:</strong> ${user.email}</p>
+                            <p><strong>Role:</strong> <span class="badge badge-${user.role === 'admin' ? 'danger' : 'primary'}">${user.role}</span></p>
+                            <p><strong>Status:</strong> <span class="badge badge-${user.status === 'active' ? 'success' : 'danger'}">${user.status}</span></p>
+                            <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom:12px;">Activity Summary</h4>
+                            <p><strong>Health Records:</strong> ${recordsSnap.size}</p>
+                            <p><strong>Appointments:</strong> ${aptSnap.size}</p>
+                            <p><strong>Prescriptions:</strong> ${prescSnap.size}</p>
+                            <p><strong>Last Login:</strong> ${user.lastLogin ? formatTimestamp(user.lastLogin) : 'Never'}</p>
+                            <p><strong>Created:</strong> ${user.createdAt ? formatTimestamp(user.createdAt) : 'N/A'}</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top:20px;">
+                        <h4 style="margin-bottom:12px;">Quick Actions</h4>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-sm btn-primary" onclick="editUser('${userId}')">Edit User</button>
+                            ${user.status !== 'suspended' ? `
+                                <button class="btn btn-sm btn-warning" onclick="suspendUser('${userId}')">Suspend User</button>
+                            ` : `
+                                <button class="btn btn-sm btn-success" onclick="activateUser('${userId}')">Activate User</button>
+                            `}
+                            <button class="btn btn-sm btn-outline" onclick="viewUserRecords('${userId}')">View Records</button>
+                            <button class="btn btn-sm btn-outline" onclick="viewUserAppointments('${userId}')">View Appointments</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('userDetailsModal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading user details:', error);
+                showToast('Error loading user details', 'error');
+            }
+        }
+        
+        function closeUserDetailsModal() {
+            document.getElementById('userDetailsModal').classList.remove('active');
+        }
+        
+        async function editUser(userId) {
+            // Implementation for editing user
+            showToast('Edit user feature coming soon', 'info');
+        }
+        
+        async function suspendUser(userId) {
+            if (!confirm('Suspend this user?')) return;
+            try {
+                await db.collection('users').doc(userId).update({ status: 'suspended' });
+                showToast('User suspended', 'success');
+                loadAllUsers();
+                logActivity(currentUser.uid, 'admin-action', `Suspended user ${userId}`);
+            } catch (error) {
+                showToast('Error suspending user', 'error');
+            }
+        }
+        
+        async function activateUser(userId) {
+            try {
+                await db.collection('users').doc(userId).update({ status: 'active' });
+                showToast('User activated', 'success');
+                loadAllUsers();
+                logActivity(currentUser.uid, 'admin-action', `Activated user ${userId}`);
+            } catch (error) {
+                showToast('Error activating user', 'error');
+            }
+        }
+        
+        function confirmDeleteUser(userId) {
+            selectedUserId = userId;
+            if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                deleteUserConfirmed();
+            }
+        }
+        
+        async function deleteUser() {
+            if (!selectedUserId) return;
+            if (!confirm('FINAL CONFIRMATION: Delete this user and all their data?')) return;
+            
+            try {
+                await db.collection('users').doc(selectedUserId).delete();
+                showToast('User deleted', 'success');
+                closeUserDetailsModal();
+                loadAllUsers();
+                logActivity(currentUser.uid, 'admin-action', `Deleted user ${selectedUserId}`);
+            } catch (error) {
+                showToast('Error deleting user', 'error');
+            }
+        }
+        
+        async function loadRecentActivity() {
+            try {
+                const snapshot = await db.collection('activity_logs').orderBy('timestamp', 'desc').limit(20).get();
+                const list = document.getElementById('recentActivity');
+                
+                if (snapshot.empty) {
+                    list.innerHTML = '<li class="activity-item"><div class="empty-state" style="padding:20px;"><p>No recent activity</p></div></li>';
+                    return;
+                }
+                
+                // Cache users
+                const userIds = [...new Set(snapshot.docs.map(d => d.data().userId))];
+                const usersCache = {};
+                for (const id of userIds) {
+                    const doc = await db.collection('users').doc(id).get();
+                    usersCache[id] = doc.exists ? doc.data() : null;
+                }
+                
+                list.innerHTML = snapshot.docs.map(doc => {
+                    const log = doc.data();
+                    const user = usersCache[log.userId];
+                    const typeClass = log.type === 'login' ? 'success' : log.type.includes('record') ? 'info' : log.type === 'logout' ? 'warning' : 'primary';
+                    
+                    return `
+                        <li class="activity-item">
+                            <div class="activity-avatar"><i data-lucide="${getActivityIcon(log.type)}"></i></div>
+                            <div class="activity-content">
+                                <div class="activity-text">
+                                    <strong>${user ? `${user.firstName} ${user.lastName}` : 'Unknown'}</strong>: ${log.description}
+                                </div>
+                                <div class="activity-time">${formatTimestamp(log.timestamp)}</div>
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+                
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            } catch (error) {
+                console.error('Error loading activity:', error);
+            }
+        }
+        
+        function setupRealtimeListeners() {
+            // Listen for new users
+            db.collection('users').onSnapshot((snapshot) => {
+                loadStats();
+                loadAllUsers();
+            });
+            
+            // Listen for new activity
+            db.collection('activity_logs').orderBy('timestamp', 'desc').limit(20).onSnapshot((snapshot) => {
+                loadRecentActivity();
+            });
+        }
+        
+        function refreshAllData() {
+            showToast('Refreshing all data...', 'info');
+            loadAllData();
+        }
+        
+        async function exportAllData() {
+            showToast('Exporting all data...', 'info');
+            // Implementation for exporting all data
+            const collections = ['users', 'health_records', 'appointments', 'prescriptions', 'lab_results', 'vitals', 'inventory'];
+            let csv = '';
+            
+            for (const col of collections) {
+                csv += `\n=== ${col.toUpperCase()} ===\n`;
+                const snap = await db.collection(col).get();
+                snap.forEach(doc => {
+                    csv += JSON.stringify({ id: doc.id, ...doc.data() }) + '\n';
+                });
+            }
+            
+            const blob = new Blob([csv], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `admin_full_export_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showToast('Data exported successfully', 'success');
+        }
+        
+        function getActivityIcon(type) {
+            return { login: 'log-in', signup: 'user-plus', 'appointment-book': 'calendar-plus', 'record-create': 'file-plus', logout: 'log-out', 'admin-action': 'shield-check', 'admin-login': 'shield' }[type] || 'file-text';
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('sidebar-hidden');
+            toggleBtn.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.classList.toggle('sidebar-open');
+        }
+        
+        function toggleNotifications() {
+            document.getElementById('notificationPanel').classList.toggle('active');
+        }
+        
+        // Search functionality
+        document.getElementById('globalSearch')?.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = allUsersData.filter(user => {
+                const name = `${user.firstName} ${user.lastName}`.toLowerCase();
+                const email = (user.email || '').toLowerCase();
+                return name.includes(query) || email.includes(query);
+            });
+            renderUsersTable(filtered);
+        });
+    </script>
+</body>
+</html>

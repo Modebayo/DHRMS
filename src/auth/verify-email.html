@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/auth.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="../js/auth.js"></script>
+    <style>
+        .verify-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%);
+            padding: 24px;
+        }
+        .verify-card {
+            background: white;
+            border-radius: 16px;
+            padding: 48px;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+        }
+        .verify-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: white;
+        }
+        .verify-card h1 {
+            font-size: 24px;
+            margin-bottom: 12px;
+            color: #0f172a;
+        }
+        .verify-card p {
+            color: #64748b;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        .verify-card .btn {
+            margin-bottom: 12px;
+        }
+        .resend-text {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-container">
+        <div class="verify-card">
+            <div class="verify-icon">
+                <i data-lucide="mail" style="width:40px;height:40px"></i>
+            </div>
+            <h1>Verify Your Email</h1>
+            <p>We've sent a verification email to your address. Please check your inbox and click the verification link to activate your account.</p>
+            
+            <button class="btn btn-primary btn-full" onclick="checkVerification()">I've Verified My Email</button>
+            <button class="btn btn-outline btn-full" onclick="resendVerification()">Resend Verification Email</button>
+            
+            <div class="resend-text">
+                Didn't receive the email? Check your spam folder or resend.
+            </div>
+            
+            <div style="margin-top: 24px;">
+                <a href="login.html" style="color: #3b82f6; font-size: 14px;">Back to Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        let currentUser = null;
+        
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+            
+            if (user.emailVerified) {
+                window.location.href = '../dashboard/index.html';
+            }
+        });
+        
+        async function checkVerification() {
+            try {
+                await currentUser.reload();
+                if (currentUser.emailVerified) {
+                    showToast('Email verified successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '../dashboard/index.html';
+                    }, 1500);
+                } else {
+                    showToast('Email not verified yet. Please check your inbox.', 'warning');
+                }
+            } catch (error) {
+                console.error('Error checking verification:', error);
+            }
+        }
+        
+        async function resendVerification() {
+            try {
+                await currentUser.sendEmailVerification();
+                showToast('Verification email resent!', 'success');
+            } catch (error) {
+                showToast('Error resending email', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

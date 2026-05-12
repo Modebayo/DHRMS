@@ -1,0 +1,73 @@
+.bar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.bar-item:last-child {
+    border-bottom: none;
+}
+
+.bar-label {
+    min-width: 120px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.bar-container {
+    flex: 1;
+    height: 24px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    border-radius: var(--radius-md);
+    transition: width 0.5s ease;
+}
+
+.bar-student { background: var(--primary-color); }
+.bar-doctor { background: var(--success-color); }
+.bar-nurse { background: var(--warning-color); }
+.bar-admin { background: var(--danger-color); }
+.bar-dept { background: var(--info-color); }
+
+.bar-value {
+    min-width: 80px;
+    text-align: right;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.trend-up {
+    color: var(--success-color);
+    font-weight: 500;
+}
+
+.trend-down {
+    color: var(--danger-color);
+    font-weight: 500;
+}
+
+.profile-avatar-section {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0 auto 12px;
+}

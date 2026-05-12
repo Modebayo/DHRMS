@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Diagnosis - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <style>
+        .diagnosis-form { max-width: 800px; margin: 0 auto; }
+        .symptom-tag { display: inline-flex; align-items: center; padding: 6px 12px; background: var(--bg-secondary); border-radius: 20px; margin: 4px; font-size: 13px; }
+        .severity-indicator { display: flex; gap: 8px; margin-top: 8px; }
+        .severity-btn { padding: 8px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: white; cursor: pointer; font-size: 13px; }
+        .severity-btn.active { background: var(--primary-100); border-color: var(--primary-500); color: var(--primary-700); }
+        .severity-btn.mild { border-color: var(--success-300); }
+        .severity-btn.mild.active { background: var(--success-50); border-color: var(--success-500); color: var(--success-700); }
+        .severity-btn.moderate { border-color: var(--warning-300); }
+        .severity-btn.moderate.active { background: var(--warning-50); border-color: var(--warning-500); color: var(--warning-700); }
+        .severity-btn.severe { border-color: var(--danger-300); }
+        .severity-btn.severe.active { background: var(--danger-50); border-color: var(--danger-500); color: var(--danger-700); }
+        .prescription-item { display: flex; gap: 12px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-md); margin-bottom: 8px; align-items: center; }
+        .prescription-item input { flex: 1; }
+        .medication-list { margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Add Diagnosis</h1>
+                        <p>Document consultation and create treatment plan</p>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="diagnosis-form">
+                    <div class="card" style="margin-bottom:20px">
+                        <div class="card-header"><h3 class="card-title"><i data-lucide="user" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Patient Information</h3></div>
+                        <div id="patientInfo" style="padding:16px">
+                            <div class="patient-visit-card" style="background:linear-gradient(135deg,var(--primary-500),var(--primary-700));color:white;padding:16px;border-radius:var(--radius-lg)">
+                                <div style="display:flex;justify-content:space-between;align-items:center">
+                                    <div>
+                                        <h3 id="patientName" style="margin:0 0 4px 0">Loading...</h3>
+                                        <p id="patientDetails" style="margin:0;opacity:0.9;font-size:13px"></p>
+                                    </div>
+                                    <div style="text-align:right">
+                                        <div id="visitType" style="font-size:12px;opacity:0.9">Consultation</div>
+                                        <div id="visitDate" style="font-size:11px;opacity:0.7"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="vitalsSummary" style="display:none;margin-top:16px">
+                                <h4 style="font-size:14px;margin-bottom:12px"><i data-lucide="activity" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Recorded Vitals</h4>
+                                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+                                    <div class="vital-box" style="background:var(--bg-secondary);padding:12px;border-radius:var(--radius-md);text-align:center">
+                                        <div style="font-size:20px;font-weight:600" id="vitalTemp">--</div>
+                                        <div style="font-size:11px;color:var(--text-muted)">Temp (°C)</div>
+                                    </div>
+                                    <div class="vital-box" style="background:var(--bg-secondary);padding:12px;border-radius:var(--radius-md);text-align:center">
+                                        <div style="font-size:20px;font-weight:600" id="vitalPulse">--</div>
+                                        <div style="font-size:11px;color:var(--text-muted)">Pulse (bpm)</div>
+                                    </div>
+                                    <div class="vital-box" style="background:var(--bg-secondary);padding:12px;border-radius:var(--radius-md);text-align:center">
+                                        <div style="font-size:20px;font-weight:600" id="vitalBP">--/--</div>
+                                        <div style="font-size:11px;color:var(--text-muted)">BP (mmHg)</div>
+                                    </div>
+                                    <div class="vital-box" style="background:var(--bg-secondary);padding:12px;border-radius:var(--radius-md);text-align:center">
+                                        <div style="font-size:20px;font-weight:600" id="vitalSpO2">--</div>
+                                        <div style="font-size:11px;color:var(--text-muted)">SpO2 (%)</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="chiefComplaintSection" style="margin-top:16px;display:none">
+                                <label style="font-size:12px;color:var(--text-muted)">Chief Complaint</label>
+                                <p id="chiefComplaintText" style="margin:4px 0 0;font-weight:500"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form id="diagnosisForm">
+                        <div class="card" style="margin-bottom:20px">
+                            <div class="card-header"><h3 class="card-title"><i data-lucide="clipboard-list" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Clinical Findings</h3></div>
+                            <div style="padding:16px">
+                                <div class="form-group">
+                                    <label>Symptoms Observed</label>
+                                    <div id="symptomsContainer">
+                                        <div style="display:flex;gap:8px;margin-bottom:8px">
+                                            <input type="text" id="newSymptom" placeholder="Add symptom..." style="flex:1">
+                                            <button type="button" class="btn btn-sm btn-outline" onclick="addSymptom()"><i data-lucide="plus" style="width:14px;height:14px"></i> Add</button>
+                                        </div>
+                                        <div id="symptomsList" style="min-height:40px"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Physical Examination Notes</label>
+                                    <textarea id="examinationNotes" rows="3" placeholder="Observations from physical examination..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Severity Level</label>
+                                    <div class="severity-indicator">
+                                        <button type="button" class="severity-btn mild" onclick="setSeverity('mild')">Mild</button>
+                                        <button type="button" class="severity-btn moderate" onclick="setSeverity('moderate')">Moderate</button>
+                                        <button type="button" class="severity-btn severe" onclick="setSeverity('severe')">Severe</button>
+                                    </div>
+                                    <input type="hidden" id="severityLevel" value="moderate">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-bottom:20px">
+                            <div class="card-header"><h3 class="card-title"><i data-lucide="stethoscope" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Diagnosis</h3></div>
+                            <div style="padding:16px">
+                                <div class="form-group">
+                                    <label>Primary Diagnosis *</label>
+                                    <textarea id="primaryDiagnosis" rows="2" required placeholder="Main diagnosis..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Secondary Diagnoses (if any)</label>
+                                    <textarea id="secondaryDiagnoses" rows="2" placeholder="Additional diagnoses..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>ICD-10 Code (if known)</label>
+                                    <input type="text" id="icdCode" placeholder="e.g., J06.9, K35.2">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-bottom:20px">
+                            <div class="card-header">
+                                <h3 class="card-title"><i data-lucide="pill" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Treatment Plan</h3>
+                            </div>
+                            <div style="padding:16px">
+                                <div class="form-group">
+                                    <label>Medications</label>
+                                    <div class="medication-list" id="medicationList">
+                                        <div class="prescription-item" id="medTemplate" style="display:none">
+                                            <input type="text" placeholder="Medication name" class="med-name">
+                                            <input type="text" placeholder="Dosage (e.g., 500mg)" class="med-dosage" style="width:100px">
+                                            <input type="text" placeholder="Frequency (e.g., 3x daily)" class="med-frequency" style="width:120px">
+                                            <input type="text" placeholder="Duration (e.g., 7 days)" class="med-duration" style="width:100px">
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removeMedication(this)"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="addMedication()" style="margin-top:8px"><i data-lucide="plus" style="width:14px;height:14px"></i> Add Medication</button>
+                                </div>
+                                <div class="form-group">
+                                    <label>Treatment Instructions</label>
+                                    <textarea id="treatmentInstructions" rows="3" placeholder="Additional treatment instructions, rest, diet, etc."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Procedures (if any)</label>
+                                    <textarea id="procedures" rows="2" placeholder="Any procedures performed or scheduled..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-bottom:20px">
+                            <div class="card-header"><h3 class="card-title"><i data-lucide="calendar" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Follow-up</h3></div>
+                            <div style="padding:16px">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Follow-up Required</label>
+                                        <select id="followUpRequired" onchange="toggleFollowUpDate()">
+                                            <option value="no">No follow-up needed</option>
+                                            <option value="1-week">Follow-up in 1 week</option>
+                                            <option value="2-weeks">Follow-up in 2 weeks</option>
+                                            <option value="1-month">Follow-up in 1 month</option>
+                                            <option value="3-months">Follow-up in 3 months</option>
+                                            <option value="as-needed">As needed</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="followUpDateGroup" style="display:none">
+                                        <label>Suggested Date</label>
+                                        <input type="date" id="followUpDate">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Referral (if needed)</label>
+                                    <select id="referralTo" onchange="toggleReferralDetails()">
+                                        <option value="">No referral</option>
+                                        <option value="specialist">Refer to Specialist</option>
+                                        <option value="hospital">Refer to Hospital</option>
+                                        <option value="another-doctor">Refer to Another Doctor</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="referralDetailsGroup" style="display:none">
+                                    <label>Referral Details</label>
+                                    <textarea id="referralDetails" rows="2" placeholder="Reason for referral, specialist type, etc."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header"><h3 class="card-title"><i data-lucide="file-text" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Additional Notes</h3></div>
+                            <div style="padding:16px">
+                                <div class="form-group">
+                                    <label>Doctor's Notes</label>
+                                    <textarea id="doctorNotes" rows="3" placeholder="Additional notes for the record..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="checkbox">
+                                        <input type="checkbox" id="sendToPatient">
+                                        <span>Send diagnosis summary to patient via message</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <div style="display:flex;gap:12px;margin-top:20px">
+                        <button type="button" class="btn btn-outline" onclick="saveDraft()" style="flex:1">
+                            <i data-lucide="save" style="width:16px;height:16px"></i> Save Draft
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="completeDiagnosis()" style="flex:1">
+                            <i data-lucide="check-circle" style="width:16px;height:16px"></i> Complete & Discharge
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let currentUser = null;
+        let userData = null;
+        let visitId = null;
+        let visitData = null;
+        let symptoms = [];
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        visitId = urlParams.get('visitId');
+        
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            
+            initTheme();
+            
+            if (visitId) {
+                await loadVisitData();
+            } else {
+                showToast('No visit selected', 'error');
+                setTimeout(() => { window.location.href = 'visit-workflow.html'; }, 1500);
+            }
+            
+            addMedication();
+        })();
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        
+        async function loadVisitData() {
+            const doc = await db.collection('visits').doc(visitId).get();
+            if (!doc.exists) {
+                showToast('Visit not found', 'error');
+                return;
+            }
+            
+            visitData = doc.data();
+            
+            const patientDoc = await db.collection('users').doc(visitData.patientId).get();
+            const patient = patientDoc.data();
+            
+            document.getElementById('patientName').textContent = visitData.patientName;
+            document.getElementById('patientDetails').textContent = `${patient?.studentId || ''} • ${patient?.department || ''} • ${patient?.phone || ''}`;
+            document.getElementById('visitType').textContent = visitData.visitType;
+            document.getElementById('visitDate').textContent = formatDate(visitData.date);
+            
+            if (visitData.chiefComplaint) {
+                document.getElementById('chiefComplaintSection').style.display = 'block';
+                document.getElementById('chiefComplaintText').textContent = visitData.chiefComplaint;
+            }
+            
+            if (visitData.vitals) {
+                document.getElementById('vitalsSummary').style.display = 'block';
+                document.getElementById('vitalTemp').textContent = visitData.vitals.temperature || '--';
+                document.getElementById('vitalPulse').textContent = visitData.vitals.pulse || '--';
+                document.getElementById('vitalBP').textContent = `${visitData.vitals.bpSystolic || '--'}/${visitData.vitals.bpDiastolic || '--'}`;
+                document.getElementById('vitalSpO2').textContent = visitData.vitals.spo2 || '--';
+            }
+            
+            lucide.createIcons();
+        }
+        
+        function setSeverity(level) {
+            document.querySelectorAll('.severity-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.severity-btn.${level}`).classList.add('active');
+            document.getElementById('severityLevel').value = level;
+        }
+        
+        function addSymptom() {
+            const input = document.getElementById('newSymptom');
+            const symptom = input.value.trim();
+            if (!symptom) return;
+            
+            symptoms.push(symptom);
+            renderSymptoms();
+            input.value = '';
+        }
+        
+        function removeSymptom(index) {
+            symptoms.splice(index, 1);
+            renderSymptoms();
+        }
+        
+        function renderSymptoms() {
+            const list = document.getElementById('symptomsList');
+            if (symptoms.length === 0) {
+                list.innerHTML = '<span style="color:var(--text-muted);font-size:13px">No symptoms added</span>';
+                return;
+            }
+            list.innerHTML = symptoms.map((s, i) => `
+                <span class="symptom-tag">
+                    ${escapeHtml(s)}
+                    <i data-lucide="x" style="width:14px;height:14px;margin-left:8px;cursor:pointer" onclick="removeSymptom(${i})"></i>
+                </span>
+            `).join('');
+            lucide.createIcons();
+        }
+        
+        function addMedication() {
+            const template = document.getElementById('medTemplate');
+            const clone = template.cloneNode(true);
+            clone.id = '';
+            clone.style.display = 'flex';
+            document.getElementById('medicationList').appendChild(clone);
+            lucide.createIcons();
+        }
+        
+        function removeMedication(btn) {
+            btn.closest('.prescription-item').remove();
+        }
+        
+        function getMedications() {
+            const meds = [];
+            document.querySelectorAll('.prescription-item:not(#medTemplate)').forEach(item => {
+                const name = item.querySelector('.med-name').value.trim();
+                const dosage = item.querySelector('.med-dosage').value.trim();
+                const frequency = item.querySelector('.med-frequency').value.trim();
+                const duration = item.querySelector('.med-duration').value.trim();
+                if (name) {
+                    meds.push({ name, dosage, frequency, duration });
+                }
+            });
+            return meds;
+        }
+        
+        function toggleFollowUpDate() {
+            const followUp = document.getElementById('followUpRequired').value;
+            const dateGroup = document.getElementById('followUpDateGroup');
+            
+            if (followUp !== 'no' && followUp !== 'as-needed') {
+                dateGroup.style.display = 'block';
+                const date = new Date();
+                if (followUp === '1-week') date.setDate(date.getDate() + 7);
+                else if (followUp === '2-weeks') date.setDate(date.getDate() + 14);
+                else if (followUp === '1-month') date.setMonth(date.getMonth() + 1);
+                else if (followUp === '3-months') date.setMonth(date.getMonth() + 3);
+                document.getElementById('followUpDate').value = date.toISOString().split('T')[0];
+            } else {
+                dateGroup.style.display = 'none';
+            }
+        }
+        
+        function toggleReferralDetails() {
+            const referral = document.getElementById('referralTo').value;
+            document.getElementById('referralDetailsGroup').style.display = referral ? 'block' : 'none';
+        }
+        
+        async function saveDraft() {
+            const diagnosisData = collectDiagnosisData();
+            diagnosisData.isDraft = true;
+            
+            await db.collection('visits').doc(visitId).update({
+                diagnosisData: diagnosisData,
+                currentStage: 'diagnosis',
+                status: 'in-progress',
+                draftSavedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            showToast('Draft saved', 'success');
+        }
+        
+        function collectDiagnosisData() {
+            return {
+                symptoms: symptoms,
+                examinationNotes: document.getElementById('examinationNotes').value.trim(),
+                severity: document.getElementById('severityLevel').value,
+                primaryDiagnosis: document.getElementById('primaryDiagnosis').value.trim(),
+                secondaryDiagnoses: document.getElementById('secondaryDiagnoses').value.trim(),
+                icdCode: document.getElementById('icdCode').value.trim(),
+                medications: getMedications(),
+                treatmentInstructions: document.getElementById('treatmentInstructions').value.trim(),
+                procedures: document.getElementById('procedures').value.trim(),
+                followUpRequired: document.getElementById('followUpRequired').value,
+                followUpDate: document.getElementById('followUpDate').value,
+                referralTo: document.getElementById('referralTo').value,
+                referralDetails: document.getElementById('referralDetails').value.trim(),
+                doctorNotes: document.getElementById('doctorNotes').value.trim(),
+                createdBy: currentUser.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+        }
+        
+        async function completeDiagnosis() {
+            const primaryDiagnosis = document.getElementById('primaryDiagnosis').value.trim();
+            
+            if (!primaryDiagnosis) {
+                showToast('Primary diagnosis is required', 'warning');
+                return;
+            }
+            
+            const diagnosisData = collectDiagnosisData();
+            diagnosisData.isDraft = false;
+            
+            try {
+                const medications = getMedications();
+                
+                if (medications.length > 0) {
+                    for (const med of medications) {
+                        await db.collection('prescriptions').add({
+                            patientId: visitData.patientId,
+                            patientName: visitData.patientName,
+                            medication: med.name,
+                            dosage: med.dosage,
+                            frequency: med.frequency,
+                            duration: med.duration,
+                            prescribedBy: currentUser.uid,
+                            doctorName: `${userData.firstName} ${userData.lastName}`,
+                            status: 'pending',
+                            visitId: visitId,
+                            diagnosis: primaryDiagnosis,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                }
+                
+                await db.collection('health_records').add({
+                    patientId: visitData.patientId,
+                    patientName: visitData.patientName,
+                    visitId: visitId,
+                    visitType: visitData.visitType,
+                    chiefComplaint: visitData.chiefComplaint,
+                    symptoms: symptoms,
+                    vitals: visitData.vitals,
+                    diagnosis: primaryDiagnosis,
+                    secondaryDiagnoses: diagnosisData.secondaryDiagnoses,
+                    icdCode: diagnosisData.icdCode,
+                    severity: diagnosisData.severity,
+                    treatmentPlan: diagnosisData.treatmentInstructions,
+                    medications: medications.map(m => `${m.name} ${m.dosage} ${m.frequency} ${m.duration}`).join(', '),
+                    procedures: diagnosisData.procedures,
+                    recordedBy: currentUser.uid,
+                    doctorName: `${userData.firstName} ${userData.lastName}`,
+                    visitDate: visitData.date,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                const followUpRequired = document.getElementById('followUpRequired').value;
+                let followUpDate = null;
+                if (followUpRequired !== 'no' && followUpRequired !== 'as-needed') {
+                    followUpDate = document.getElementById('followUpDate').value;
+                }
+                
+                await db.collection('visits').doc(visitId).update({
+                    diagnosisData: diagnosisData,
+                    currentStage: 'treatment',
+                    status: 'in-progress',
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                if (followUpDate) {
+                    await db.collection('appointments').add({
+                        patientId: visitData.patientId,
+                        patientName: visitData.patientName,
+                        type: 'follow-up',
+                        reason: `Follow-up: ${primaryDiagnosis}`,
+                        date: followUpDate,
+                        status: 'pending',
+                        visitId: visitId,
+                        createdBy: currentUser.uid,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                if (document.getElementById('referralTo').value) {
+                    await db.collection('referrals').add({
+                        patientId: visitData.patientId,
+                        patientName: visitData.patientName,
+                        fromDoctor: currentUser.uid,
+                        doctorName: `${userData.firstName} ${userData.lastName}`,
+                        referralType: document.getElementById('referralTo').value,
+                        reason: primaryDiagnosis,
+                        details: document.getElementById('referralDetails').value.trim(),
+                        status: 'pending',
+                        visitId: visitId,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                if (document.getElementById('sendToPatient').checked) {
+                    await sendDiagnosisToPatient(diagnosisData, medications);
+                }
+                
+                await db.collection('notifications').add({
+                    userId: visitData.patientId,
+                    type: 'diagnosis',
+                    title: 'Consultation Complete',
+                    message: `Your consultation is complete. ${medications.length > 0 ? 'Prescription has been issued.' : ''} Please proceed to treatment.`,
+                    visitId: visitId,
+                    read: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showToast('Diagnosis completed successfully', 'success');
+                logActivity(currentUser.uid, 'diagnosis-complete', `Completed diagnosis for ${visitData.patientName}`);
+                
+                setTimeout(() => {
+                    window.location.href = 'visit-workflow.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error completing diagnosis:', error);
+                showToast('Error completing diagnosis', 'error');
+            }
+        }
+        
+        async function sendDiagnosisToPatient(diagnosisData, medications) {
+            let message = `📋 Consultation Summary\n\n`;
+            message += `Date: ${formatDate(new Date())}\n`;
+            message += `Doctor: Dr. ${userData.firstName} ${userData.lastName}\n\n`;
+            message += `📝 Diagnosis:\n${diagnosisData.primaryDiagnosis}\n\n`;
+            
+            if (diagnosisData.symptoms.length > 0) {
+                message += `🔍 Symptoms:\n${diagnosisData.symptoms.join(', ')}\n\n`;
+            }
+            
+            if (medications.length > 0) {
+                message += `💊 Prescriptions:\n`;
+                medications.forEach(med => {
+                    message += `- ${med.name} ${med.dosage}\n  ${med.frequency} for ${med.duration}\n`;
+                });
+                message += `\n`;
+            }
+            
+            if (diagnosisData.treatmentInstructions) {
+                message += `📋 Instructions:\n${diagnosisData.treatmentInstructions}\n\n`;
+            }
+            
+            if (diagnosisData.followUpRequired !== 'no') {
+                const followUpText = diagnosisData.followUpRequired === 'as-needed' ? 'As needed' : `On ${diagnosisData.followUpDate}`;
+                message += `📅 Follow-up: ${followUpText}\n`;
+            }
+            
+            message += `\nThank you for choosing Koladaisi University Health Center.`;
+            
+            const convRef = await db.collection('conversations').add({
+                participants: [currentUser.uid, visitData.patientId].sort(),
+                subject: 'Visit Summary',
+                lastMessage: message.substring(0, 100) + '...',
+                lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            await convRef.collection('messages').add({
+                senderId: currentUser.uid,
+                text: message,
+                type: 'diagnosis_summary',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    </script>
+</body>
+</html>

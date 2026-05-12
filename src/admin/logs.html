@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Logs - Admin Panel</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar sidebar-hidden" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="shield-check"></i></div>
+                <div class="sidebar-brand"><h2>Admin Panel</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section"><a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a></div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Administration</div>
+                    <a href="users.html" class="nav-item"><i data-lucide="users"></i>User Management</a>
+                    <a href="reports.html" class="nav-item"><i data-lucide="bar-chart-3"></i>Reports</a>
+                    <a href="logs.html" class="nav-item active"><i data-lucide="clipboard-list"></i>Activity Logs</a>
+                    <a href="settings.html" class="nav-item"><i data-lucide="settings"></i>Settings</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Profile</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title"><h1>Activity Logs</h1><p>System activity and access tracking</p></div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-sm btn-outline" onclick="exportLogs()"><i data-lucide="download"></i> Export</button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="stats-grid" style="margin-bottom:24px;">
+                    <div class="stat-card"><div class="stat-icon blue"><i data-lucide="clipboard-list"></i></div><div class="stat-value" id="totalLogs">0</div><div class="stat-label">Total Logs</div></div>
+                    <div class="stat-card"><div class="stat-icon green"><i data-lucide="log-in"></i></div><div class="stat-value" id="loginCount">0</div><div class="stat-label">Logins</div></div>
+                    <div class="stat-card"><div class="stat-icon orange"><i data-lucide="file-plus"></i></div><div class="stat-value" id="recordCount">0</div><div class="stat-label">Record Actions</div></div>
+                    <div class="stat-card"><div class="stat-icon red"><i data-lucide="user-plus"></i></div><div class="stat-value" id="signupCount">0</div><div class="stat-label">New Signups</div></div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Activity Log</h3>
+                        <div style="display:flex;gap:8px;">
+                            <select id="filterLogType" style="padding:8px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary)">
+                                <option value="">All Types</option>
+                                <option value="login">Login</option>
+                                <option value="signup">Signup</option>
+                                <option value="logout">Logout</option>
+                                <option value="record-create">Record Created</option>
+                                <option value="record-update">Record Updated</option>
+                                <option value="appointment-book">Appointment Booked</option>
+                                <option value="admin-action">Admin Action</option>
+                                <option value="user_update">User Updated</option>
+                                <option value="user_approve">User Approved</option>
+                                <option value="user_suspend">User Suspended</option>
+                                <option value="user_delete">User Deleted</option>
+                            </select>
+                            <select id="filterUser" style="padding:8px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary)">
+                                <option value="">All Users</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Time</th><th>User</th><th>Action Type</th><th>Description</th><th>IP Address</th></tr></thead>
+                            <tbody id="logsTable"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination" style="display:flex;justify-content:center;padding:16px;gap:8px;"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="logs.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() { await guardPage(); })();
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarToggle').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treatment - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <style>
+        .treatment-step { padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: 16px; }
+        .step-number { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-500); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-bottom: 12px; }
+        .treatment-item { display: flex; gap: 12px; padding: 12px; background: white; border-radius: var(--radius-md); margin-bottom: 8px; align-items: center; }
+        .treatment-item.completed { background: var(--success-50); border: 1px solid var(--success-200); }
+        .treatment-item input[type="checkbox"] { width: 20px; height: 20px; }
+        .injection-form { background: var(--warning-50); padding: 16px; border-radius: var(--radius-md); margin: 16px 0; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Treatment</h1>
+                        <p>Administer treatment to patient</p>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card" style="margin-bottom:20px">
+                    <div class="card-header"><h3 class="card-title">Patient & Treatment Plan</h3></div>
+                    <div style="padding:20px">
+                        <div class="patient-visit-card" style="background:linear-gradient(135deg,var(--primary-500),var(--primary-700));color:white;padding:20px;border-radius:var(--radius-lg);margin-bottom:20px">
+                            <div style="display:flex;justify-content:space-between">
+                                <div>
+                                    <h3 id="patientName" style="margin:0 0 4px 0">Loading...</h3>
+                                    <p id="patientInfo" style="margin:0;opacity:0.9;font-size:13px"></p>
+                                </div>
+                                <div style="text-align:right">
+                                    <div style="font-size:12px;opacity:0.9" id="visitType">Consultation</div>
+                                    <div style="font-size:11px;opacity:0.7" id="visitDate"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="diagnosisSummary" style="display:none;background:var(--bg-secondary);padding:16px;border-radius:var(--radius-md);margin-bottom:20px">
+                            <h4 style="margin:0 0 8px 0"><i data-lucide="stethoscope" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Diagnosis</h4>
+                            <p id="diagnosisText" style="margin:0;font-weight:500"></p>
+                            <div id="medicationsList" style="margin-top:12px"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="treatmentForm">
+                    <div class="card" style="margin-bottom:20px">
+                        <div class="card-header"><h3 class="card-title"><i data-lucide="check-square" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Treatment Checklist</h3></div>
+                        <div style="padding:20px">
+                            <div id="treatmentChecklist">
+                                <div class="treatment-item" id="templateTreatment" style="display:none">
+                                    <input type="checkbox" class="treatment-checkbox">
+                                    <div style="flex:1">
+                                        <div class="treatment-name" style="font-weight:500"></div>
+                                        <div class="treatment-details" style="font-size:12px;color:var(--text-muted)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top:20px">
+                                <label>Add Custom Treatment</label>
+                                <div style="display:flex;gap:8px;margin-top:8px">
+                                    <input type="text" id="customTreatment" placeholder="Treatment name" style="flex:1">
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="addCustomTreatment()"><i data-lucide="plus" style="width:14px;height:14px"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-bottom:20px">
+                        <div class="card-header"><h3 class="card-title"><i data-lucide="syringe" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Injections / Procedures</h3></div>
+                        <div style="padding:20px">
+                            <div id="injectionList">
+                                <div class="injection-form" id="injectionTemplate" style="display:none">
+                                    <div style="display:flex;gap:12px;flex-wrap:wrap">
+                                        <div style="flex:1;min-width:150px">
+                                            <label style="font-size:12px">Injection/Procedure</label>
+                                            <input type="text" class="injection-name" placeholder="e.g., Paracetamol IV">
+                                        </div>
+                                        <div style="width:100px">
+                                            <label style="font-size:12px">Dosage</label>
+                                            <input type="text" class="injection-dose" placeholder="e.g., 1g">
+                                        </div>
+                                        <div style="width:120px">
+                                            <label style="font-size:12px">Route</label>
+                                            <select class="injection-route">
+                                                <option value="IV">IV</option>
+                                                <option value="IM">IM</option>
+                                                <option value="SC">SC</option>
+                                                <option value="Oral">Oral</option>
+                                            </select>
+                                        </div>
+                                        <div style="display:flex;align-items:flex-end">
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removeInjection(this)"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="addInjection()"><i data-lucide="plus" style="width:14px;height:14px"></i> Add Injection/Procedure</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-bottom:20px">
+                        <div class="card-header"><h3 class="card-title"><i data-lucide="activity" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Vitals After Treatment</h3></div>
+                        <div style="padding:20px">
+                            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+                                <div class="form-group">
+                                    <label>Temperature (°C)</label>
+                                    <input type="number" step="0.1" id="postTemp" placeholder="Optional">
+                                </div>
+                                <div class="form-group">
+                                    <label>Pulse (bpm)</label>
+                                    <input type="number" id="postPulse" placeholder="Optional">
+                                </div>
+                                <div class="form-group">
+                                    <label>BP Systolic</label>
+                                    <input type="number" id="postBPSys" placeholder="Optional">
+                                </div>
+                                <div class="form-group">
+                                    <label>BP Diastolic</label>
+                                    <input type="number" id="postBPDia" placeholder="Optional">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title"><i data-lucide="message-square" style="width:18px;height:18px;display:inline;margin-right:8px"></i>Treatment Notes</h3></div>
+                        <div style="padding:20px">
+                            <div class="form-group">
+                                <label>Observations During Treatment</label>
+                                <textarea id="treatmentObservations" rows="3" placeholder="Any observations, reactions, or notes..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Patient Response</label>
+                                <select id="patientResponse">
+                                    <option value="good">Good - Patient tolerated well</option>
+                                    <option value="moderate">Moderate - Some discomfort noted</option>
+                                    <option value="poor">Poor - Reaction observed</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                
+                <div style="display:flex;gap:12px;margin-top:20px">
+                    <button type="button" class="btn btn-outline" onclick="saveTreatmentProgress()" style="flex:1">
+                        <i data-lucide="save" style="width:16px;height:16px"></i> Save Progress
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="completeTreatment()" style="flex:1">
+                        <i data-lucide="check-circle" style="width:16px;height:16px"></i> Complete Treatment & Discharge
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let currentUser = null;
+        let userData = null;
+        let visitId = null;
+        let visitData = null;
+        let completedTreatments = [];
+        let customTreatments = [];
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        visitId = urlParams.get('visitId');
+        
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            
+            initTheme();
+            
+            if (visitId) {
+                await loadVisitData();
+            } else {
+                showToast('No visit selected', 'error');
+                setTimeout(() => { window.location.href = 'visit-workflow.html'; }, 1500);
+            }
+        })();
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        
+        async function loadVisitData() {
+            const doc = await db.collection('visits').doc(visitId).get();
+            if (!doc.exists) {
+                showToast('Visit not found', 'error');
+                return;
+            }
+            
+            visitData = doc.data();
+            
+            const patientDoc = await db.collection('users').doc(visitData.patientId).get();
+            const patient = patientDoc.data();
+            
+            document.getElementById('patientName').textContent = visitData.patientName;
+            document.getElementById('patientInfo').textContent = `${patient?.studentId || ''} • ${patient?.department || ''}`;
+            document.getElementById('visitType').textContent = visitData.visitType;
+            document.getElementById('visitDate').textContent = formatDate(visitData.date);
+            
+            if (visitData.diagnosisData) {
+                document.getElementById('diagnosisSummary').style.display = 'block';
+                document.getElementById('diagnosisText').textContent = visitData.diagnosisData.primaryDiagnosis;
+                
+                if (visitData.diagnosisData.medications && visitData.diagnosisData.medications.length > 0) {
+                    document.getElementById('medicationsList').innerHTML = `
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Medications:</div>
+                        ${visitData.diagnosisData.medications.map(m => `
+                            <div style="background:white;padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:4px;font-size:13px">
+                                <strong>${m.name}</strong> ${m.dosage} - ${m.frequency}
+                            </div>
+                        `).join('')}
+                    `;
+                }
+                
+                generateTreatmentChecklist(visitData.diagnosisData);
+            }
+            
+            lucide.createIcons();
+        }
+        
+        function generateTreatmentChecklist(diagnosisData) {
+            const checklist = document.getElementById('treatmentChecklist');
+            const template = document.getElementById('templateTreatment');
+            
+            const treatments = [
+                { name: 'Administer prescribed medications', details: diagnosisData.medications?.map(m => m.name).join(', ') || 'Per prescription' },
+                { name: 'Monitor vital signs', details: 'Temperature, pulse, blood pressure' },
+                { name: 'Provide post-treatment care instructions', details: 'Rest, diet, activity restrictions' },
+                { name: 'Schedule follow-up if required', details: diagnosisData.followUpRequired !== 'no' ? `Follow-up in ${diagnosisData.followUpRequired}` : 'No follow-up needed' }
+            ];
+            
+            treatments.forEach((t, index) => {
+                const clone = template.cloneNode(true);
+                clone.id = '';
+                clone.style.display = 'flex';
+                clone.querySelector('.treatment-name').textContent = t.name;
+                clone.querySelector('.treatment-details').textContent = t.details;
+                clone.querySelector('.treatment-checkbox').dataset.index = index;
+                clone.querySelector('.treatment-checkbox').addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        completedTreatments.push(t.name);
+                        clone.classList.add('completed');
+                    } else {
+                        completedTreatments = completedTreatments.filter(x => x !== t.name);
+                        clone.classList.remove('completed');
+                    }
+                });
+                checklist.appendChild(clone);
+            });
+            
+            lucide.createIcons();
+        }
+        
+        function addCustomTreatment() {
+            const input = document.getElementById('customTreatment');
+            const name = input.value.trim();
+            if (!name) return;
+            
+            customTreatments.push(name);
+            
+            const checklist = document.getElementById('treatmentChecklist');
+            const template = document.getElementById('templateTreatment');
+            const clone = template.cloneNode(true);
+            clone.id = '';
+            clone.style.display = 'flex';
+            clone.querySelector('.treatment-name').textContent = name;
+            clone.querySelector('.treatment-details').textContent = 'Custom treatment';
+            clone.querySelector('.treatment-checkbox').dataset.custom = true;
+            clone.querySelector('.treatment-checkbox').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    completedTreatments.push(name);
+                    clone.classList.add('completed');
+                } else {
+                    completedTreatments = completedTreatments.filter(x => x !== name);
+                    clone.classList.remove('completed');
+                }
+            });
+            checklist.appendChild(clone);
+            
+            input.value = '';
+            lucide.createIcons();
+        }
+        
+        function addInjection() {
+            const template = document.getElementById('injectionTemplate');
+            const clone = template.cloneNode(true);
+            clone.id = '';
+            clone.style.display = 'block';
+            document.getElementById('injectionList').appendChild(clone);
+            lucide.createIcons();
+        }
+        
+        function removeInjection(btn) {
+            btn.closest('.injection-form').remove();
+        }
+        
+        function getInjections() {
+            const injections = [];
+            document.querySelectorAll('.injection-form:not(#injectionTemplate)').forEach(item => {
+                const name = item.querySelector('.injection-name').value.trim();
+                const dose = item.querySelector('.injection-dose').value.trim();
+                const route = item.querySelector('.injection-route').value;
+                if (name) {
+                    injections.push({ name, dose, route });
+                }
+            });
+            return injections;
+        }
+        
+        async function saveTreatmentProgress() {
+            const treatmentData = collectTreatmentData();
+            treatmentData.isDraft = true;
+            
+            await db.collection('visits').doc(visitId).update({
+                treatmentData: treatmentData,
+                [`stageData.treatment`]: {
+                    completedTreatments: completedTreatments,
+                    customTreatments: customTreatments,
+                    savedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }
+            });
+            
+            showToast('Treatment progress saved', 'success');
+        }
+        
+        function collectTreatmentData() {
+            return {
+                completedTreatments: completedTreatments,
+                customTreatments: customTreatments,
+                injections: getInjections(),
+                postVitals: {
+                    temperature: document.getElementById('postTemp').value,
+                    pulse: document.getElementById('postPulse').value,
+                    bpSystolic: document.getElementById('postBPSys').value,
+                    bpDiastolic: document.getElementById('postBPDia').value
+                },
+                observations: document.getElementById('treatmentObservations').value.trim(),
+                patientResponse: document.getElementById('patientResponse').value,
+                administeredBy: currentUser.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+        }
+        
+        async function completeTreatment() {
+            try {
+                const treatmentData = collectTreatmentData();
+                treatmentData.isDraft = false;
+                treatmentData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
+                
+                const dischargeData = {
+                    diagnosis: visitData.diagnosisData?.primaryDiagnosis || 'N/A',
+                    treatmentSummary: `Treatment completed. Patient response: ${treatmentData.patientResponse}. ${treatmentData.observations || ''}`,
+                    prescription: visitData.diagnosisData?.medications?.map(m => `${m.name} ${m.dosage} (${m.frequency})`).join(', ') || '',
+                    followUpRequired: visitData.diagnosisData?.followUpRequired || 'no',
+                    specialInstructions: visitData.diagnosisData?.treatmentInstructions || '',
+                    conditions: ['Stable', treatmentData.patientResponse === 'good' ? 'Improved' : 'Under Observation'],
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    dischargedBy: currentUser.uid
+                };
+                
+                await db.collection('visits').doc(visitId).update({
+                    treatmentData: treatmentData,
+                    currentStage: 'discharge',
+                    status: 'completed',
+                    dischargeData: dischargeData,
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await db.collection('notifications').add({
+                    userId: visitData.patientId,
+                    type: 'discharge',
+                    title: 'Treatment Complete - Ready for Discharge',
+                    message: `Your treatment has been completed. Please check out at the reception.`,
+                    visitId: visitId,
+                    read: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await logActivity(currentUser.uid, 'treatment-complete', `Completed treatment for ${visitData.patientName}`);
+                
+                showToast('Treatment completed and patient discharged!', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'visit-workflow.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error completing treatment:', error);
+                showToast('Error completing treatment', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

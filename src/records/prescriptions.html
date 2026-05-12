@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prescriptions - Doctor</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand">
+                    <h2>Health Records</h2>
+                    <p>Koladeisi University</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
+                    <a href="prescriptions.html" class="nav-item active"><i data-lucide="pill"></i>Prescriptions</a>
+                    <a href="lab-results.html" class="nav-item"><i data-lucide="flask-conical"></i>Lab Results</a>
+                    <a href="vitals.html" class="nav-item"><i data-lucide="activity"></i>Vitals</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Prescriptions</h1>
+                        <p>Manage prescriptions</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="openPrescModal()"><i data-lucide="plus"></i> New Prescription</button>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Medication</th>
+                                    <th>Dosage</th>
+                                    <th>Frequency</th>
+                                    <th>Duration</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prescTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="modal-overlay" id="prescModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">New Prescription</h3>
+                <button class="modal-close" onclick="closePrescModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="prescForm">
+                    <div class="form-group">
+                        <label>Patient</label>
+                        <select id="prescPatient" required><option value="">Select patient</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Medication</label>
+                        <input type="text" id="prescMedication" placeholder="Medication name" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Dosage</label>
+                            <input type="text" id="prescDosage" placeholder="e.g., 1 tablet" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Frequency</label>
+                            <select id="prescFreq" required>
+                                <option value="once-daily">Once Daily</option>
+                                <option value="twice-daily">Twice Daily</option>
+                                <option value="three-times-daily">Three Times Daily</option>
+                                <option value="as-needed">As Needed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Duration</label>
+                        <input type="text" id="prescDuration" placeholder="e.g., 7 days" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Instructions</label>
+                        <textarea id="prescInstructions" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closePrescModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="savePrescription()">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="prescriptions.js"></script>
+    <script>
+        lucide.createIcons();
+        (async function() {
+            const result = await guardPage();
+            if (!result) return;
+        })();
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('sidebar-hidden');
+            toggleBtn.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.classList.toggle('sidebar-open');
+        }
+    </script>
+</body>
+</html>
