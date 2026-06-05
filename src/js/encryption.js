@@ -193,6 +193,120 @@ const Encryption = (() => {
         return await importPublicKey(data.publicKey);
     }
 
+    // =====================================================
+    // Document-specified Field-Level Encryption API
+    // AES-256-GCM with random IV per operation
+    // Returns base64(IV + cipherText) format per spec
+    // =====================================================
+
+    const FIELD_KEY_NAME = 'ku-dhrms-field-encryption-key';
+
+    async function getFieldEncryptionKey() {
+        let key = sessionStorage.getItem(FIELD_KEY_NAME);
+        if (key) return key;
+
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not authenticated');
+
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) throw new Error('User not found');
+
+        const userData = userDoc.data();
+        key = userData.fieldEncryptionKey || null;
+
+        if (!key) {
+            key = await generateFieldKey();
+            await db.collection('users').doc(user.uid).update({
+                fieldEncryptionKey: key
+            });
+        }
+
+        sessionStorage.setItem(FIELD_KEY_NAME, key);
+        return key;
+    }
+
+    async function generateFieldKey() {
+        const key = crypto.getRandomValues(new Uint8Array(32));
+        return bufToBase64(key.buffer);
+    }
+
+    async function encryptField(plaintext) {
+        if (!plaintext && plaintext !== '') return null;
+        const keyB64 = await getFieldEncryptionKey();
+        const keyBuf = base64ToBuf(keyB64);
+        const aesKey = await crypto.subtle.importKey(
+            'raw', keyBuf,
+            { name: 'AES-GCM', length: 256 },
+            false, ['encrypt']
+        );
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(String(plaintext));
+        const ciphertext = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv: iv },
+            aesKey,
+            encoded
+        );
+        const combined = new Uint8Array(iv.length + new Uint8Array(ciphertext).length);
+        combined.set(iv, 0);
+        combined.set(new Uint8Array(ciphertext), iv.length);
+        return bufToBase64(combined.buffer);
+    }
+
+    async function decryptField(cipherB64) {
+        if (!cipherB64) return null;
+        const keyB64 = await getFieldEncryptionKey();
+        const keyBuf = base64ToBuf(keyB64);
+        const aesKey = await crypto.subtle.importKey(
+            'raw', keyBuf,
+            { name: 'AES-GCM', length: 256 },
+            false, ['decrypt']
+        );
+        const combined = new Uint8Array(base64ToBuf(cipherB64));
+        const iv = combined.slice(0, 12);
+        const ciphertext = combined.slice(12);
+        const decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            aesKey,
+            ciphertext
+        );
+        return new TextDecoder().decode(decrypted);
+    }
+
+    async function encryptPatientFields(data) {
+        const sensitiveFields = [
+            'surname', 'firstname', 'dob', 'bloodGroup', 'genotype',
+            'phone', 'email', 'address', 'emergencyName', 'emergencyPhone',
+            'emergencyAddress', 'existingConditions', 'allergies'
+        ];
+        const result = {};
+        for (const [key, value] of Object.entries(data)) {
+            if (sensitiveFields.includes(key) && value) {
+                result[key + '_enc'] = await encryptField(value);
+            } else {
+                result[key] = value;
+            }
+        }
+        return result;
+    }
+
+    async function decryptPatientFields(data) {
+        const sensitiveFields = [
+            'surname_enc', 'firstname_enc', 'dob_enc', 'bloodGroup_enc', 'genotype_enc',
+            'phone_enc', 'email_enc', 'address_enc', 'emergencyName_enc', 'emergencyPhone_enc'
+        ];
+        const result = {};
+        for (const [key, value] of Object.entries(data)) {
+            if (sensitiveFields.includes(key)) {
+                const plainKey = key.replace('_enc', '');
+                const decrypted = await decryptField(value);
+                result[plainKey] = decrypted !== null ? decrypted : '[encrypted]';
+            } else {
+                result[key] = value;
+            }
+        }
+        return result;
+    }
+
     return {
         generateKeyPair,
         exportPublicKey,
@@ -206,6 +320,11 @@ const Encryption = (() => {
         decryptPrivateKey,
         getPublicKeyFromUser,
         base64ToBuf,
-        bufToBase64
+        bufToBase64,
+        encryptField,
+        decryptField,
+        encryptPatientFields,
+        decryptPatientFields,
+        getFieldEncryptionKey
     };
 })();

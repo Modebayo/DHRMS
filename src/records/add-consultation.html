@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>New Consultation - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>Patients</a>
+                    <a href="index.html" class="nav-item"><i data-lucide="file-text"></i>Records</a>
+                    <a href="add-consultation.html" class="nav-item active"><i data-lucide="stethoscope"></i>New Consultation</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-role" id="userRole">Staff</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>New Consultation</h1>
+                        <p>SOAP-format clinical consultation record</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <span id="autoSaveIndicator" style="font-size:12px;color:var(--text-muted);margin-right:12px;">Auto-save enabled</span>
+                    <button class="btn btn-primary" onclick="saveConsultation()">
+                        <i data-lucide="save" style="width:16px;height:16px"></i> Save Consultation
+                    </button>
+                </div>
+            </header>
+
+            <div class="content" style="max-width:1000px;margin:0 auto;">
+                <div id="alertBox" class="alert" style="display:none;"></div>
+                <div id="autoSaveToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--success-600);color:white;padding:8px 16px;border-radius:8px;font-size:13px;display:none;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);"></div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="user" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i>Patient Information</h3>
+                    </div>
+                    <div style="padding:20px;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="required-field">Patient</label>
+                                <select id="patientSelect" required>
+                                    <option value="">Select patient...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Consultation Date</label>
+                                <input type="date" id="consultDate">
+                            </div>
+                        </div>
+                        <div id="patientSummary" style="display:none;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);margin-top:12px;"></div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="message-square" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i><strong>S</strong> - Subjective</h3>
+                    </div>
+                    <div style="padding:20px;">
+                        <div class="form-group">
+                            <label class="required-field">Chief Complaint (Presenting Complaint)</label>
+                            <input type="text" id="chiefComplaint" placeholder="e.g., Headache, Fever, Abdominal pain" required>
+                        </div>
+                        <div class="form-group">
+                            <label>History of Presenting Complaint</label>
+                            <textarea id="hpc" rows="3" placeholder="Onset, duration, character, location, radiation, aggravating/relieving factors, associated symptoms (use SOCRATES framework)"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Review of Systems</label>
+                            <textarea id="ros" rows="2" placeholder="Relevant review of other body systems"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="activity" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i><strong>O</strong> - Objective</h3>
+                    </div>
+                    <div style="padding:20px;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Temperature (°C)</label>
+                                <input type="number" id="temperature" step="0.1" placeholder="36.5">
+                            </div>
+                            <div class="form-group">
+                                <label>Heart Rate (bpm)</label>
+                                <input type="number" id="heartRate" placeholder="72">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Blood Pressure (mmHg)</label>
+                                <div class="form-row" style="gap:8px;">
+                                    <input type="number" id="bpSystolic" placeholder="120" style="flex:1;">
+                                    <span style="align-self:center;">/</span>
+                                    <input type="number" id="bpDiastolic" placeholder="80" style="flex:1;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Respiratory Rate (/min)</label>
+                                <input type="number" id="respRate" placeholder="16">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>SpO2 (%)</label>
+                                <input type="number" id="spo2" placeholder="98" min="0" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label>Weight (kg)</label>
+                                <input type="number" id="weight" step="0.1" placeholder="70">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Physical Examination Findings</label>
+                            <textarea id="examFindings" rows="4" placeholder="General appearance, head/neck, chest, abdomen, extremities, neurological findings"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="search" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i><strong>A</strong> - Assessment</h3>
+                    </div>
+                    <div style="padding:20px;">
+                        <div class="form-group">
+                            <label class="required-field">Provisional Diagnosis</label>
+                            <input type="text" id="provisionalDx" placeholder="Working diagnosis based on subjective + objective findings" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirmed Diagnosis</label>
+                            <input type="text" id="confirmedDx" placeholder="Definitive diagnosis (update after investigations)">
+                        </div>
+                        <div class="form-group">
+                            <label>Differential Diagnoses</label>
+                            <textarea id="differentialDx" rows="2" placeholder="Other possible diagnoses being considered"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="clipboard-check" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i><strong>P</strong> - Plan</h3>
+                    </div>
+                    <div style="padding:20px;">
+                        <div class="form-group">
+                            <label>Treatment Plan</label>
+                            <textarea id="treatmentPlan" rows="3" placeholder="Medications, procedures, referrals, follow-up plan"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Investigations Ordered</label>
+                            <textarea id="investigations" rows="2" placeholder="Lab tests, imaging, other investigations"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Follow-Up Instructions</label>
+                            <textarea id="followUp" rows="2" placeholder="When to return, referral to specialist, health education"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Severity</label>
+                                <select id="severity">
+                                    <option value="mild">Mild</option>
+                                    <option value="moderate" selected>Moderate</option>
+                                    <option value="severe">Severe</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="status">
+                                    <option value="active">Active</option>
+                                    <option value="ongoing">Ongoing</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="referred">Referred</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:12px;justify-content:flex-end;padding:0 0 40px;">
+                    <a href="index.html" class="btn btn-outline">Cancel</a>
+                    <button class="btn btn-primary" onclick="saveConsultation()" id="saveBtn">
+                        <span class="btn-text"><i data-lucide="save"></i> Save & Complete</span>
+                        <span class="spinner" style="display:none;"></span>
+                    </button>
+                </div>
+
+                <input type="hidden" id="draftId">
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <script>
+        let currentUser = null;
+        let userData = null;
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        (async function() {
+            initTheme();
+            const result = await guardPage(['doctor', 'nurse', 'administrator']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            if (userData.status === 'inactive') {
+                window.location.href = '../dashboard/index.html';
+                return;
+            }
+
+            document.getElementById('userName').textContent = userData.firstName + ' ' + userData.lastName;
+            document.getElementById('userAvatar').textContent = (userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '');
+            document.getElementById('userRole').textContent = userData.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('consultDate').value = today;
+
+            loadPatients();
+            startAutoSave();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        })();
+
+        async function loadPatients() {
+            const select = document.getElementById('patientSelect');
+            try {
+                const snapshot = await db.collection('patients').orderBy('surname_enc').get();
+                select.innerHTML = '<option value="">Select patient...</option>';
+                for (const doc of snapshot.docs) {
+                    const data = doc.data();
+                    const decrypted = await Encryption.decryptPatientFields(data);
+                    select.innerHTML += '<option value="' + doc.id + '">' + escapeHtml(decrypted.surname + ', ' + decrypted.firstname) + ' (' + escapeHtml(data.clinicNumber) + ')</option>';
+                }
+            } catch (error) {
+                console.error('Error loading patients:', error);
+                select.innerHTML = '<option value="">Error loading patients</option>';
+            }
+        }
+
+        document.getElementById('patientSelect')?.addEventListener('change', async function() {
+            const patientId = this.value;
+            const summary = document.getElementById('patientSummary');
+            if (!patientId) {
+                summary.style.display = 'none';
+                return;
+            }
+            try {
+                const doc = await db.collection('patients').doc(patientId).get();
+                if (doc.exists) {
+                    const decrypted = await Encryption.decryptPatientFields(doc.data());
+                    const data = doc.data();
+                    summary.innerHTML =
+                        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:13px;">' +
+                            '<div><strong>Name:</strong> ' + escapeHtml(decrypted.surname + ' ' + decrypted.firstname) + '</div>' +
+                            '<div><strong>Clinic No:</strong> ' + escapeHtml(data.clinicNumber) + '</div>' +
+                            '<div><strong>DOB:</strong> ' + escapeHtml(decrypted.dob || 'N/A') + '</div>' +
+                            '<div><strong>Gender:</strong> ' + escapeHtml(data.gender || 'N/A') + '</div>' +
+                        '</div>';
+                    summary.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading patient:', error);
+            }
+        });
+
+        // =====================================================
+        // 60-second auto-save
+        // =====================================================
+        let autoSaveTimer = null;
+        let hasUnsavedChanges = false;
+
+        function markChanged() {
+            hasUnsavedChanges = true;
+            document.getElementById('autoSaveIndicator').textContent = 'Unsaved changes...';
+            document.getElementById('autoSaveIndicator').style.color = 'var(--warning-600)';
+        }
+
+        document.querySelectorAll('#patientSelect, #chiefComplaint, #hpc, #ros, #provisionalDx, #confirmedDx, #differentialDx, #treatmentPlan, #investigations, #followUp, #examFindings, #severity, #status, #temperature, #heartRate, #bpSystolic, #bpDiastolic, #respRate, #spo2, #weight, #consultDate').forEach(el => {
+            el.addEventListener('change', markChanged);
+            el.addEventListener('input', markChanged);
+        });
+
+        function startAutoSave() {
+            autoSaveTimer = setInterval(async () => {
+                if (!hasUnsavedChanges) return;
+                const patientId = document.getElementById('patientSelect').value;
+                if (!patientId) return;
+
+                await saveDraft();
+            }, 60000);
+        }
+
+        async function saveDraft() {
+            const patientId = document.getElementById('patientSelect').value;
+            if (!patientId) return;
+
+            const draftData = collectFormData();
+            draftData.status = 'draft';
+            draftData.doctorRef = currentUser.uid;
+            draftData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+
+            const draftId = document.getElementById('draftId').value;
+
+            try {
+                if (draftId) {
+                    await db.collection('consultations').doc(draftId).update(draftData);
+                } else {
+                    draftData.patientRef = patientId;
+                    draftData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    draftData.createdBy = currentUser.uid;
+                    const ref = await db.collection('consultations').add(draftData);
+                    document.getElementById('draftId').value = ref.id;
+                }
+                hasUnsavedChanges = false;
+                document.getElementById('autoSaveIndicator').textContent = 'Auto-saved ' + new Date().toLocaleTimeString();
+                document.getElementById('autoSaveIndicator').style.color = 'var(--text-muted)';
+                showAutoSaveToast('Draft saved at ' + new Date().toLocaleTimeString());
+            } catch (error) {
+                console.error('Auto-save error:', error);
+                document.getElementById('autoSaveIndicator').textContent = 'Auto-save failed';
+                document.getElementById('autoSaveIndicator').style.color = 'var(--danger-600)';
+            }
+        }
+
+        function showAutoSaveToast(msg) {
+            const toast = document.getElementById('autoSaveToast');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            clearTimeout(toast._hide);
+            toast._hide = setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        function collectFormData() {
+            return {
+                chiefComplaint: sanitizeInput(document.getElementById('chiefComplaint').value),
+                hpc: sanitizeInput(document.getElementById('hpc').value),
+                ros: sanitizeInput(document.getElementById('ros').value),
+                provisionalDx: sanitizeInput(document.getElementById('provisionalDx').value),
+                confirmedDx: sanitizeInput(document.getElementById('confirmedDx').value),
+                differentialDx: sanitizeInput(document.getElementById('differentialDx').value),
+                treatmentPlan: sanitizeInput(document.getElementById('treatmentPlan').value),
+                investigations: sanitizeInput(document.getElementById('investigations').value),
+                followUp: sanitizeInput(document.getElementById('followUp').value),
+                examFindings: sanitizeInput(document.getElementById('examFindings').value),
+                temperature: parseFloat(document.getElementById('temperature').value) || null,
+                heartRate: parseInt(document.getElementById('heartRate').value) || null,
+                bpSystolic: parseInt(document.getElementById('bpSystolic').value) || null,
+                bpDiastolic: parseInt(document.getElementById('bpDiastolic').value) || null,
+                respRate: parseInt(document.getElementById('respRate').value) || null,
+                spo2: parseInt(document.getElementById('spo2').value) || null,
+                weight: parseFloat(document.getElementById('weight').value) || null,
+                severity: document.getElementById('severity').value,
+                status: document.getElementById('status').value,
+                consultationDate: document.getElementById('consultDate').value
+            };
+        }
+
+        async function saveConsultation() {
+            const patientId = document.getElementById('patientSelect').value;
+            const chiefComplaint = document.getElementById('chiefComplaint').value.trim();
+            const provisionalDx = document.getElementById('provisionalDx').value.trim();
+
+            if (!patientId) {
+                showAlert('alertBox', 'Please select a patient', 'error');
+                return;
+            }
+            if (!chiefComplaint) {
+                showAlert('alertBox', 'Chief Complaint is required (Subjective)', 'error');
+                return;
+            }
+            if (!provisionalDx) {
+                showAlert('alertBox', 'Provisional Diagnosis is required (Assessment)', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.spinner').style.display = 'inline-block';
+
+            try {
+                const formData = collectFormData();
+                formData.patientRef = patientId;
+                formData.doctorRef = currentUser.uid;
+                formData.status = 'completed';
+                formData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
+                formData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+
+                const draftId = document.getElementById('draftId').value;
+
+                if (draftId) {
+                    await db.collection('consultations').doc(draftId).update(formData);
+                } else {
+                    formData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    formData.createdBy = currentUser.uid;
+                    await db.collection('consultations').add(formData);
+                }
+
+                await logAuditEvent(currentUser.uid, 'CREATE_CONSULTATION', 'consultations', draftId || '',
+                    'Created consultation: ' + chiefComplaint);
+
+                showToast('Consultation saved successfully!', 'success');
+                clearInterval(autoSaveTimer);
+                setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+
+            } catch (error) {
+                console.error('Save error:', error);
+                showAlert('alertBox', 'Error saving consultation: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.spinner').style.display = 'none';
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

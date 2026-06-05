@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>Admin Control Panel - Koladaisi University</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/records.css">
     <link rel="stylesheet" href="../css/mobile-responsive.css">
     <script src="../js/theme.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/key-manager.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../components/emergency-sidebar.js"></script>
     <script src="../components/enhanced-chat.js"></script>
@@ -130,6 +134,12 @@
                         <div class="stat-label">Total Users</div>
                         <div class="stat-trend" style="font-size:11px;color:var(--text-muted);margin-top:4px;">Click to view</div>
                     </div>
+                    <div class="stat-card" onclick="location.href='users.html?status=pending_approval'" style="cursor:pointer;">
+                        <div class="stat-header"><div class="stat-icon amber"><i data-lucide="hourglass"></i></div></div>
+                        <div class="stat-value" id="pendingApprovals">0</div>
+                        <div class="stat-label">Pending Approvals</div>
+                        <div class="stat-trend" style="font-size:11px;color:var(--text-muted);margin-top:4px;">Click to review</div>
+                    </div>
                     <div class="stat-card">
                         <div class="stat-header"><div class="stat-icon green"><i data-lucide="file-text"></i></div></div>
                         <div class="stat-value" id="totalRecords">0</div>
@@ -199,39 +209,45 @@
                 </div>
             </div>
         </main>
+
+        <div class="notification-panel" id="notificationPanel">
+            <div class="notification-header"><h3>Notifications</h3><button onclick="toggleNotifications()"><i data-lucide="x"></i></button></div>
+            <div class="notification-list" id="notificationList"></div>
+        </div>
+
+        <div class="chat-widget" id="chatWidget" style="display:none">
+            <div class="chat-header"><h3><i data-lucide="bot"></i> Health Assistant</h3><button onclick="toggleChat()"><i data-lucide="x"></i></button></div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input"><input type="text" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter') sendMessage()"><button onclick="sendMessage()"><i data-lucide="send"></i></button></div>
+        </div>
     </div>
     
     <script>
-        lucide.createIcons();
+        initTheme();
         
         let currentUser = null;
         let allUsersData = [];
         let selectedUserId = null;
         
-        // Auth check
-        auth.onAuthStateChanged(async (user) => {
-            if (!user) { window.location.href = '../auth/login.html'; return; }
-            
-            currentUser = user;
-            const doc = await db.collection('users').doc(user.uid).get();
-            
-            if (!doc.exists || doc.data().role !== 'admin') {
-                window.location.href = '../dashboard/index.html';
-                return;
-            }
-            
-            const userData = doc.data();
+        guardPage().then(result => {
+            if (!result) return;
+            currentUser = result.user;
+            const userData = result.userData;
             document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
             document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
-            
             document.getElementById('app').style.display = 'flex';
-            
-            // Load all data
             loadAllData();
-            
-            // Set up real-time listeners
             setupRealtimeListeners();
-        });
+        }).catch(err => console.error('Auth guard error:', err));
+
+        function toggleChat() {
+            const w = document.getElementById('chatWidget');
+            w.style.display = w.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function sendMessage() {
+            sendEnhancedMessage();
+        }
         
         async function loadAllData() {
             await Promise.all([
@@ -252,12 +268,38 @@
                     db.collection('vitals').get()
                 ]);
                 
+                const pendingCount = usersSnap.docs.filter(d => d.data().status === 'pending_approval').length;
+                
+                const notifDot = document.getElementById('notifDot');
+                if (notifDot) {
+                    notifDot.style.display = pendingCount > 0 ? 'block' : 'none';
+                    notifDot.title = pendingCount + ' pending ' + (pendingCount === 1 ? 'approval' : 'approvals');
+                }
+                
                 document.getElementById('totalUsers').textContent = usersSnap.size;
+                document.getElementById('pendingApprovals').textContent = pendingCount;
                 document.getElementById('totalRecords').textContent = recordsSnap.size;
                 document.getElementById('totalAppointments').textContent = aptSnap.size;
                 document.getElementById('totalPrescriptions').textContent = prescSnap.size;
                 document.getElementById('totalLabResults').textContent = labSnap.size;
                 document.getElementById('totalVitals').textContent = vitalsSnap.size;
+
+                const pendingUsers = usersSnap.docs.filter(d => d.data().status === 'pending_approval');
+                const notifList = document.getElementById('notificationList');
+                if (notifList) {
+                    if (pendingUsers.length > 0) {
+                        notifList.innerHTML = pendingUsers.slice(0, 10).map(doc => {
+                            const u = doc.data();
+                            return '<div class="notification-item unread" onclick="location.href=\'users.html?status=pending_approval\'">' +
+                                '<div class="notification-title">Pending Approval: ' + escapeHtml(u.firstName || '') + ' ' + escapeHtml(u.lastName || '') + '</div>' +
+                                '<div class="notification-desc">' + escapeHtml(u.role || 'user') + ' account requires approval</div>' +
+                                '<div class="notification-time">' + (u.createdAt ? formatTimestamp(u.createdAt) : 'Recently') + '</div>' +
+                                '</div>';
+                        }).join('');
+                    } else {
+                        notifList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">No pending notifications</div>';
+                    }
+                }
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
@@ -276,6 +318,7 @@
         
         function renderUsersTable(users) {
             const tbody = document.getElementById('allUsersTable');
+            if (!tbody) return;
             
             if (users.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">📋</div><h3>No users found</h3></td></tr>';
@@ -399,8 +442,7 @@
         }
         
         async function editUser(userId) {
-            // Implementation for editing user
-            showToast('Edit user feature coming soon', 'info');
+            window.location.href = 'users.html?edit=' + userId;
         }
         
         async function suspendUser(userId) {
@@ -433,7 +475,7 @@
             }
         }
         
-        async function deleteUser() {
+        async function deleteUserConfirmed() {
             if (!selectedUserId) return;
             if (!confirm('FINAL CONFIRMATION: Delete this user and all their data?')) return;
             

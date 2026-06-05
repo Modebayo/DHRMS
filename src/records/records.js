@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     currentUser = result.user;
     userData = result.userData;
+    if (userData.status === 'inactive') {
+        window.location.href = '../dashboard/index.html';
+        return;
+    }
+    populateUserProfile();
     
     updateNavigation();
     setupFilters();
@@ -22,11 +27,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 function updateNavigation() {
     const role = userData.role;
     
-    if (role === 'doctor' || role === 'nurse') {
+    if (role === 'doctor' || role === 'nurse' || role === 'records_officer') {
         document.getElementById('doctorNav').style.display = 'block';
     }
-    
-    if (role === 'admin') {
+
+    if (role === 'admin' || role === 'administrator') {
         document.getElementById('doctorNav').style.display = 'block';
         document.getElementById('adminNav').style.display = 'block';
     }
@@ -399,8 +404,87 @@ function printRecord() {
     printWindow.print();
 }
 
-function exportRecords() {
-    showToast('Export feature coming soon', 'info');
+async function exportRecords() {
+    showToast('Preparing export...', 'info');
+
+    try {
+        const snapshot = await db.collection('health_records')
+            .orderBy('visitDate', 'desc')
+            .get();
+
+        if (snapshot.empty) {
+            showToast('No records to export', 'warning');
+            return;
+        }
+
+        const userIds = new Set();
+        snapshot.docs.forEach(doc => {
+            const d = doc.data();
+            if (d.patientId) userIds.add(d.patientId);
+            if (d.recordedBy) userIds.add(d.recordedBy);
+        });
+
+        const usersCache = {};
+        for (const id of userIds) {
+            const uDoc = await db.collection('users').doc(id).get();
+            usersCache[id] = uDoc.exists ? uDoc.data() : null;
+        }
+
+        const rows = [['Patient', 'Student ID', 'Department', 'Visit Date', 'Record Type', 'Severity', 'Status', 'Symptoms', 'Diagnosis', 'Treatment', 'Notes', 'Recorded By']];
+
+        for (const doc of snapshot.docs) {
+            const r = doc.data();
+            const patient = usersCache[r.patientId];
+            const recorder = usersCache[r.recordedBy];
+
+            let symptoms = r.encryptedData ? '[Encrypted]' : (r.symptoms || '');
+            let diagnosis = r.encryptedData ? '[Encrypted]' : (r.diagnosis || '');
+            let treatment = r.encryptedData ? '[Encrypted]' : (r.treatment || '');
+            let notes = r.encryptedData ? '[Encrypted]' : (r.notes || '');
+
+            rows.push([
+                patient ? `${patient.firstName || ''} ${patient.lastName || ''}` : 'Unknown',
+                patient?.studentId || 'N/A',
+                formatDepartment(patient?.department),
+                r.visitDate || 'N/A',
+                formatRecordType(r.recordType),
+                r.severity || 'moderate',
+                r.status || 'active',
+                symptoms,
+                diagnosis,
+                treatment,
+                notes,
+                recorder ? `${recorder.firstName || ''} ${recorder.lastName || ''}` : 'N/A'
+            ]);
+        }
+
+        let csv = '';
+        rows.forEach(row => {
+            csv += row.map(cell => {
+                const s = String(cell || '');
+                if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+                    return '"' + s.replace(/"/g, '""') + '"';
+                }
+                return s;
+            }).join(',') + '\n';
+        });
+
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `health_records_export_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast(`Exported ${rows.length - 1} records successfully`, 'success');
+        logActivity(currentUser.uid, 'export', `Exported ${rows.length - 1} health records`);
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Error exporting records: ' + error.message, 'error');
+    }
 }
 
 function formatDate(date) {
@@ -410,4 +494,13 @@ function formatDate(date) {
         month: 'short', 
         day: 'numeric' 
     });
+}
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
 }

@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>Pharmacy</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
@@ -31,6 +35,15 @@
                     <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
                 </div>
             </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile" id="userProfile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-role" id="userRole">Role</span>
+                    </div>
+                </div>
+            </div>
         </aside>
         
         <main class="main-content">
@@ -68,7 +81,7 @@
                     </div>
                     <div class="table-container">
                         <table>
-                            <thead><tr><th>Patient</th><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Prescribed By</th><th>Status</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Patient</th><th>Medication</th><th>Dosage</th><th>Route</th><th>Frequency</th><th>Duration</th><th>Prescribed By</th><th>Status</th><th>Actions</th></tr></thead>
                             <tbody id="prescriptionsTable"></tbody>
                         </table>
                     </div>
@@ -122,6 +135,22 @@
                         </div>
                         <div class="form-group"><label for="duration">Duration</label><input type="text" id="duration" placeholder="e.g., 5 days" required></div>
                     </div>
+                    <div class="form-group">
+                        <label for="route">Route of Administration</label>
+                        <select id="route">
+                            <option value="">Select route</option>
+                            <option value="oral">Oral</option>
+                            <option value="topical">Topical</option>
+                            <option value="intravenous">Intravenous (IV)</option>
+                            <option value="intramuscular">Intramuscular (IM)</option>
+                            <option value="subcutaneous">Subcutaneous (SC)</option>
+                            <option value="inhalation">Inhalation</option>
+                            <option value="sublingual">Sublingual</option>
+                            <option value="rectal">Rectal</option>
+                            <option value="ophthalmic">Ophthalmic (Eye)</option>
+                            <option value="otic">Otic (Ear)</option>
+                        </select>
+                    </div>
                     <div class="form-group"><label for="prescNotes">Instructions</label><textarea id="prescNotes" rows="2" placeholder="Special instructions..."></textarea></div>
                 </form>
             </div>
@@ -133,10 +162,9 @@
     </div>
     
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
     <script src="../js/encryption.js"></script>
     <script src="../js/key-manager.js"></script>
@@ -145,10 +173,24 @@
     <script src="../js/theme.js"></script>
     <script src="pharmacy.js"></script>
     <script>
-        lucide.createIcons();
+        initTheme();
         (async function() {
             const result = await guardPage();
             if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            if (userData.status === 'inactive') {
+                window.location.href = '../dashboard/index.html';
+                return;
+            }
+            populateUserProfile();
+            if (userData.role === 'student') {
+                const f = document.getElementById('prescPatientField');
+                if (f) f.style.display = 'none';
+            }
+            if (typeof loadPatients === 'function') loadPatients();
+            if (typeof subscribePrescriptions === 'function') subscribePrescriptions();
+            if (typeof setupPrescriptionSearch === 'function') setupPrescriptionSearch();
         })();
 
         function toggleSidebar() {

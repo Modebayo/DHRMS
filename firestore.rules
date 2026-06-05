@@ -1,158 +1,248 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isAuthenticated() {
+
+    // =====================================================
+    // HELPER FUNCTIONS
+    // =====================================================
+
+    function isAuth() {
       return request.auth != null;
     }
-    
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+
+    function getRole() {
+      return request.auth.token.role;
     }
-    
+
+    // Support both doc-specified role names and legacy names
+    function roleIn(roles) {
+      return isAuth() && roles.some(r => getRole() == r);
+    }
+
     function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return roleIn(['administrator', 'admin']);
     }
-    
+
     function isDoctor() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+      return isAuth() && getRole() == 'doctor';
     }
-    
+
     function isNurse() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'nurse';
+      return isAuth() && getRole() == 'nurse';
     }
-    
+
+    function isPharmacist() {
+      return isAuth() && getRole() == 'pharmacist';
+    }
+
+    function isLabTech() {
+      return isAuth() && getRole() == 'lab_technician';
+    }
+
+    function isRecordsOfficer() {
+      return isAuth() && getRole() == 'records_officer';
+    }
+
+    function isClinical() {
+      return isDoctor() || isNurse();
+    }
+
     function isMedicalStaff() {
-      return isDoctor() || isNurse() || isAdmin();
+      return isDoctor() || isNurse() || isLabTech() || isPharmacist();
     }
-    
-    function isStudent() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
     }
-    
-    // Validate required string fields
-    function hasValidString(data, field, maxLength) {
-      return data[field] is string && data[field].size() <= maxLength;
+
+    function isPatient() {
+      return isAuth() && getRole() == 'student';
     }
-    
-    // Users collection
+
+    // =====================================================
+    // COLLECTIONS
+    // =====================================================
+
+    // --- patients ---
+    // Administrator: RW | Doctor: R | Nurse: RW | Pharmacist: R | Lab Tech: R | Records Officer: RW
+    match /patients/{patientId} {
+      allow read: if isAuth() && (
+        isAdmin() || isDoctor() || isNurse() || isPharmacist() || isLabTech() || isRecordsOfficer()
+      );
+      allow create: if isAuth() && (
+        isAdmin() || isNurse() || isRecordsOfficer()
+      );
+      allow update: if isAuth() && (
+        isAdmin() || isNurse() || isRecordsOfficer()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- consultations ---
+    // Administrator: R | Doctor: RW | Nurse: RW | Others: No Access
+    match /consultations/{consultId} {
+      allow read: if isAuth() && (
+        isAdmin() || isDoctor() || isNurse()
+      );
+      allow create: if isAuth() && (
+        isDoctor() || isNurse()
+      );
+      allow update: if isAuth() && (
+        isDoctor() || isNurse()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- prescriptions ---
+    // Administrator: R | Doctor: RW | Nurse: R | Pharmacist: RW | Others: No Access
+    match /prescriptions/{prescriptionId} {
+      allow read: if isAuth() && (
+        isAdmin() || isDoctor() || isNurse() || isPharmacist()
+      );
+      allow create: if isAuth() && (
+        isDoctor()
+      );
+      allow update: if isAuth() && (
+        isDoctor() || isPharmacist()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- lab_requests ---
+    // Administrator: R | Doctor: RW | Nurse: R | Lab Tech: RW | Others: No Access
+    match /lab_requests/{requestId} {
+      allow read: if isAuth() && (
+        isAdmin() || isDoctor() || isNurse() || isLabTech()
+      );
+      allow create: if isAuth() && (
+        isDoctor() || isLabTech()
+      );
+      allow update: if isAuth() && (
+        isDoctor() || isLabTech()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- lab_results ---
+    // Administrator: R | Doctor: R | Nurse: R | Lab Tech: RW | Others: No Access
+    match /lab_results/{resultId} {
+      allow read: if isAuth() && (
+        isAdmin() || isDoctor() || isNurse() || isLabTech()
+      );
+      allow create: if isAuth() && (
+        isLabTech()
+      );
+      allow update: if isAuth() && (
+        isLabTech()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- appointments ---
+    // Administrator: RW | Doctor: RW | Nurse: RW | Records Officer: RW | Others: No Access
+    match /appointments/{appointmentId} {
+      allow read: if isAuth() && (
+        isAdmin() || isDoctor() || isNurse() || isRecordsOfficer() || isPatient()
+      );
+      allow create: if isAuth() && (
+        isAdmin() || isDoctor() || isNurse() || isRecordsOfficer() || isPatient()
+      );
+      allow update: if isAuth() && (
+        isAdmin() || isDoctor() || isNurse() || isRecordsOfficer()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- audit_logs ---
+    // Administrator: list/read | All authenticated: create only | NEVER update/delete
+    match /audit_logs/{logId} {
+      allow read: if isAuth() && isAdmin();
+      allow list: if isAuth() && isAdmin();
+      allow create: if isAuth();
+      allow update, delete: if false;
+    }
+
+    // --- system_counters ---
+    // Administrator only
+    match /system_counters/{counterId} {
+      allow read: if isAuth() && isAdmin();
+      allow write: if isAuth() && isAdmin();
+    }
+
+    // --- users (Firebase Auth mirror) ---
     match /users/{userId} {
-      allow read: if isAuthenticated() && (
-        isOwner(userId) || 
-        isAdmin() || 
-        isDoctor() || 
-        isNurse()
+      allow read: if isAuth() && (
+        isOwner(userId) || isAdmin() || isDoctor() || isNurse()
       );
-      
-      allow create: if isAdmin() || (
-        // Users can create their own profile during signup
-        isOwner(userId) && 
-        request.resource.data.keys().hasAll(['email', 'role', 'firstName', 'lastName']) &&
-        hasValidString(request.resource.data, 'firstName', 50) &&
-        hasValidString(request.resource.data, 'lastName', 50) &&
-        request.resource.data.role in ['student', 'doctor', 'nurse', 'admin']
-      );
-      
+      allow create: if isOwner(userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
-    
-    // Health records
+
+    // --- health_records (legacy, keep for compatibility) ---
     match /health_records/{recordId} {
-      allow read: if isAuthenticated();
-      allow create: if isMedicalStaff() && (
-        hasValidString(request.resource.data, 'diagnosis', 500) &&
-        hasValidString(request.resource.data, 'symptoms', 1000)
-      );
-      allow update: if isMedicalStaff();
+      allow read: if isAuth() && (isAdmin() || isClinical());
+      allow create: if isAuth() && (isAdmin() || isClinical());
+      allow update: if isAuth() && (isAdmin() || isClinical());
       allow delete: if isAdmin();
     }
-    
-    // Appointments
-    match /appointments/{appointmentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (
-        request.resource.data.keys().hasAll(['patientId', 'doctorId', 'date', 'time']) &&
-        request.resource.data.status == 'pending'
-      );
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
-    }
-    
-    // Prescriptions
-    match /prescriptions/{prescriptionId} {
-      allow read: if isAuthenticated();
-      allow create: if isMedicalStaff() && (
-        hasValidString(request.resource.data, 'medication', 200) &&
-        hasValidString(request.resource.data, 'dosage', 100)
-      );
-      allow update: if isMedicalStaff();
-      allow delete: if isAdmin();
-    }
-    
-    // Lab results
-    match /lab_results/{labId} {
-      allow read: if isAuthenticated();
-      allow create: if isMedicalStaff() && (
-        hasValidString(request.resource.data, 'result', 2000)
-      );
-      allow update: if isMedicalStaff();
-      allow delete: if isAdmin();
-    }
-    
-    // Vitals
+
+    // --- vitals ---
     match /vitals/{vitalId} {
-      allow read: if isAuthenticated();
-      allow create: if isMedicalStaff();
-      allow update: if isMedicalStaff();
+      allow read: if isAuth() && (isAdmin() || isClinical());
+      allow create: if isAuth() && (isAdmin() || isClinical());
+      allow update: if isAuth() && (isAdmin() || isClinical());
       allow delete: if isAdmin();
     }
-    
-    // Tasks
-    match /tasks/{taskId} {
-      allow read: if isAuthenticated();
-      allow create: if isMedicalStaff() && (
-        hasValidString(request.resource.data, 'description', 500)
-      );
-      allow update: if isMedicalStaff();
-      allow delete: if isAdmin();
-    }
-    
-    // Inventory
+
+    // --- inventory ---
     match /inventory/{itemId} {
-      allow read: if isAuthenticated();
-      allow create: if isMedicalStaff() && (
-        hasValidString(request.resource.data, 'name', 200) &&
-        request.resource.data.quantity is int &&
-        request.resource.data.quantity >= 0
-      );
-      allow update: if isMedicalStaff();
+      allow read: if isAuth() && (isAdmin() || isPharmacist() || isDoctor());
+      allow create: if isAuth() && (isAdmin() || isPharmacist());
+      allow update: if isAuth() && (isAdmin() || isPharmacist());
       allow delete: if isAdmin();
     }
-    
-    // Activity logs
+
+    // --- activity_logs (legacy, keep for compatibility) ---
     match /activity_logs/{logId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated();
+      allow create: if isAuth();
       allow update, delete: if false;
     }
-    
-    // Notifications
-    match /notifications/{notificationId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+
+    // --- tasks ---
+    match /tasks/{taskId} {
+      allow read: if isAuth() && (isAdmin() || isClinical());
+      allow create: if isAuth() && (isAdmin() || isClinical());
+      allow update: if isAuth() && (isAdmin() || isClinical());
       allow delete: if isAdmin();
     }
-    
-    // System settings
+
+    // --- treatment_requests ---
+    match /treatment_requests/{requestId} {
+      allow read: if isAuth() && (isAdmin() || isOwner(requestId) || isClinical());
+      allow create: if isAuth();
+      allow update: if isAuth() && (isAdmin() || isClinical());
+      allow delete: if isAdmin();
+    }
+
+    // --- notifications ---
+    match /notifications/{notificationId} {
+      allow read: if isAuth() && (isOwner(request.resource.data.userId));
+      allow create: if isAuth();
+      allow update: if isAuth() && (isOwner(request.resource.data.userId));
+      allow delete: if isAdmin();
+    }
+
+    // --- settings ---
     match /settings/{settingId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if isAuth();
+      allow write: if isAuth() && isAdmin();
+    }
+
+    // Fallback: deny everything else
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

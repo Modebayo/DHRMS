@@ -1,0 +1,19 @@
+[build]
+  command = "echo 'No build step required'"
+  publish = "."
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://YOUR_RENDER_APP.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+  Content-Type = "application/javascript"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+  Content-Type = "text/css"

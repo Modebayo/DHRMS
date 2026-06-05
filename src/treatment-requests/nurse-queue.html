@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Treatment Queue - Nurse - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <style>
+        .queue-card { border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; margin-bottom:12px; cursor:pointer; transition:var(--transition); }
+        .queue-card:hover { border-color:var(--primary-300); box-shadow:var(--shadow-sm); }
+        .queue-card .badge { font-size:11px; }
+        .tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--bg-secondary); padding:4px; border-radius:var(--radius-md); }
+        .tab { flex:1; padding:10px; text-align:center; cursor:pointer; border-radius:var(--radius-sm); font-size:14px; font-weight:500; transition:var(--transition); }
+        .tab.active { background:var(--bg-primary); box-shadow:var(--shadow-sm); color:var(--primary-600); }
+        .tab:hover:not(.active) { background:var(--bg-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+                <a href="../dashboard/index.html" class="sidebar-back" title="Back to Dashboard"><i data-lucide="arrow-left"></i></a>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="nurse-queue.html" class="nav-item active"><i data-lucide="clipboard-list"></i>Treatment Queue</a>
+                    <a href="../records/vitals.html" class="nav-item"><i data-lucide="activity"></i>Record Vitals</a>
+                    <a href="../messages/index.html" class="nav-item"><i data-lucide="message-square"></i>Messages</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../records/visit-workflow.html" class="nav-item"><i data-lucide="git-branch"></i>Visit Workflow</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">N</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Nurse</div>
+                        <div class="user-role">Nurse</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Treatment Queue</h1>
+                        <p>Manage patient treatment requests</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <span id="queueCount" class="badge badge-danger" style="font-size:14px;padding:6px 12px;">0 pending</span>
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="stats-grid" style="margin-bottom:20px;">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i data-lucide="users"></i></div>
+                        <div class="stat-value" id="pendingTriage">0</div>
+                        <div class="stat-label">Awaiting Triage</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange"><i data-lucide="activity"></i></div>
+                        <div class="stat-value" id="activeCases">0</div>
+                        <div class="stat-label">Active Cases</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i data-lucide="package-check"></i></div>
+                        <div class="stat-value" id="readyToDispense">0</div>
+                        <div class="stat-label">Ready to Dispense</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i data-lucide="check-circle"></i></div>
+                        <div class="stat-value" id="completedToday">0</div>
+                        <div class="stat-label">Completed Today</div>
+                    </div>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('triage', this)"><i data-lucide="stethoscope" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> Triage</div>
+                    <div class="tab" onclick="switchTab('dispense', this)"><i data-lucide="package-check" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> Dispense Treatment</div>
+                    <div class="tab" onclick="switchTab('all', this)"><i data-lucide="list" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> All Cases</div>
+                </div>
+
+                <div id="queueList" class="card">
+                    <div class="card-header">
+                        <h3 class="card-title" id="queueTitle">Awaiting Triage</h3>
+                    </div>
+                    <div id="requestsContainer">
+                        <div class="empty-state" style="padding:40px;">
+                            <i data-lucide="inbox" style="width:48px;height:48px;color:var(--gray-300);"></i>
+                            <h3>No pending requests</h3>
+                            <p>New patient requests will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script>
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        let currentUser = null;
+        let userData = null;
+        let currentTab = 'triage';
+        let requestsUnsub = null;
+
+        (async function() {
+            const result = await guardPage(['nurse']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            initTheme();
+            loadRequests();
+        })();
+
+        function switchTab(tab, el) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            loadRequests();
+        }
+
+        function loadRequests() {
+            if (requestsUnsub) requestsUnsub();
+
+            let statusFilter;
+            let title;
+            if (currentTab === 'triage') {
+                statusFilter = 'submitted';
+                title = 'Awaiting Triage';
+            } else if (currentTab === 'dispense') {
+                statusFilter = 'treatment_ready';
+                title = 'Ready to Dispense';
+            } else {
+                statusFilter = null;
+                title = 'All Your Cases';
+            }
+
+            document.getElementById('queueTitle').textContent = title;
+
+            let query = db.collection('treatment_requests')
+                .where('nurseId', '==', currentUser.uid);
+
+            if (statusFilter) {
+                query = query.where('status', '==', statusFilter);
+            }
+
+            requestsUnsub = query.onSnapshot((snapshot) => {
+                const sorted = snapshot.docs.slice().sort((a, b) => {
+                    const aTime = a.data().createdAt?.toDate?.()?.getTime() || 0;
+                    const bTime = b.data().createdAt?.toDate?.()?.getTime() || 0;
+                    return bTime - aTime;
+                });
+                updateStats(sorted);
+                renderRequests(sorted);
+            }, (error) => {
+                console.error('Error loading requests:', error);
+            });
+        }
+
+        function updateStats(docs) {
+            let triage = 0, active = 0, dispense = 0, completed = 0;
+            const today = new Date().toISOString().split('T')[0];
+
+            docs.forEach(doc => {
+                const r = doc.data();
+                if (r.status === 'submitted') triage++;
+                if (r.status === 'with_doctor') active++;
+                if (r.status === 'treatment_ready') dispense++;
+                if (r.status === 'completed') {
+                    const d = r.updatedAt?.toDate ? r.updatedAt.toDate() : null;
+                    if (d && d.toISOString().split('T')[0] === today) completed++;
+                }
+            });
+
+            document.getElementById('pendingTriage').textContent = triage;
+            document.getElementById('activeCases').textContent = active;
+            document.getElementById('readyToDispense').textContent = dispense;
+            document.getElementById('completedToday').textContent = completed;
+
+            const pending = currentTab === 'triage' ? triage : (currentTab === 'dispense' ? dispense : docs.length);
+            document.getElementById('queueCount').textContent = pending + ' pending';
+        }
+
+        function renderRequests(docs) {
+            const container = document.getElementById('requestsContainer');
+
+            if (docs.length === 0) {
+                container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><i data-lucide="inbox" style="width:48px;height:48px;margin-bottom:12px;"></i><h3>No requests</h3><p>No requests match this filter</p></div>';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = '';
+            docs.forEach((doc) => {
+                const r = doc.data();
+                const severityColor = r.severity === 'severe' ? 'danger' : r.severity === 'moderate' ? 'warning' : 'info';
+                const statusLabels = { submitted: 'Awaiting Triage', with_doctor: 'With Doctor', treatment_ready: 'Ready to Dispense', completed: 'Completed', cancelled: 'Cancelled' };
+
+                let actionBtn = '';
+                if (r.status === 'submitted') {
+                    actionBtn = `<button class="btn btn-sm btn-primary" onclick="goToTriage('${doc.id}')"><i data-lucide="activity" style="width:14px;height:14px;"></i> Triage</button>`;
+                } else if (r.status === 'treatment_ready') {
+                    actionBtn = `<button class="btn btn-sm btn-success" onclick="goToDispense('${doc.id}')"><i data-lucide="package-check" style="width:14px;height:14px;"></i> Dispense</button>`;
+                }
+
+                container.innerHTML += `
+                    <div class="queue-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div style="flex:1;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <strong>${escapeHtml(r.patientName)}</strong>
+                                    <span class="badge badge-${severityColor}">${r.severity}</span>
+                                    <span class="badge badge-${r.status === 'completed' ? 'success' : r.status === 'submitted' ? 'warning' : 'info'}">${statusLabels[r.status] || r.status}</span>
+                                </div>
+                                <p style="margin:6px 0 0;font-size:13px;color:var(--text-secondary);"><strong>Complaint:</strong> ${escapeHtml(r.complaint)}</p>
+                                <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0;">${formatTimestamp(r.createdAt)}</p>
+                            </div>
+                            ${actionBtn}
+                        </div>
+                    </div>
+                `;
+            });
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function goToTriage(id) {
+            window.location.href = `triage.html?id=${id}`;
+        }
+
+        function goToDispense(id) {
+            window.location.href = `dispense.html?id=${id}`;
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

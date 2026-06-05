@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>Add Diagnosis - Koladaisi University</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
@@ -31,7 +35,30 @@
                 <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
                 <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
             </div>
-            <nav class="sidebar-nav" id="sidebarNav"></nav>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
+                    <a href="visit-workflow.html" class="nav-item"><i data-lucide="git-branch"></i>Visit Workflow</a>
+                    <a href="prescriptions.html" class="nav-item"><i data-lucide="pill"></i>Prescriptions</a>
+                    <a href="lab-results.html" class="nav-item"><i data-lucide="flask-conical"></i>Lab Results</a>
+                    <a href="vitals.html" class="nav-item"><i data-lucide="activity"></i>Vitals</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile" id="userProfile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-role" id="userRole">Role</span>
+                    </div>
+                </div>
+            </div>
         </aside>
         
         <main class="main-content">
@@ -238,16 +265,15 @@
     </div>
     
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
     <script src="../js/auth-guard.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/theme.js"></script>
     <script>
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         
         let currentUser = null;
         let userData = null;
@@ -263,6 +289,11 @@
             if (!result) return;
             currentUser = result.user;
             userData = result.userData;
+            if (userData.status === 'inactive') {
+                window.location.href = '../dashboard/index.html';
+                return;
+            }
+            populateUserProfile();
             
             initTheme();
             
@@ -311,7 +342,7 @@
                 document.getElementById('vitalSpO2').textContent = visitData.vitals.spo2 || '--';
             }
             
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         
         function setSeverity(level) {
@@ -347,7 +378,7 @@
                     <i data-lucide="x" style="width:14px;height:14px;margin-left:8px;cursor:pointer" onclick="removeSymptom(${i})"></i>
                 </span>
             `).join('');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         
         function addMedication() {
@@ -356,7 +387,7 @@
             clone.id = '';
             clone.style.display = 'flex';
             document.getElementById('medicationList').appendChild(clone);
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         
         function removeMedication(btn) {
@@ -557,6 +588,15 @@
             }
         }
         
+        function populateUserProfile() {
+            const nameEl = document.getElementById('userName');
+            const roleEl = document.getElementById('userRole');
+            const avatarEl = document.getElementById('userAvatar');
+            if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+            if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+            if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
+        }
+
         async function sendDiagnosisToPatient(diagnosisData, medications) {
             let message = `📋 Consultation Summary\n\n`;
             message += `Date: ${formatDate(new Date())}\n`;

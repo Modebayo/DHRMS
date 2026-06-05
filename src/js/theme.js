@@ -54,8 +54,23 @@ function updateEmergencyThemeUI() {
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     updateThemeIcons();
+    injectSidebarCloseButton();
     
     setTimeout(() => {
         updateEmergencyThemeUI();
     }, 100);
 });
+
+function injectSidebarCloseButton() {
+    const headers = document.querySelectorAll('.sidebar-header');
+    headers.forEach(header => {
+        if (header.querySelector('.sidebar-close')) return;
+        const btn = document.createElement('button');
+        btn.className = 'sidebar-close';
+        btn.setAttribute('onclick', 'toggleSidebar()');
+        btn.setAttribute('aria-label', 'Close sidebar');
+        btn.innerHTML = '<i data-lucide="x" style="width:20px;height:20px"></i>';
+        header.appendChild(btn);
+    });
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}

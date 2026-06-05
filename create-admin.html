@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Create Admin - DHRMS</title>
+    <link rel="stylesheet" href="src/css/main.css">
+    <style>
+        body { background: linear-gradient(135deg, #0f172a, #1e3a8a); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .card { background: white; border-radius: 16px; padding: 40px; max-width: 520px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .card h1 { text-align: center; margin-bottom: 8px; font-size: 24px; }
+        .card p.subtitle { text-align: center; color: #64748b; margin-bottom: 32px; font-size: 14px; }
+        .logo-icon { width: 64px; height: 64px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+        .form-group input { width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: inherit; box-sizing: border-box; }
+        .form-group input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; display: none; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; display: block; }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; display: block; }
+        .alert-info { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; display: block; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-text { vertical-align: middle; }
+        .auth-footer { text-align: center; margin-top: 20px; font-size: 14px; color: #94a3b8; }
+        .auth-footer a { color: #2563eb; text-decoration: none; font-weight: 500; }
+        .auth-footer a:hover { text-decoration: underline; }
+        .success-check { width: 64px; height: 64px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+        .password-hint { display: block; color: #94a3b8; font-size: 12px; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="card" id="app">
+        <div class="logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        </div>
+        <h1>Create Admin Account</h1>
+        <p class="subtitle">Koladaisi University Health Records Management System</p>
+
+        <div id="alertBox"></div>
+
+        <form id="adminForm">
+            <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" id="firstName" value="ALAGBEDE" required>
+            </div>
+            <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" id="lastName" value="IBRAHIM MODEBAYO" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" value="ibrotech974@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label for="adminId">Admin ID</label>
+                <input type="text" id="adminId" value="admin001" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password (min 8 chars, 1 uppercase, 1 number, 1 special char)</label>
+                <input type="password" id="password" value="Neon10@2026" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" value="Neon10@2026" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="createBtn">
+                <span class="spinner" id="spinner" style="display:none;"></span>
+                <span class="btn-text" id="btnText">Create Admin Account</span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p><a href="src/auth/admin-login.html">Go to Admin Login</a></p>
+        </div>
+    </div>
+
+
+    <script src="src/js/firebase-compat.js"></script>
+    <script src="src/js/firebase-config.js"></script>
+
+    <script>
+        const alertBox = document.getElementById('alertBox');
+        const form = document.getElementById('adminForm');
+        const createBtn = document.getElementById('createBtn');
+        const spinner = document.getElementById('spinner');
+        const btnText = document.getElementById('btnText');
+
+        function showAlert(message, type) {
+            alertBox.className = 'alert alert-' + type;
+            alertBox.innerHTML = message;
+            alertBox.style.display = 'block';
+        }
+
+        function setLoading(loading) {
+            createBtn.disabled = loading;
+            spinner.style.display = loading ? 'inline-block' : 'none';
+            btnText.textContent = loading ? 'Creating Account...' : 'Create Admin Account';
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alertBox.style.display = 'none';
+
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const adminId = document.getElementById('adminId').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!firstName || !lastName || !email || !adminId || !password) {
+                showAlert('All fields are required', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 8) {
+                showAlert('Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const resp = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    throw { code: data.error || 'auth/unknown' };
+                }
+
+                await auth.signInWithCustomToken(data.customToken);
+
+                await db.collection('users').doc(data.localId).set({
+                    firstName,
+                    lastName,
+                    email,
+                    userId: adminId,
+                    role: 'admin',
+                    status: 'active',
+                    emailVerified: true,
+                    phone: '',
+                    dateOfBirth: '',
+                    department: 'Administration',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showAlert('Admin account created successfully! Redirecting to login...', 'success');
+                await auth.signOut();
+
+                setTimeout(() => {
+                    window.location.href = 'src/auth/admin-login.html';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Creation error:', error);
+                const code = error.code || '';
+                let message = 'Failed to create admin account';
+                if (code === 'EMAIL_EXISTS' || code === 'auth/email-already-exists') {
+                    message = 'Email already registered. <a href="src/auth/admin-login.html" style="color:#2563eb;font-weight:600;">Try logging in</a> instead.';
+                } else if (code === 'WEAK_PASSWORD') {
+                    message = 'Password is too weak. Use min 8 characters with uppercase, number, and special char.';
+                } else if (code === 'INVALID_EMAIL') {
+                    message = 'Invalid email address format.';
+                } else if (code === 'TOO_MANY_ATTEMPTS_TRY_LATER') {
+                    message = 'Too many requests. Wait a minute and try again.';
+                }
+                showAlert(message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -5,20 +5,7 @@ let selectedTime = null;
 let availableSlots = [];
 let appointmentsUnsub = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) { window.location.href = '../auth/login.html'; return; }
-        currentUser = user;
-        const doc = await db.collection('users').doc(user.uid).get();
-        if (!doc.exists) { window.location.href = '../auth/login.html'; return; }
-        userData = doc.data();
-        
-        loadDoctors();
-        setupFilters();
-        setupDatePicker();
-        subscribeAppointments();
-    });
-});
+// Auth handled by guardPage() in HTML
 
 function setupDatePicker() {
     const dateInput = document.getElementById('appointmentDate') || document.getElementById('bookDate');
@@ -159,7 +146,8 @@ function subscribeAppointments() {
                 
                 const statusClass = apt.status === 'confirmed' ? 'success' : 
                                apt.status === 'pending' ? 'warning' : 
-                               apt.status === 'cancelled' ? 'danger' : 'info';
+                               apt.status === 'cancelled' ? 'danger' :
+                               apt.status === 'completed' ? 'info' : 'primary';
                 
                 return `
                     <tr>
@@ -173,6 +161,7 @@ function subscribeAppointments() {
                             <button class="btn btn-sm btn-outline" onclick="viewAppointment('${doc.id}')"><i data-lucide="eye" style="width:14px;height:14px"></i></button>
                             ${apt.status === 'pending' ? `<button class="btn btn-sm btn-danger" onclick="cancelAppointment('${doc.id}')"><i data-lucide="x" style="width:14px;height:14px"></i></button>` : ''}
                             ${userData.role === 'doctor' && apt.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="confirmAppointment('${doc.id}')">Confirm</button>` : ''}
+                            ${apt.status === 'confirmed' ? `<button class="btn btn-sm btn-primary" onclick="completeAppointment('${doc.id}')"><i data-lucide="check" style="width:14px;height:14px"></i> Complete</button>` : ''}
                         </td>
                     </tr>
                 `;
@@ -191,16 +180,19 @@ function updateStats(query) {
     const total = query ? query.size : 0;
     const pending = query ? query.docs.filter(d => d.data().status === 'pending').length : 0;
     const confirmed = query ? query.docs.filter(d => d.data().status === 'confirmed').length : 0;
+    const completed = query ? query.docs.filter(d => d.data().status === 'completed').length : 0;
     const cancelled = query ? query.docs.filter(d => d.data().status === 'cancelled').length : 0;
     
     const totalEl = document.getElementById('totalAppointments');
     const pendingEl = document.getElementById('pendingAppointments');
     const confirmedEl = document.getElementById('confirmedAppointments');
+    const completedEl = document.getElementById('completedAppointments');
     const cancelledEl = document.getElementById('cancelledAppointments');
     
     if (totalEl) totalEl.textContent = total;
     if (pendingEl) pendingEl.textContent = pending;
     if (confirmedEl) confirmedEl.textContent = confirmed;
+    if (completedEl) completedEl.textContent = completed;
     if (cancelledEl) cancelledEl.textContent = cancelled;
 }
 
@@ -260,9 +252,26 @@ async function confirmAppointment(id) {
             confirmedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
+        await logActivity(currentUser.uid, 'appointment-confirm', 'Confirmed appointment');
         showToast('Appointment confirmed', 'success');
     } catch (error) {
         showToast('Error confirming appointment', 'error');
+    }
+}
+
+async function completeAppointment(id) {
+    if (!confirm('Mark this appointment as completed?')) return;
+    
+    try {
+        await db.collection('appointments').doc(id).update({
+            status: 'completed',
+            completedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        await logActivity(currentUser.uid, 'appointment-complete', 'Completed appointment');
+        showToast('Appointment completed', 'success');
+    } catch (error) {
+        showToast('Error completing appointment', 'error');
     }
 }
 
@@ -364,3 +373,12 @@ async function updateAppointmentBadge() {
 
 // Call on load
 setTimeout(updateAppointmentBadge, 1000);
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
+}

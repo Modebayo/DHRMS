@@ -166,18 +166,4 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
         document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
     }
-    
-    async function logActivity(userId, type, description) {
-        try {
-            await db.collection('activity_logs').add({
-                userId: userId,
-                type: type,
-                description: description,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                userAgent: navigator.userAgent
-            });
-        } catch (error) {
-            console.error('Activity log error:', error);
-        }
-    }
 });

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Request Treatment - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/key-manager.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+                <a href="../dashboard/index.html" class="sidebar-back" title="Back to Dashboard"><i data-lucide="arrow-left"></i></a>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="my-requests.html" class="nav-item"><i data-lucide="clipboard-list"></i>My Requests</a>
+                    <a href="../messages/index.html" class="nav-item"><i data-lucide="message-square"></i>Messages</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../records/my-records.html" class="nav-item"><i data-lucide="file-text"></i>My Records</a>
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Patient</div>
+                        <div class="user-role">Student</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Request Treatment</h1>
+                        <p>Describe your symptoms to begin the treatment process</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content" style="max-width:800px;margin:0 auto;">
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="activity" style="width:20px;height:20px;display:inline;vertical-align:middle;margin-right:8px;"></i>How It Works</h3>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:16px;">
+                        <div style="text-align:center;padding:12px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-100);color:var(--primary-600);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-weight:700;">1</div>
+                            <strong style="font-size:13px;">Submit Symptoms</strong>
+                            <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">Describe how you feel</p>
+                        </div>
+                        <div style="text-align:center;padding:12px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--orange-100);color:var(--orange-600);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-weight:700;">2</div>
+                            <strong style="font-size:13px;">Nurse Triage</strong>
+                            <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">Nurse reviews and records vitals</p>
+                        </div>
+                        <div style="text-align:center;padding:12px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--blue-100);color:var(--blue-600);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-weight:700;">3</div>
+                            <strong style="font-size:13px;">Doctor Review</strong>
+                            <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">Doctor diagnoses and prescribes</p>
+                        </div>
+                        <div style="text-align:center;padding:12px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--green-100);color:var(--green-600);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-weight:700;">4</div>
+                            <strong style="font-size:13px;">Treatment</strong>
+                            <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">Nurse dispenses treatment to you</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="edit-3" style="width:20px;height:20px;display:inline;vertical-align:middle;margin-right:8px;"></i>Describe Your Symptoms</h3>
+                    </div>
+                    <form id="treatmentForm">
+                        <div class="form-group">
+                            <label class="required-field">Chief Complaint</label>
+                            <input type="text" id="complaint" placeholder="e.g., Headache, Fever, Stomach ache" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="required-field">Describe Your Symptoms</label>
+                            <textarea id="symptoms" rows="4" placeholder="Describe your symptoms in detail. When did they start? How severe are they?" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="required-field">Severity</label>
+                                <select id="severity" required>
+                                    <option value="">Select severity...</option>
+                                    <option value="mild">Mild - Minor discomfort</option>
+                                    <option value="moderate">Moderate - Noticeable discomfort</option>
+                                    <option value="severe">Severe - Significant discomfort</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Affected Body Area</label>
+                                <select id="bodyArea">
+                                    <option value="">Select area...</option>
+                                    <option value="head">Head</option>
+                                    <option value="eyes">Eyes</option>
+                                    <option value="ears">Ears</option>
+                                    <option value="nose">Nose / Sinus</option>
+                                    <option value="throat">Throat</option>
+                                    <option value="chest">Chest</option>
+                                    <option value="abdomen">Abdomen / Stomach</option>
+                                    <option value="back">Back</option>
+                                    <option value="arms">Arms / Hands</option>
+                                    <option value="legs">Legs / Feet</option>
+                                    <option value="skin">Skin</option>
+                                    <option value="general">General / Whole Body</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Duration</label>
+                            <select id="duration">
+                                <option value="">Select duration...</option>
+                                <option value="few-hours">A few hours</option>
+                                <option value="1-day">1 day</option>
+                                <option value="2-3-days">2-3 days</option>
+                                <option value="1-week">About a week</option>
+                                <option value="2-weeks">About 2 weeks</option>
+                                <option value="1-month">About a month</option>
+                                <option value="over-month">More than a month</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Any existing medical conditions / allergies?</label>
+                            <textarea id="existingConditions" rows="2" placeholder="List any known allergies or chronic conditions"></textarea>
+                        </div>
+                        <div id="formAlert" class="alert" style="display:none;"></div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+                            <a href="../dashboard/index.html" class="btn btn-outline">Cancel</a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <span class="btn-text"><i data-lucide="send"></i> Submit Request</span>
+                                <span class="spinner" style="display:none;"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script>
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        let currentUser = null;
+        let userData = null;
+
+        (async function() {
+            const result = await guardPage(['student']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            initTheme();
+        })();
+
+        document.getElementById('treatmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const complaint = document.getElementById('complaint').value.trim();
+            const symptoms = document.getElementById('symptoms').value.trim();
+            const severity = document.getElementById('severity').value;
+            const bodyArea = document.getElementById('bodyArea').value;
+            const duration = document.getElementById('duration').value;
+            const existingConditions = document.getElementById('existingConditions').value.trim();
+
+            if (!complaint || !symptoms || !severity) {
+                showAlert('formAlert', 'Please fill in all required fields', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.spinner').style.display = 'inline-block';
+
+            try {
+                // Auto-assign to nurse with fewest active requests
+                const nursesSnap = await db.collection('users')
+                    .where('role', '==', 'nurse')
+                    .where('status', '==', 'active')
+                    .get();
+
+                let assignedNurseId = null;
+                let minLoad = Infinity;
+                for (const nurseDoc of nursesSnap.docs) {
+                    const activeRequests = await db.collection('treatment_requests')
+                        .where('nurseId', '==', nurseDoc.id)
+                        .where('status', 'in', ['submitted', 'with_doctor', 'treatment_ready'])
+                        .get();
+                    if (activeRequests.size < minLoad) {
+                        minLoad = activeRequests.size;
+                        assignedNurseId = nurseDoc.id;
+                    }
+                }
+
+                if (!assignedNurseId) {
+                    showAlert('formAlert', 'No nurses available at the moment. Please try again later.', 'error');
+                    btn.disabled = false;
+                    btn.querySelector('.btn-text').style.display = 'inline';
+                    btn.querySelector('.spinner').style.display = 'none';
+                    return;
+                }
+
+                const requestRef = await db.collection('treatment_requests').add({
+                    patientId: currentUser.uid,
+                    patientName: `${userData.firstName} ${userData.lastName}`,
+                    nurseId: assignedNurseId,
+                    doctorId: null,
+                    complaint,
+                    symptoms,
+                    severity,
+                    bodyArea: bodyArea || '',
+                    duration: duration || '',
+                    existingConditions: existingConditions || '',
+                    status: 'submitted',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await logActivity(currentUser.uid, 'treatment_request', `Submitted treatment request: ${complaint}`);
+
+                // Notify the assigned nurse
+                await db.collection('notifications').add({
+                    userId: assignedNurseId,
+                    type: 'treatment_request',
+                    title: 'New Treatment Request',
+                    message: `${userData.firstName} ${userData.lastName} submitted: ${complaint}`,
+                    read: false,
+                    treatmentRequestId: requestRef.id,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast('Treatment request submitted! A nurse will attend to you shortly.', 'success');
+
+                setTimeout(() => {
+                    window.location.href = `my-requests.html?id=${requestRef.id}`;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error submitting request:', error);
+                showAlert('formAlert', 'Error submitting request. Please try again.', 'error');
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.spinner').style.display = 'none';
+            }
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

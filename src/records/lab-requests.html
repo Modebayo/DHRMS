@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Lab Requests - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>Patients</a>
+                    <a href="lab-requests.html" class="nav-item active"><i data-lucide="flask-conical"></i>Lab Requests</a>
+                    <a href="lab-results.html" class="nav-item"><i data-lucide="test-tube"></i>Lab Results</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-role" id="userRole">Staff</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Lab Requests</h1>
+                        <p>Create and manage laboratory investigation requests</p>
+                    </div>
+                </div>
+                <div class="header-right" id="headerActions">
+                    <button class="btn btn-primary" onclick="openCreateRequest()"><i data-lucide="plus" style="width:16px;height:16px"></i> New Request</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
+                    <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total Requests</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statPending">0</div><div class="stat-label">Pending</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statInProgress">0</div><div class="stat-label">In Progress</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statCompleted">0</div><div class="stat-label">Completed</div></div>
+                </div>
+
+                <div class="card">
+                    <div style="padding:16px;display:flex;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border-color);">
+                        <select id="filterStatus" style="min-width:150px;">
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resulted">Resulted</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <select id="filterUrgency" style="min-width:140px;">
+                            <option value="">All Urgencies</option>
+                            <option value="routine">Routine</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="stat">STAT</option>
+                        </select>
+                        <div class="search-box" style="flex:1;min-width:200px;">
+                            <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);width:16px;height:16px;"></i>
+                            <input type="text" id="searchRequests" placeholder="Search..." style="padding-left:36px;">
+                        </div>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Test Name</th>
+                                    <th>Requested By</th>
+                                    <th>Urgency</th>
+                                    <th>Date</th>
+                                    <th>Clinical Info</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Create Request Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">New Lab Request</h3>
+                <button class="modal-close" onclick="closeCreateRequest()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="requestForm">
+                <div class="modal-body">
+                    <div id="createAlert" class="alert" style="display:none;"></div>
+                    <div class="form-group">
+                        <label class="required-field">Patient</label>
+                        <select id="reqPatient" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="required-field">Test Name</label>
+                        <select id="reqTest" required>
+                            <option value="">Select test...</option>
+                            <option value="blood-count">Complete Blood Count (CBC)</option>
+                            <option value="malaria">Malaria Parasite</option>
+                            <option value="urinalysis">Urinalysis</option>
+                            <option value="blood-glucose">Blood Glucose</option>
+                            <option value="lipid-profile">Lipid Profile</option>
+                            <option value="liver-function">Liver Function Test</option>
+                            <option value="renal-function">Renal Function Test</option>
+                            <option value="typhoid">Widal Test (Typhoid)</option>
+                            <option value="hiv">HIV Test</option>
+                            <option value="hepatitis-b">Hepatitis B Surface Antigen</option>
+                            <option value="pregnancy">Pregnancy Test</option>
+                            <option value="stool-mcs">Stool M/C/S</option>
+                            <option value="urine-mcs">Urine M/C/S</option>
+                            <option value="chest-xray">Chest X-Ray</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="otherTestGroup" style="display:none;">
+                        <label>Specify Test Name</label>
+                        <input type="text" id="reqOtherTest" placeholder="Enter test name">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required-field">Urgency</label>
+                            <select id="reqUrgency" required>
+                                <option value="routine">Routine</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="stat">STAT (Immediate)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Clinical Information</label>
+                        <textarea id="reqClinicalInfo" rows="3" placeholder="Relevant clinical information for the lab technician"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeCreateRequest()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitRequestBtn">
+                        <span class="btn-text">Submit Request</span>
+                        <span class="spinner" style="display:none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Record Result Modal -->
+    <div class="modal-overlay" id="resultModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Lab Result</h3>
+                <button class="modal-close" onclick="closeResultModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="resultForm">
+                <div class="modal-body">
+                    <div id="resultAlert" class="alert" style="display:none;"></div>
+                    <div id="resultRequestInfo" style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);margin-bottom:16px;"></div>
+                    <div class="form-group">
+                        <label class="required-field">Result Value</label>
+                        <textarea id="resValue" rows="3" placeholder="Enter the test result value" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Reference Range</label>
+                            <input type="text" id="resRange" placeholder="e.g., 4.0-11.0 x10^9/L">
+                        </div>
+                        <div class="form-group">
+                            <label class="required-field">Interpretation</label>
+                            <select id="resInterpretation" required>
+                                <option value="normal">Normal</option>
+                                <option value="abnormal">Abnormal</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Notes</label>
+                        <textarea id="resNotes" rows="2" placeholder="Any additional notes"></textarea>
+                    </div>
+                    <input type="hidden" id="resRequestId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeResultModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitResultBtn">
+                        <span class="btn-text">Record Result</span>
+                        <span class="spinner" style="display:none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div class="modal-overlay" id="viewModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Request Details</h3>
+                <button class="modal-close" onclick="closeViewModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="viewContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeViewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let userData = null;
+        let allRequests = [];
+        let requestsUnsub = null;
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        (async function() {
+            initTheme();
+            const result = await guardPage(['doctor', 'nurse', 'administrator', 'lab_technician']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+
+            document.getElementById('userName').textContent = userData.firstName + ' ' + userData.lastName;
+            document.getElementById('userAvatar').textContent = (userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '');
+            document.getElementById('userRole').textContent = userData.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+            if (userData.role === 'doctor' || userData.role === 'administrator') {
+                document.getElementById('headerActions').style.display = 'block';
+            } else {
+                document.getElementById('headerActions').style.display = 'none';
+            }
+
+            loadPatients();
+            subscribeRequests();
+            setupFilters();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        })();
+
+        document.getElementById('reqTest')?.addEventListener('change', function() {
+            document.getElementById('otherTestGroup').style.display = this.value === 'other' ? 'block' : 'none';
+        });
+
+        async function loadPatients() {
+            const select = document.getElementById('reqPatient');
+            try {
+                const snapshot = await db.collection('patients').orderBy('surname_enc').get();
+                select.innerHTML = '<option value="">Select patient...</option>';
+                for (const doc of snapshot.docs) {
+                    const data = doc.data();
+                    const decrypted = await Encryption.decryptPatientFields(data);
+                    select.innerHTML += '<option value="' + doc.id + '">' + escapeHtml(decrypted.surname + ' ' + decrypted.firstname) + ' (' + escapeHtml(data.clinicNumber) + ')</option>';
+                }
+            } catch (error) {
+                console.error('Error loading patients:', error);
+                select.innerHTML = '<option value="">Error loading patients</option>';
+            }
+        }
+
+        function subscribeRequests() {
+            if (requestsUnsub) requestsUnsub();
+            const tbody = document.getElementById('requestsTable');
+
+            let query = db.collection('lab_requests').orderBy('createdAt', 'desc');
+
+            if (userData.role === 'doctor') {
+                query = db.collection('lab_requests')
+                    .where('requestedBy', '==', currentUser.uid)
+                    .orderBy('createdAt', 'desc');
+            }
+
+            requestsUnsub = query.onSnapshot(async (snapshot) => {
+                try {
+                    allRequests = [];
+
+                    const userIds = new Set();
+                    const patientIds = new Set();
+                    snapshot.docs.forEach(d => {
+                        const data = d.data();
+                        if (data.requestedBy) userIds.add(data.requestedBy);
+                        if (data.patientId) patientIds.add(data.patientId);
+                    });
+
+                    const usersCache = {};
+                    for (const id of userIds) {
+                        const doc = await db.collection('users').doc(id).get();
+                        usersCache[id] = doc.exists ? doc.data() : null;
+                    }
+
+                    const patientsCache = {};
+                    for (const id of patientIds) {
+                        const doc = await db.collection('patients').doc(id).get();
+                        if (doc.exists) {
+                            const decrypted = await Encryption.decryptPatientFields(doc.data());
+                            patientsCache[id] = decrypted;
+                        }
+                    }
+
+                    let pending = 0, inProgress = 0, completed = 0;
+                    allRequests = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        if (data.status === 'pending') pending++;
+                        else if (data.status === 'in_progress') inProgress++;
+                        else if (data.status === 'resulted') completed++;
+                        return { id: doc.id, ...data, user: usersCache[data.requestedBy], patient: patientsCache[data.patientId] };
+                    });
+
+                    document.getElementById('statTotal').textContent = snapshot.size;
+                    document.getElementById('statPending').textContent = pending;
+                    document.getElementById('statInProgress').textContent = inProgress;
+                    document.getElementById('statCompleted').textContent = completed;
+
+                    renderTable(allRequests);
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                } catch (error) {
+                    console.error('Error loading requests:', error);
+                }
+            });
+        }
+
+        function renderTable(requests) {
+            const tbody = document.getElementById('requestsTable');
+            if (requests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i data-lucide="flask-conical" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Lab Requests</h3><p>Create the first lab request</p></td></tr>';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                return;
+            }
+
+            const isLabTech = userData.role === 'lab_technician';
+
+            tbody.innerHTML = requests.map(r => {
+                const statusClass = r.status === 'resulted' ? 'success' : r.status === 'in_progress' ? 'info' : r.status === 'cancelled' ? 'danger' : 'warning';
+                const urgencyClass = r.urgency === 'stat' ? 'danger' : r.urgency === 'urgent' ? 'warning' : 'success';
+                const patientName = r.patient ? escapeHtml(r.patient.surname + ' ' + r.patient.firstname) : 'Unknown';
+                const doctorName = r.user ? 'Dr. ' + escapeHtml(r.user.firstName + ' ' + r.user.lastName) : 'Unknown';
+
+                let actions = '<button class="btn btn-sm btn-outline" onclick="viewRequest(\'' + r.id + '\')"><i data-lucide="eye" style="width:14px;height:14px"></i></button>';
+                if (isLabTech && r.status === 'pending') {
+                    actions += '<button class="btn btn-sm btn-primary" onclick="recordResult(\'' + r.id + '\')"><i data-lucide="test-tube" style="width:14px;height:14px"></i> Record Result</button>';
+                }
+
+                return '<tr>' +
+                    '<td><strong>' + patientName + '</strong></td>' +
+                    '<td>' + escapeHtml(r.testName || 'N/A') + '</td>' +
+                    '<td>' + doctorName + '</td>' +
+                    '<td><span class="badge badge-' + urgencyClass + '">' + escapeHtml(r.urgency || 'routine') + '</span></td>' +
+                    '<td>' + formatDate(r.createdAt) + '</td>' +
+                    '<td style="max-width:150px;font-size:12px;">' + escapeHtml((r.clinicalInfo || '').substring(0, 50)) + '</td>' +
+                    '<td><span class="badge badge-' + statusClass + '">' + escapeHtml(r.status) + '</span></td>' +
+                    '<td style="white-space:nowrap;">' + actions + '</td>' +
+                '</tr>';
+            }).join('');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function setupFilters() {
+            function apply() {
+                const status = document.getElementById('filterStatus').value;
+                const urgency = document.getElementById('filterUrgency').value;
+                const query = (document.getElementById('searchRequests').value || '').toLowerCase();
+
+                const filtered = allRequests.filter(r => {
+                    const statusMatch = !status || r.status === status;
+                    const urgencyMatch = !urgency || r.urgency === urgency;
+                    const qMatch = !query ||
+                        (r.testName && r.testName.toLowerCase().includes(query)) ||
+                        (r.patient && ((r.patient.surname || '').toLowerCase().includes(query) || (r.patient.firstname || '').toLowerCase().includes(query)));
+                    return statusMatch && urgencyMatch && qMatch;
+                });
+                renderTable(filtered);
+            }
+
+            document.getElementById('filterStatus')?.addEventListener('change', apply);
+            document.getElementById('filterUrgency')?.addEventListener('change', apply);
+            document.getElementById('searchRequests')?.addEventListener('input', apply);
+        }
+
+        function openCreateRequest() {
+            document.getElementById('requestForm').reset();
+            document.getElementById('createAlert').style.display = 'none';
+            document.getElementById('otherTestGroup').style.display = 'none';
+            loadPatients();
+            document.getElementById('createModal').classList.add('active');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeCreateRequest() {
+            document.getElementById('createModal').classList.remove('active');
+        }
+
+        document.getElementById('requestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitRequestBtn');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.spinner').style.display = 'inline-block';
+
+            try {
+                const patientId = document.getElementById('reqPatient').value;
+                const testName = document.getElementById('reqTest').value === 'other' ?
+                    document.getElementById('reqOtherTest').value.trim() :
+                    document.getElementById('reqTest').value;
+                const urgency = document.getElementById('reqUrgency').value;
+                const clinicalInfo = document.getElementById('reqClinicalInfo').value.trim();
+
+                if (!patientId || !testName) {
+                    showAlert('createAlert', 'Please select a patient and test', 'error');
+                    return;
+                }
+
+                const encrypted = await Encryption.encryptField(clinicalInfo || '');
+
+                await db.collection('lab_requests').add({
+                    patientId,
+                    requestedBy: currentUser.uid,
+                    testName,
+                    urgency: urgency || 'routine',
+                    clinicalInfoEnc: encrypted,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await logAuditEvent(currentUser.uid, 'CREATE_LAB_REQUEST', 'lab_requests', '', 'Created lab request: ' + testName);
+
+                showToast('Lab request created successfully', 'success');
+                closeCreateRequest();
+            } catch (error) {
+                console.error('Error creating request:', error);
+                showAlert('createAlert', 'Error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.spinner').style.display = 'none';
+            }
+        });
+
+        async function recordResult(requestId) {
+            document.getElementById('resultForm').reset();
+            document.getElementById('resultAlert').style.display = 'none';
+            document.getElementById('resRequestId').value = requestId;
+
+            const request = allRequests.find(r => r.id === requestId);
+            if (request) {
+                const patientName = request.patient ? escapeHtml(request.patient.surname + ' ' + request.patient.firstname) : 'Unknown';
+                document.getElementById('resultRequestInfo').innerHTML =
+                    '<strong>Patient:</strong> ' + patientName + '<br>' +
+                    '<strong>Test:</strong> ' + escapeHtml(request.testName) + '<br>' +
+                    '<strong>Urgency:</strong> ' + escapeHtml(request.urgency);
+            }
+
+            document.getElementById('resultModal').classList.add('active');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeResultModal() {
+            document.getElementById('resultModal').classList.remove('active');
+        }
+
+        document.getElementById('resultForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitResultBtn');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.spinner').style.display = 'inline-block';
+
+            try {
+                const requestId = document.getElementById('resRequestId').value;
+                const resultValue = document.getElementById('resValue').value.trim();
+                const refRange = document.getElementById('resRange').value.trim();
+                const interpretation = document.getElementById('resInterpretation').value;
+                const notes = document.getElementById('resNotes').value.trim();
+
+                if (!resultValue) {
+                    showAlert('resultAlert', 'Please enter the result value', 'error');
+                    return;
+                }
+
+                const request = allRequests.find(r => r.id === requestId);
+                if (!request) throw new Error('Request not found');
+
+                // Save to lab_results
+                await db.collection('lab_results').add({
+                    requestRef: requestId,
+                    patientId: request.patientId,
+                    testName: request.testName,
+                    resultValue,
+                    referenceRange: refRange,
+                    interpretation,
+                    notes,
+                    recordedBy: currentUser.uid,
+                    recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Update request status
+                await db.collection('lab_requests').doc(requestId).update({
+                    status: 'resulted',
+                    resultedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    resultedBy: currentUser.uid,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Notify requesting doctor
+                if (request.requestedBy) {
+                    await db.collection('notifications').add({
+                        userId: request.requestedBy,
+                        type: 'lab_result',
+                        title: 'Lab Result Ready',
+                        message: 'Lab result for ' + request.testName + ' is ready',
+                        read: false,
+                        relatedId: requestId,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                await logAuditEvent(currentUser.uid, 'RECORD_LAB_RESULT', 'lab_results', '', 'Recorded result for: ' + request.testName);
+
+                showToast('Lab result recorded and doctor notified', 'success');
+                closeResultModal();
+            } catch (error) {
+                console.error('Error recording result:', error);
+                showAlert('resultAlert', 'Error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.spinner').style.display = 'none';
+            }
+        });
+
+        async function viewRequest(id) {
+            const r = allRequests.find(x => x.id === id);
+            if (!r) return;
+
+            const clinicalInfo = r.clinicalInfoEnc ? await Encryption.decryptField(r.clinicalInfoEnc) : 'None';
+            const patientName = r.patient ? escapeHtml(r.patient.surname + ' ' + r.patient.firstname) : 'Unknown';
+            const doctorName = r.user ? 'Dr. ' + escapeHtml(r.user.firstName + ' ' + r.user.lastName) : 'Unknown';
+
+            document.getElementById('viewContent').innerHTML =
+                '<div style="display:grid;gap:12px;">' +
+                    '<div><strong>Patient:</strong> ' + patientName + '</div>' +
+                    '<div><strong>Test:</strong> ' + escapeHtml(r.testName) + '</div>' +
+                    '<div><strong>Requested By:</strong> ' + doctorName + '</div>' +
+                    '<div><strong>Urgency:</strong> ' + escapeHtml(r.urgency) + '</div>' +
+                    '<div><strong>Status:</strong> ' + escapeHtml(r.status) + '</div>' +
+                    '<div><strong>Clinical Info:</strong> ' + escapeHtml(clinicalInfo) + '</div>' +
+                    '<div><strong>Date:</strong> ' + formatDate(r.createdAt) + '</div>' +
+                '</div>';
+            document.getElementById('viewModal').classList.add('active');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.remove('active');
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            const d = date.toDate ? date.toDate() : new Date(date);
+            return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

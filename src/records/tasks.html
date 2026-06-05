@@ -6,150 +6,50 @@
     <title>Tasks - Nurse</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
 </head>
 <body>
     <div class="dashboard">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
-                <div class="sidebar-brand">
-                    <h2>Health Records</h2>
-                    <p>Koladeisi University</p>
-                </div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
             </div>
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
                     <a href="../records/index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
-                    <a href="tasks.html" class="nav-item active"><i data-lucide="list-todo"></i>My Tasks</a>
-                    <a href="vitals.html" class="nav-item"><i data-lucide="activity"></i>Vitals</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
+                    <a href="tasks.html" class="nav-item active"><i data-lucide="list-todo"></i>Tasks</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
                 </div>
                 <div class="nav-section">
                     <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
                     <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
                 </div>
             </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile" id="userProfile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-role" id="userRole">Role</span>
+                    </div>
+                </div>
+            </div>
         </aside>
         
         <main class="main-content">
-            <header class="header">
-                <div class="header-left">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
-                    <div class="page-title">
-                        <h1>My Tasks</h1>
-                        <p>Manage your daily tasks</p>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <button class="btn btn-primary" onclick="openTaskModal()"><i data-lucide="plus"></i> Add Task</button>
-                </div>
-            </header>
-            
-            <div class="content">
-                <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-                    <div class="stat-card">
-                        <div class="stat-header"><div class="stat-icon orange"><i data-lucide="clock"></i></div></div>
-                        <div class="stat-value" id="pendingTasks">0</div>
-                        <div class="stat-label">Pending</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header"><div class="stat-icon blue"><i data-lucide="loader"></i></div></div>
-                        <div class="stat-value" id="inProgressTasks">0</div>
-                        <div class="stat-label">In Progress</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header"><div class="stat-icon green"><i data-lucide="check-circle"></i></div></div>
-                        <div class="stat-value" id="completedTasks">0</div>
-                        <div class="stat-label">Completed</div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Task List</h3>
-                        <div class="filter-group">
-                            <select id="filterTaskStatus">
-                                <option value="">All</option>
-                                <option value="pending">Pending</option>
-                                <option value="in-progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Task</th>
-                                    <th>Priority</th>
-                                    <th>Patient</th>
-                                    <th>Assigned By</th>
-                                    <th>Due Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tasksTable">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
     
-    <div class="modal-overlay" id="taskModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">Add Task</h3>
-                <button class="modal-close" onclick="closeTaskModal()"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">
-                <form id="taskForm">
-                    <div class="form-group">
-                        <label>Task Description</label>
-                        <textarea id="taskDescription" rows="2" required placeholder="Describe the task..."></textarea>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Priority</label>
-                            <select id="taskPriority">
-                                <option value="low">Low</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="high">High</option>
-                                <option value="urgent">Urgent</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Due Date</label>
-                            <input type="date" id="taskDueDate">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Patient (optional)</label>
-                        <select id="taskPatient"><option value="">None</option></select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeTaskModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveTask()">Save</button>
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-    <script src="../js/firebase-config.js"></script>
     <script src="../js/theme.js"></script>
     <script src="../js/auth-guard.js"></script>
     <script src="../js/auth.js"></script>
     <script src="tasks.js"></script>
     <script>
-        lucide.createIcons();
+        initTheme();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         (async function() { await guardPage(); })();
         
         function toggleSidebar() {

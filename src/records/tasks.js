@@ -1,5 +1,6 @@
 let currentUser = null;
 let userData = null;
+let tasksUnsub = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
@@ -10,9 +11,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     currentUser = result.user;
     userData = result.userData;
+    if (userData.status === 'inactive') {
+        window.location.href = '../dashboard/index.html';
+        return;
+    }
+    populateUserProfile();
     
     loadPatients();
-    loadTasks();
+    subscribeTasks();
     setupTaskFilter();
 });
 
@@ -47,13 +53,17 @@ async function loadPatients() {
     }
 }
 
-async function loadTasks() {
+function subscribeTasks() {
     const tbody = document.getElementById('tasksTable');
     if (!tbody) return;
 
-    try {
-        const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get();
-        
+    if (tasksUnsub) tasksUnsub();
+
+    tasksUnsub = db.collection('tasks')
+        .where('assignedTo', '==', currentUser ? currentUser.uid : 'none')
+        .orderBy('createdAt', 'desc')
+        .onSnapshot(async (snapshot) => {
+        try {
         let pending = 0, inProgress = 0, completed = 0;
         
         if (snapshot.empty) {
@@ -111,11 +121,13 @@ async function loadTasks() {
         document.getElementById('inProgressTasks').textContent = inProgress;
         document.getElementById('completedTasks').textContent = completed;
         if (typeof lucide !== 'undefined') lucide.createIcons();
-        
-    } catch (error) {
-        console.error('Error loading tasks:', error);
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><h3>Error Loading Tasks</h3><p>Please try again</p></td></tr>';
-    }
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><h3>Error Loading Tasks</h3><p>Please try again</p></td></tr>';
+        }
+    }, error => {
+        console.error('Tasks subscription error:', error);
+    });
 }
 
 function openTaskModal() {
@@ -154,7 +166,6 @@ async function saveTask() {
         showToast('Task added successfully', 'success');
         logActivity(currentUser.uid, 'task-create', 'Created new task');
         closeTaskModal();
-        loadTasks();
     } catch (error) {
         console.error('Error adding task:', error);
         showToast('Error adding task', 'error');
@@ -166,7 +177,6 @@ async function updateTaskStatus(id, status) {
         const statusText = status === 'in-progress' ? 'started' : 'completed';
         await db.collection('tasks').doc(id).update({ status });
         showToast(`Task ${statusText}`, 'success');
-        loadTasks();
     } catch (error) {
         console.error('Error updating task:', error);
         showToast('Error updating task', 'error');
@@ -178,6 +188,7 @@ async function deleteTask(id) {
     try {
         await db.collection('tasks').doc(id).delete();
         showToast('Task deleted', 'success');
+        // Real-time subscription handles UI update
         loadTasks();
     } catch (error) {
         console.error('Error deleting task:', error);
@@ -188,4 +199,13 @@ async function deleteTask(id) {
 function formatDate(date) {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
 }

@@ -2,23 +2,7 @@ let currentUser = null;
 let userData = null;
 let prescUnsub = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) { window.location.href = '../auth/login.html'; return; }
-        currentUser = user;
-        const doc = await db.collection('users').doc(user.uid).get();
-        if (!doc.exists) { window.location.href = '../auth/login.html'; return; }
-        userData = doc.data();
-        
-        if (userData.role === 'student') {
-            document.getElementById('prescPatientField').style.display = 'none';
-        }
-        
-        loadPatients();
-        subscribePrescriptions();
-        setupPrescriptionSearch();
-    });
-});
+// Auth handled by guardPage() in HTML
 
 function setupPrescriptionSearch() {
     const search = document.getElementById('searchPrescriptions');
@@ -74,13 +58,14 @@ function subscribePrescriptions() {
             }
             
             if (snapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i data-lucide="pill" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Prescriptions</h3><p>Create your first prescription</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><i data-lucide="pill" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Prescriptions</h3><p>Create your first prescription</p></td></tr>';
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             } else {
                 tbody.innerHTML = snapshot.docs.map(doc => {
                     const presc = doc.data();
                     const patient = usersCache[presc.patientId];
                     const doctor = usersCache[presc.doctorId];
+                    const dispenser = usersCache[presc.dispensedBy];
                     
                     if (presc.status === 'pending') pending++;
                     if (presc.status === 'dispensed') dispensed++;
@@ -88,19 +73,25 @@ function subscribePrescriptions() {
                     const statusClass = presc.status === 'dispensed' ? 'success' : presc.status === 'pending' ? 'warning' : 'danger';
                     
                     let actions = '';
-                    if (presc.status === 'pending' && userData.role !== 'student') {
+                    if (presc.status === 'pending' && (userData.role === 'pharmacist' || userData.role === 'admin' || userData.role === 'administrator')) {
                         actions = `<button class="btn btn-sm btn-success" onclick="dispense('${doc.id}')"><i data-lucide="package-check" style="width:14px;height:14px"></i> Dispense</button>`;
                     }
+                    
+                    const routeLabel = presc.route ? presc.route.charAt(0).toUpperCase() + presc.route.slice(1) : '-';
+                    const dispensedInfo = presc.status === 'dispensed' && dispenser
+                        ? `<small style="color:var(--gray-400);display:block;font-size:11px">by ${escapeHtml(dispenser.firstName)} ${escapeHtml(dispenser.lastName)}</small>`
+                        : '';
                     
                     return `
                          <tr>
                              <td>${patient ? `${escapeHtml(patient.firstName)} ${escapeHtml(patient.lastName)}` : 'N/A'}</td>
                              <td>${escapeHtml(presc.medication)}</td>
                              <td>${escapeHtml(presc.dosage)}</td>
+                             <td>${routeLabel}</td>
                              <td>${escapeHtml(presc.frequency?.replace(/-/g, ' '))}</td>
                              <td>${escapeHtml(presc.duration)}</td>
                              <td>${doctor ? `Dr. ${escapeHtml(doctor.firstName)} ${escapeHtml(doctor.lastName)}` : 'N/A'}</td>
-                             <td><span class="badge badge-${statusClass}">${escapeHtml(presc.status)}</span></td>
+                             <td><span class="badge badge-${statusClass}">${escapeHtml(presc.status)}</span>${dispensedInfo}</td>
                              <td>${actions}</td>
                          </tr>
                     `;
@@ -136,6 +127,7 @@ async function savePrescription() {
     const dosage = sanitizeInput(document.getElementById('dosage').value);
     const frequency = document.getElementById('frequency').value;
     const duration = sanitizeInput(document.getElementById('duration').value);
+    const route = document.getElementById('route').value;
     const notes = sanitizeInput(document.getElementById('prescNotes').value);
     
     let patientId = currentUser.uid;
@@ -156,10 +148,17 @@ async function savePrescription() {
             dosage,
             frequency,
             duration,
+            route: route || 'oral',
             notes,
             status: 'pending',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
+        
+        const params = new URLSearchParams(window.location.search);
+        const consultationRef = params.get('consultation');
+        if (consultationRef) {
+            prescData.consultationRef = consultationRef;
+        }
         
         await db.collection('prescriptions').add(prescData);
         showToast('Prescription created', 'success');
@@ -174,10 +173,21 @@ async function dispense(id) {
     try {
         await db.collection('prescriptions').doc(id).update({
             status: 'dispensed',
+            dispensedBy: currentUser.uid,
             dispensedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+        await logActivity(currentUser.uid, 'prescription-dispense', 'Dispensed prescription: ' + id);
         showToast('Medication dispensed', 'success');
     } catch (error) {
         showToast('Error dispensing', 'error');
     }
+}
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
 }

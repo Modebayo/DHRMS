@@ -3,13 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>Reports & Analytics</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/components.css">
     <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <style>
+        .report-tab { padding:8px 16px; border:1.5px solid var(--border-color); background:var(--bg-primary); border-radius:var(--radius-md); cursor:pointer; font-size:13px; transition:all 0.2s; }
+        .report-tab:hover { border-color:var(--primary-300); background:var(--primary-50); }
+        .report-tab.active { background:var(--primary-500); color:#fff; border-color:var(--primary-500); }
+        .report-panel { display:none; }
+        .report-panel.active { display:block; animation:fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    </style>
     <script src="../js/theme.js"></script>
-    </head>
+</head>
 <body>
     <div class="dashboard">
         <aside class="sidebar sidebar-hidden" id="sidebar">
@@ -31,17 +43,22 @@
                     <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
                 </div>
             </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile" id="userProfile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-role" id="userRole">Role</span>
+                    </div>
+                </div>
+            </div>
         </aside>
         
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
                     <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
-                        <div class="hamburger">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
+                        <div class="hamburger"><span></span><span></span><span></span></div>
                     </button>
                     <div class="page-title">
                         <h1>Reports & Analytics</h1>
@@ -49,45 +66,150 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <button class="btn btn-primary" onclick="exportReport()"><i data-lucide="download"></i> Export Report</button>
+                    <button class="btn btn-primary" onclick="exportOverviewReport()"><i data-lucide="download"></i> Export Overview</button>
                 </div>
             </header>
             
             <div class="content">
-                <div class="stats-grid">
-                    <div class="stat-card"><div class="stat-icon blue"><i data-lucide="users"></i></div><div class="stat-value" id="rTotalUsers">0</div><div class="stat-label">Total Users</div></div>
-                    <div class="stat-card"><div class="stat-icon green"><i data-lucide="file-text"></i></div><div class="stat-value" id="rTotalRecords">0</div><div class="stat-label">Health Records</div></div>
-                    <div class="stat-card"><div class="stat-icon orange"><i data-lucide="calendar-days"></i></div><div class="stat-value" id="rTotalAppointments">0</div><div class="stat-label">Appointments</div></div>
-                    <div class="stat-card"><div class="stat-icon red"><i data-lucide="pill"></i></div><div class="stat-value" id="rTotalPrescriptions">0</div><div class="stat-label">Prescriptions</div></div>
-                    <div class="stat-card"><div class="stat-icon purple"><i data-lucide="clipboard-list"></i></div><div class="stat-value" id="rThisMonth">0</div><div class="stat-label">This Month Logs</div></div>
+                <div class="report-tabs" style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;">
+                    <button class="btn report-tab active" data-report="panelOverview">Overview</button>
+                    <button class="btn report-tab" data-report="panelAttendance">Clinic Attendance</button>
+                    <button class="btn report-tab" data-report="panelDiagnosis">Diagnosis Frequency</button>
+                    <button class="btn report-tab" data-report="panelPrescriptionUtil">Prescription Utilisation</button>
+                    <button class="btn report-tab" data-report="panelLabUtil">Lab Test Utilisation</button>
+                    <button class="btn report-tab" data-report="panelAppointmentAtt">Appointment Attendance</button>
                 </div>
-                
-                <div class="grid-2">
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Users by Role</h3></div>
-                        <div id="roleChart"></div>
+
+                <div id="panelOverview" class="report-panel active">
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-icon blue"><i data-lucide="users"></i></div><div class="stat-value" id="rTotalUsers">0</div><div class="stat-label">Total Users</div></div>
+                        <div class="stat-card"><div class="stat-icon green"><i data-lucide="file-text"></i></div><div class="stat-value" id="rTotalRecords">0</div><div class="stat-label">Health Records</div></div>
+                        <div class="stat-card"><div class="stat-icon orange"><i data-lucide="calendar-days"></i></div><div class="stat-value" id="rTotalAppointments">0</div><div class="stat-label">Appointments</div></div>
+                        <div class="stat-card"><div class="stat-icon red"><i data-lucide="pill"></i></div><div class="stat-value" id="rTotalPrescriptions">0</div><div class="stat-label">Prescriptions</div></div>
+                        <div class="stat-card"><div class="stat-icon purple"><i data-lucide="clipboard-list"></i></div><div class="stat-value" id="rThisMonth">0</div><div class="stat-label">This Month Logs</div></div>
                     </div>
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Department Distribution</h3></div>
-                        <div id="deptChart"></div>
+                    
+                    <div class="grid-2">
+                        <div class="card"><div class="card-header"><h3 class="card-title">Users by Role</h3></div><div id="roleChart"></div></div>
+                        <div class="card"><div class="card-header"><h3 class="card-title">Department Distribution</h3></div><div id="deptChart"></div></div>
+                        <div class="card"><div class="card-header"><h3 class="card-title">User Status</h3></div><div id="statusChart"></div></div>
+                        <div class="card"><div class="card-header"><h3 class="card-title">Appointment Status</h3></div><div id="aptChart"></div></div>
                     </div>
+                    
                     <div class="card">
-                        <div class="card-header"><h3 class="card-title">User Status</h3></div>
-                        <div id="statusChart"></div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Appointment Status</h3></div>
-                        <div id="aptChart"></div>
+                        <div class="card-header"><h3 class="card-title">System Summary</h3></div>
+                        <div class="table-container">
+                            <table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody id="summaryTable"></tbody></table>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="card">
-                    <div class="card-header"><h3 class="card-title">Monthly Activity Summary</h3></div>
-                    <div class="table-container">
-                        <table>
-                            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
-                            <tbody id="summaryTable"></tbody>
-                        </table>
+
+                <div id="panelAttendance" class="report-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Clinic Attendance Report</h3>
+                            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                                <label style="font-size:13px;">From: <input type="date" id="reportDateFrom" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <label style="font-size:13px;">To: <input type="date" id="reportDateTo" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <button class="btn btn-primary" id="generateAttendance"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> Generate</button>
+                                <button class="btn btn-outline export-report-btn"><i data-lucide="download" style="width:16px;height:16px"></i> Export</button>
+                            </div>
+                        </div>
+                        <div style="padding:16px;display:flex;gap:16px;flex-wrap:wrap;">
+                            <div style="padding:12px 20px;background:var(--primary-50);border-radius:var(--radius-md);text-align:center;">
+                                <div style="font-size:28px;font-weight:700;color:var(--primary-600);" id="attendanceTotal">0</div>
+                                <div style="font-size:12px;color:var(--primary-700);">Total Visits</div>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table><thead><tr><th>Date</th><th>Health Records</th><th>Appointments</th><th>Consultations</th></tr></thead><tbody id="attendanceTableBody"><tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">Click "Generate" to load report</td></tr></tbody></table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panelDiagnosis" class="report-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Diagnosis Frequency Report</h3>
+                            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                                <label style="font-size:13px;">From: <input type="date" id="diagDateFrom" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <label style="font-size:13px;">To: <input type="date" id="diagDateTo" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <button class="btn btn-primary" id="generateDiagnosis"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> Generate</button>
+                                <button class="btn btn-outline export-report-btn"><i data-lucide="download" style="width:16px;height:16px"></i> Export</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table><thead><tr><th>Rank</th><th>Diagnosis</th><th>Count (%)</th></tr></thead><tbody id="diagnosisTableBody"><tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-muted);">Click "Generate" to load report</td></tr></tbody></table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panelPrescriptionUtil" class="report-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Prescription Utilisation Report</h3>
+                            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                                <label style="font-size:13px;">From: <input type="date" id="prescDateFrom" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <label style="font-size:13px;">To: <input type="date" id="prescDateTo" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <button class="btn btn-primary" id="generatePrescriptionUtil"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> Generate</button>
+                                <button class="btn btn-outline export-report-btn"><i data-lucide="download" style="width:16px;height:16px"></i> Export</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table><thead><tr><th>Rank</th><th>Medication</th><th>Prescribed</th><th>Dispensed (%)</th></tr></thead><tbody id="prescriptionUtilTableBody"><tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">Click "Generate" to load report</td></tr></tbody></table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panelLabUtil" class="report-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Lab Test Utilisation Report</h3>
+                            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                                <label style="font-size:13px;">From: <input type="date" id="labDateFrom" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <label style="font-size:13px;">To: <input type="date" id="labDateTo" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <button class="btn btn-primary" id="generateLabUtil"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> Generate</button>
+                                <button class="btn btn-outline export-report-btn"><i data-lucide="download" style="width:16px;height:16px"></i> Export</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table><thead><tr><th>Rank</th><th>Test Type</th><th>Requested</th><th>Resulted (%)</th></tr></thead><tbody id="labUtilTableBody"><tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">Click "Generate" to load report</td></tr></tbody></table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panelAppointmentAtt" class="report-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Appointment Attendance Report</h3>
+                            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                                <label style="font-size:13px;">From: <input type="date" id="aptDateFrom" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <label style="font-size:13px;">To: <input type="date" id="aptDateTo" class="form-input" style="padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);"></label>
+                                <button class="btn btn-primary" id="generateAppointmentAttendance"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> Generate</button>
+                                <button class="btn btn-outline export-report-btn"><i data-lucide="download" style="width:16px;height:16px"></i> Export</button>
+                            </div>
+                        </div>
+                        <div style="padding:16px;display:flex;gap:16px;flex-wrap:wrap;">
+                            <div style="padding:12px 20px;background:var(--primary-50);border-radius:var(--radius-md);text-align:center;">
+                                <div style="font-size:28px;font-weight:700;color:var(--primary-600);" id="aptAttTotal">0</div>
+                                <div style="font-size:12px;color:var(--primary-700);">Total Appointments</div>
+                            </div>
+                            <div style="padding:12px 20px;background:var(--success-50);border-radius:var(--radius-md);text-align:center;">
+                                <div style="font-size:28px;font-weight:700;color:var(--success-600);" id="aptAttShowed">0</div>
+                                <div style="font-size:12px;color:var(--success-700);">Attended</div>
+                            </div>
+                            <div style="padding:12px 20px;background:var(--danger-50);border-radius:var(--radius-md);text-align:center;">
+                                <div style="font-size:28px;font-weight:700;color:var(--danger-600);" id="aptAttNoShow">0</div>
+                                <div style="font-size:12px;color:var(--danger-700);">No-Show</div>
+                            </div>
+                            <div style="padding:12px 20px;background:var(--warning-50);border-radius:var(--radius-md);text-align:center;">
+                                <div style="font-size:28px;font-weight:700;color:var(--warning-600);" id="aptAttRate">0%</div>
+                                <div style="font-size:12px;color:var(--warning-700);">Attendance Rate</div>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table><thead><tr><th>Date</th><th>Total</th><th>Attended</th><th>No-Show</th><th>Rate</th></tr></thead><tbody id="appointmentAttTableBody"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Click "Generate" to load report</td></tr></tbody></table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -95,20 +217,24 @@
     </div>
     
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
     <script src="../js/auth-guard.js"></script>
+    <script src="../js/key-manager.js"></script>
     <script src="../js/auth.js"></script>
     <script src="reports.js"></script>
     <script>
-        lucide.createIcons();
+        initTheme();
         (async function() {
             const result = await guardPage();
             if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            populateUserProfile();
+            loadReports();
+            setupReportTabListeners();
         })();
 
         function toggleSidebar() {

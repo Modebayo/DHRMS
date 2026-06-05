@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Dispense Treatment - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <style>
+        .med-check { display:flex; align-items:center; gap:12px; padding:12px; background:var(--bg-secondary); border-radius:var(--radius-md); margin-bottom:8px; }
+        .med-check input[type="checkbox"] { width:18px; height:18px; }
+        .med-info { flex:1; }
+        .med-info strong { display:block; font-size:14px; }
+        .med-info small { color:var(--text-muted); font-size:12px; }
+        .summary-card { background:var(--primary-50); border:1px solid var(--primary-200); border-radius:var(--radius-md); padding:16px; margin-bottom:16px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+                <a href="../dashboard/index.html" class="sidebar-back" title="Back to Dashboard"><i data-lucide="arrow-left"></i></a>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="nurse-queue.html" class="nav-item"><i data-lucide="clipboard-list"></i>Treatment Queue</a>
+                    <a href="../messages/index.html" class="nav-item"><i data-lucide="message-square"></i>Messages</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../records/vitals.html" class="nav-item"><i data-lucide="activity"></i>Record Vitals</a>
+                    <a href="../pharmacy/index.html" class="nav-item"><i data-lucide="pill"></i>Pharmacy</a>
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">N</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Nurse</div>
+                        <div class="user-role">Nurse</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Dispense Treatment</h1>
+                        <p>Administer prescribed treatment to patient</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content" style="max-width:900px;margin:0 auto;">
+                <div id="patientInfo" class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="user" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i> Patient Information</h3>
+                    </div>
+                    <div id="patientDetails" style="padding:16px;"><p>Loading...</p></div>
+                </div>
+
+                <div id="diagnosisSummary" class="card" style="margin-bottom:20px;display:none;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="file-text" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i> Doctor's Orders</h3>
+                    </div>
+                    <div id="diagnosisContent" style="padding:16px;"></div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="package-check" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i> Medications to Dispense</h3>
+                    </div>
+                    <div id="medicationsList" style="padding:16px;">
+                        <p style="color:var(--text-muted);">Loading medications...</p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="edit-3" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i> Administration Notes</h3>
+                    </div>
+                    <form id="dispenseForm" style="padding:16px;">
+                        <div class="form-group">
+                            <label>Notes / Instructions Given to Patient</label>
+                            <textarea id="adminNotes" rows="3" placeholder="Any instructions given to the patient about their medication..."></textarea>
+                        </div>
+
+                        <div id="formAlert" class="alert" style="display:none;"></div>
+
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+                            <a href="nurse-queue.html" class="btn btn-outline">Back to Queue</a>
+                            <button type="submit" class="btn btn-success" id="dispenseBtn">
+                                <span class="btn-text"><i data-lucide="package-check"></i> Confirm Dispensed & Complete</span>
+                                <span class="spinner" style="display:none;"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script>
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        let currentUser = null;
+        let userData = null;
+        let requestData = null;
+        let requestId = null;
+        let prescriptionIds = [];
+
+        (async function() {
+            const result = await guardPage(['nurse', 'doctor']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            initTheme();
+
+            const params = new URLSearchParams(window.location.search);
+            requestId = params.get('id');
+            if (!requestId) {
+                showToast('No request specified', 'error');
+                window.location.href = 'nurse-queue.html';
+                return;
+            }
+            await loadRequest();
+        })();
+
+        async function loadRequest() {
+            try {
+                const doc = await db.collection('treatment_requests').doc(requestId).get();
+                if (!doc.exists) {
+                    showToast('Request not found', 'error');
+                    window.location.href = 'nurse-queue.html';
+                    return;
+                }
+                requestData = doc.data();
+                const patientDoc = await db.collection('users').doc(requestData.patientId).get();
+                const patient = patientDoc.exists ? patientDoc.data() : null;
+
+                document.getElementById('patientDetails').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div>
+                            <p><strong>Patient:</strong> ${escapeHtml(requestData.patientName)}</p>
+                            <p><strong>ID:</strong> ${patient ? escapeHtml(patient.studentId || patient.staffId || 'N/A') : 'N/A'}</p>
+                            <p><strong>Department:</strong> ${patient ? escapeHtml(patient.department || 'N/A') : 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p><strong>Complaint:</strong> ${escapeHtml(requestData.complaint)}</p>
+                            <p><strong>Status:</strong> <span class="badge badge-info">Ready to Dispense</span></p>
+                        </div>
+                    </div>
+                `;
+
+                // Show doctor's diagnosis
+                if (requestData.diagnosis) {
+                    document.getElementById('diagnosisSummary').style.display = 'block';
+                    document.getElementById('diagnosisContent').innerHTML = `
+                        <div class="summary-card">
+                            <p><strong>Diagnosis:</strong> ${escapeHtml(requestData.diagnosis)}</p>
+                            ${requestData.diagnosisNotes ? `<p style="margin-top:8px;"><strong>Doctor's Notes:</strong> ${escapeHtml(requestData.diagnosisNotes)}</p>` : ''}
+                            <p style="margin-top:8px;"><strong>Treatment Plan:</strong> ${escapeHtml(requestData.treatmentPlan)}</p>
+                        </div>
+                    `;
+                }
+
+                // Load prescriptions from treatment_requests or prescriptions collection
+                const medsContainer = document.getElementById('medicationsList');
+                if (requestData.medications && requestData.medications.length > 0) {
+                    medsContainer.innerHTML = `
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+                            <i data-lucide="info" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px;"></i>
+                            Check off each medication as it is dispensed:
+                        </p>
+                        ${requestData.medications.map((med, idx) => `
+                            <div class="med-check">
+                                <input type="checkbox" id="medCheck_${idx}" data-med-name="${escapeHtml(med.name)}">
+                                <div class="med-info">
+                                    <strong>${escapeHtml(med.name)}</strong>
+                                    <small>${med.dosage ? `Dosage: ${escapeHtml(med.dosage)}` : ''} ${med.frequency ? `| ${escapeHtml(med.frequency)}` : ''} ${med.duration ? `| ${escapeHtml(med.duration)}` : ''}</small>
+                                </div>
+                            </div>
+                        `).join('')}
+                    `;
+
+                    // Get prescription IDs for marking as dispensed
+                    const prescSnap = await db.collection('prescriptions')
+                        .where('treatmentRequestId', '==', requestId)
+                        .get();
+                    prescriptionIds = prescSnap.docs.map(d => d.id);
+                } else {
+                    medsContainer.innerHTML = '<p style="color:var(--text-muted);">No medications prescribed.</p>';
+                }
+
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            } catch (error) {
+                console.error('Error loading request:', error);
+                showToast('Error loading request', 'error');
+            }
+        }
+
+        document.getElementById('dispenseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const checkboxes = document.querySelectorAll('#medicationsList input[type="checkbox"]');
+            const checked = Array.from(checkboxes).filter(cb => cb.checked);
+
+            if (checkboxes.length > 0 && checked.length !== checkboxes.length) {
+                showAlert('formAlert', 'Please check off all medications before completing dispense.', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('dispenseBtn');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.spinner').style.display = 'inline-block';
+
+            try {
+                // Mark all prescriptions as dispensed
+                for (const prescId of prescriptionIds) {
+                    await db.collection('prescriptions').doc(prescId).update({
+                        status: 'dispensed',
+                        dispensedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        dispensedBy: currentUser.uid,
+                        dispensedByName: `${userData.firstName} ${userData.lastName}`
+                    });
+                }
+
+                // Update treatment request
+                await db.collection('treatment_requests').doc(requestId).update({
+                    status: 'completed',
+                    dispensedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    dispensedBy: currentUser.uid,
+                    adminNotes: document.getElementById('adminNotes').value.trim() || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await logActivity(currentUser.uid, 'dispense', `Dispensed treatment for ${requestData.patientName}`);
+
+                // Notify the patient
+                await db.collection('notifications').add({
+                    userId: requestData.patientId,
+                    type: 'treatment_complete',
+                    title: 'Treatment Completed',
+                    message: `Your treatment has been dispensed. Please check your treatment request for details.`,
+                    read: false,
+                    treatmentRequestId: requestId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast('Treatment dispensed successfully!', 'success');
+
+                setTimeout(() => {
+                    window.location.href = 'nurse-queue.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error dispensing treatment:', error);
+                showAlert('formAlert', 'Error dispensing treatment. Please try again.', 'error');
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.spinner').style.display = 'none';
+            }
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('sidebar-open');
+            if (toggleBtn) toggleBtn.classList.toggle('active');
+            if (overlay) overlay.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

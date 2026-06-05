@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Patient Registration - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>Patient List</a>
+                    <a href="patient-registration.html" class="nav-item active"><i data-lucide="user-plus"></i>Register Patient</a>
+                    <a href="index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                    <a href="../messages/index.html" class="nav-item"><i data-lucide="message-square"></i>Messages</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-role" id="userRole">Staff</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Patient Registration</h1>
+                        <p>Register a new patient with encrypted health records</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content" style="max-width:900px;margin:0 auto;">
+                <div id="statusAlert" class="alert" style="display:none;"></div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="user-plus" style="width:20px;height:20px;display:inline;vertical-align:middle;margin-right:8px;"></i>New Patient Registration</h3>
+                    </div>
+                    <form id="registrationForm" style="padding:20px;">
+                        <div class="card" style="margin-bottom:20px;background:var(--primary-50);border:1px solid var(--primary-200);">
+                            <div style="padding:16px;">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Clinic Number</label>
+                                        <input type="text" id="clinicNumber" readonly style="background:var(--bg-secondary);font-weight:600;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Registration Date</label>
+                                        <input type="text" id="regDate" readonly style="background:var(--bg-secondary);">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 style="margin-bottom:16px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:0.05em;">Personal Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="required-field">Surname</label>
+                                <input type="text" id="surname" placeholder="Surname" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="required-field">First Name</label>
+                                <input type="text" id="firstname" placeholder="First name" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Middle Name</label>
+                                <input type="text" id="middlename" placeholder="Middle name">
+                            </div>
+                            <div class="form-group">
+                                <label class="required-field">Date of Birth</label>
+                                <input type="date" id="dob" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="required-field">Gender</label>
+                                <select id="gender" required>
+                                    <option value="">Select gender...</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Blood Group</label>
+                                <select id="bloodGroup">
+                                    <option value="">Select...</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Genotype</label>
+                                <select id="genotype">
+                                    <option value="">Select...</option>
+                                    <option value="AA">AA</option>
+                                    <option value="AS">AS</option>
+                                    <option value="SS">SS</option>
+                                    <option value="AC">AC</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>University ID</label>
+                                <input type="text" id="universityId" placeholder="e.g., KDU/FAPS/22/001">
+                            </div>
+                        </div>
+
+                        <h4 style="margin:24px 0 16px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:0.05em;">Contact Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="required-field">Phone Number</label>
+                                <input type="tel" id="phone" placeholder="+234 801 234 5678" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" id="email" placeholder="patient@example.com">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Residential Address</label>
+                            <textarea id="address" rows="2" placeholder="Full residential address"></textarea>
+                        </div>
+
+                        <h4 style="margin:24px 0 16px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:0.05em;">Emergency Contact</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Emergency Contact Name</label>
+                                <input type="text" id="emergencyName" placeholder="Full name">
+                            </div>
+                            <div class="form-group">
+                                <label>Emergency Contact Phone</label>
+                                <input type="tel" id="emergencyPhone" placeholder="+234 801 234 5678">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Emergency Contact Address</label>
+                            <textarea id="emergencyAddress" rows="2" placeholder="Emergency contact residential address"></textarea>
+                        </div>
+
+                        <h4 style="margin:24px 0 16px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:0.05em;">Medical Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Existing Conditions</label>
+                                <textarea id="existingConditions" rows="3" placeholder="List any existing medical conditions (e.g., Hypertension, Diabetes, Asthma)"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Allergies</label>
+                                <textarea id="allergies" rows="3" placeholder="List any allergies (e.g., Penicillin, Peanuts, Latex)"></textarea>
+                            </div>
+                        </div>
+
+                        <div id="encryptionStatus" style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--success-50);border-radius:var(--radius-md);margin:20px 0;">
+                            <i data-lucide="lock" style="width:18px;height:18px;color:var(--success-600);"></i>
+                            <span style="font-size:13px;color:var(--success-700);">
+                                <strong>AES-256 Encryption Active:</strong> All sensitive fields will be encrypted before storage.
+                            </span>
+                        </div>
+
+                        <div id="duplicateAlert" class="alert alert-warning" style="display:none;"></div>
+
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+                            <button type="button" class="btn btn-outline" onclick="resetForm()">Reset</button>
+                            <button type="submit" class="btn btn-primary" id="registerBtn">
+                                <span class="btn-text"><i data-lucide="user-plus"></i> Register Patient</span>
+                                <span class="spinner" style="display:none;"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script>
+        let currentUser = null;
+        let userData = null;
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        async function init() {
+            initTheme();
+            const result = await guardPage(['nurse', 'administrator', 'records_officer']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            if (userData.status === 'inactive') {
+                window.location.href = '../dashboard/index.html';
+                return;
+            }
+
+            document.getElementById('userName').textContent = userData.firstName + ' ' + userData.lastName;
+            document.getElementById('userAvatar').textContent = (userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '');
+            document.getElementById('userRole').textContent = userData.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('regDate').value = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            await generateClinicNumber();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        async function generateClinicNumber() {
+            try {
+                const counterRef = db.collection('system_counters').doc('clinic_number_counter');
+                const year = new Date().getFullYear();
+                const result = await db.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(counterRef);
+                    let nextNum = 1;
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.year === year) {
+                            nextNum = (data.current || 0) + 1;
+                        }
+                    }
+                    transaction.set(counterRef, { year, current: nextNum }, { merge: true });
+                    return nextNum;
+                });
+                const clinicNumber = 'KU-' + year + '-' + String(result).padStart(4, '0');
+                document.getElementById('clinicNumber').value = clinicNumber;
+                return clinicNumber;
+            } catch (error) {
+                console.error('Error generating clinic number:', error);
+                document.getElementById('clinicNumber').value = 'KU-' + new Date().getFullYear() + '-TEMP';
+                showAlert('statusAlert', 'Could not generate clinic number. Will use temporary number.', 'warning');
+                return null;
+            }
+        }
+
+        async function checkDuplicates() {
+            const universityId = document.getElementById('universityId').value.trim();
+            const clinicNumber = document.getElementById('clinicNumber').value.trim();
+            const surname = document.getElementById('surname').value.trim();
+            const firstname = document.getElementById('firstname').value.trim();
+
+            if (!surname || !firstname) return false;
+
+            try {
+                const alerts = [];
+                if (universityId) {
+                    const uniSnap = await db.collection('patients')
+                        .where('universityId', '==', universityId)
+                        .limit(1)
+                        .get();
+                    if (!uniSnap.empty) {
+                        alerts.push('A patient with University ID "' + universityId + '" already exists.');
+                    }
+                }
+
+                if (clinicNumber && !clinicNumber.includes('TEMP')) {
+                    const clinicSnap = await db.collection('patients')
+                        .where('clinicNumber', '==', clinicNumber)
+                        .limit(1)
+                        .get();
+                    if (!clinicSnap.empty) {
+                        alerts.push('Clinic number ' + clinicNumber + ' is already in use. Please regenerate.');
+                        await generateClinicNumber();
+                    }
+                }
+
+                if (alerts.length > 0) {
+                    document.getElementById('duplicateAlert').innerHTML = alerts.join('<br>');
+                    document.getElementById('duplicateAlert').style.display = 'block';
+                    return true;
+                }
+
+                document.getElementById('duplicateAlert').style.display = 'none';
+                return false;
+            } catch (error) {
+                console.error('Duplicate check error:', error);
+                return false;
+            }
+        }
+
+        async function registerPatient() {
+            const surname = document.getElementById('surname').value.trim();
+            const firstname = document.getElementById('firstname').value.trim();
+            const middlename = document.getElementById('middlename').value.trim();
+            const dob = document.getElementById('dob').value;
+            const gender = document.getElementById('gender').value;
+            const bloodGroup = document.getElementById('bloodGroup').value;
+            const genotype = document.getElementById('genotype').value;
+            const universityId = document.getElementById('universityId').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const emergencyName = document.getElementById('emergencyName').value.trim();
+            const emergencyPhone = document.getElementById('emergencyPhone').value.trim();
+            const emergencyAddress = document.getElementById('emergencyAddress').value.trim();
+            const existingConditions = document.getElementById('existingConditions').value.trim();
+            const allergies = document.getElementById('allergies').value.trim();
+
+            if (!surname || !firstname || !dob || !gender || !phone) {
+                showAlert('statusAlert', 'Please fill all required fields (Surname, First Name, DOB, Gender, Phone)', 'error');
+                return null;
+            }
+
+            if (await checkDuplicates()) return null;
+
+            const clinicNumber = document.getElementById('clinicNumber').value;
+
+            const rawData = {
+                surname, firstname, middlename, dob, bloodGroup, genotype,
+                phone, email, address, emergencyName, emergencyPhone,
+                emergencyAddress, existingConditions, allergies
+            };
+
+            const encryptedPart = await Encryption.encryptPatientFields(rawData);
+
+            const patientData = {
+                ...encryptedPart,
+                clinicNumber,
+                universityId: universityId || '',
+                gender,
+                createdBy: currentUser.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            return patientData;
+        }
+
+        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.spinner').style.display = 'inline-block';
+
+            try {
+                const patientData = await registerPatient();
+                if (!patientData) {
+                    btn.disabled = false;
+                    btn.querySelector('.btn-text').style.display = 'inline';
+                    btn.querySelector('.spinner').style.display = 'none';
+                    return;
+                }
+
+                const docRef = await db.collection('patients').add(patientData);
+
+                await logActivityExt(currentUser.uid, 'CREATE_PATIENT', 'patients', docRef.id,
+                    'Registered patient: ' + patientData.clinicNumber);
+
+                showToast('Patient registered successfully! Clinic Number: ' + patientData.clinicNumber, 'success');
+                showAlert('statusAlert',
+                    'Patient <strong>' + document.getElementById('surname').value + ' ' + document.getElementById('firstname').value + '</strong> registered successfully!<br>Clinic Number: <strong>' + patientData.clinicNumber + '</strong><br>All sensitive fields encrypted with AES-256.',
+                    'success'
+                );
+                resetForm();
+                await generateClinicNumber();
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                showAlert('statusAlert', 'Error registering patient: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.spinner').style.display = 'none';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
+
+        function resetForm() {
+            document.getElementById('registrationForm').reset();
+            document.getElementById('duplicateAlert').style.display = 'none';
+            document.getElementById('regDate').value = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        ['surname', 'firstname', 'universityId'].forEach(id => {
+            document.getElementById(id)?.addEventListener('blur', () => checkDuplicates());
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        async function logActivityExt(userId, actionType, collectionName, documentId, description) {
+            try {
+                let ipAddress = 'N/A';
+                try {
+                    const resp = await fetch('https://api.ipify.org?format=json');
+                    const data = await resp.json();
+                    ipAddress = data.ip;
+                } catch (e) {}
+
+                await db.collection('audit_logs').add({
+                    userId: userId,
+                    actionType: actionType,
+                    collectionName: collectionName,
+                    documentId: documentId,
+                    description: description || '',
+                    ipAddress: ipAddress,
+                    userAgent: navigator.userAgent,
+                    actionTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (error) {
+                console.error('Audit log error:', error);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

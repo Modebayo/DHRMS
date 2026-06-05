@@ -1,26 +1,13 @@
-document.addEventListener('DOMContentLoaded', () => {
-    let currentUser = null;
-    let userData = null;
-    
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) {
-            window.location.href = '../auth/login.html';
-            return;
-        }
-        
-        currentUser = user;
-        const doc = await db.collection('users').doc(user.uid).get();
-        
-        if (!doc.exists) {
-            window.location.href = '../auth/login.html';
-            return;
-        }
-        
-        userData = doc.data();
-        initializeDashboard();
-    });
-    
-    async function initializeDashboard() {
+let currentUser = null;
+let userData = null;
+
+function initDashboard(user, data) {
+    currentUser = user;
+    userData = data;
+    initializeDashboard();
+}
+
+async function initializeDashboard() {
         document.getElementById('welcomeName').textContent = userData.firstName;
         document.title = `${userData.role.charAt(0).toUpperCase() + userData.role.slice(1)} Dashboard - KU Health Records`;
         
@@ -444,7 +431,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Search error:', error);
         }
     }
-});
 
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('active');

@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>Create User - Koladaisi University</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
@@ -255,17 +259,16 @@
     
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
     <script src="../js/auth-guard.js"></script>
+    <script src="../js/key-manager.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/theme.js"></script>
     <script>
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         
         let currentUser = null;
         let selectedRole = '';
@@ -325,7 +328,7 @@
             
             initTheme();
             renderSidebar(result.userData.role);
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         })();
         
         function renderSidebar(role) {
@@ -344,7 +347,7 @@
                     `).join('')}
                 </div>
             `).join('');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         
         function toggleSidebar() {
@@ -360,7 +363,7 @@
             
             document.getElementById('studentFields').style.display = role === 'student' ? 'block' : 'none';
             document.getElementById('staffFields').style.display = (role === 'doctor' || role === 'nurse') ? 'block' : 'none';
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         
         function previewUserPhoto(input) {
@@ -430,7 +433,7 @@
                     userId: document.getElementById('userIdNumber').value.trim(),
                     email: email,
                     role: selectedRole,
-                    status: 'active',
+                    status: selectedRole === 'student' ? 'active' : 'pending_approval',
                     bioCompleted: true,
                     bloodType: document.getElementById('bloodType').value,
                     allergies: document.getElementById('allergies').value.trim(),
@@ -467,7 +470,7 @@
             } catch (error) {
                 console.error('Create user error:', error);
                 let message = 'Error creating user';
-                if (error.code === 'auth/email-already-in-use') {
+                if (error.code === 'auth/email-already-in-use' || error.code === 'auth/email-already-exists') {
                     message = 'Email already exists in the system';
                 }
                 showAlert('createAlert', message, 'error');
@@ -495,6 +498,5 @@
             if (overlay) overlay.classList.toggle('active');
         }
     </script>
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 </body>
 </html>

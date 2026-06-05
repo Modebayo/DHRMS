@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Review & Diagnose - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <style>
+        .medication-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 40px; gap:8px; align-items:center; padding:8px; background:var(--bg-secondary); border-radius:var(--radius-md); margin-bottom:8px; }
+        .vitals-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+        .vitals-item { text-align:center; padding:12px; background:var(--bg-secondary); border-radius:var(--radius-md); }
+        .vitals-item .value { font-size:22px; font-weight:700; color:var(--primary-600); }
+        .vitals-item .label { font-size:12px; color:var(--text-muted); margin-top:4px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+                <a href="../dashboard/index.html" class="sidebar-back" title="Back to Dashboard"><i data-lucide="arrow-left"></i></a>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="doctor-queue.html" class="nav-item"><i data-lucide="clipboard-list"></i>Review Queue</a>
+                    <a href="../messages/index.html" class="nav-item"><i data-lucide="message-square"></i>Messages</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../records/patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
+                    <a href="../records/prescriptions.html" class="nav-item"><i data-lucide="pill"></i>Prescriptions</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">D</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Doctor</div>
+                        <div class="user-role">Doctor</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Review & Diagnose</h1>
+                        <p>Examine patient and prescribe treatment</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content" style="max-width:900px;margin:0 auto;">
+                <div id="patientInfo" class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="user" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i> Patient Information</h3>
+                    </div>
+                    <div id="patientDetails" style="padding:16px;"><p>Loading...</p></div>
+                </div>
+
+                <div id="vitalsDisplay" class="card" style="margin-bottom:20px;display:none;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="activity" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i> Vitals Recorded</h3>
+                    </div>
+                    <div id="vitalsGrid" class="vitals-grid" style="padding:16px;"></div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i data-lucide="stethoscope" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px;"></i> Diagnosis</h3>
+                    </div>
+                    <form id="diagnosisForm" style="padding:16px;">
+                        <div class="form-group">
+                            <label class="required-field">Primary Diagnosis</label>
+                            <input type="text" id="primaryDiagnosis" placeholder="e.g., Acute Bronchitis, Malaria" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Additional Notes</label>
+                            <textarea id="diagnosisNotes" rows="3" placeholder="Clinical findings, observations, and notes..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="required-field">Treatment Plan</label>
+                            <textarea id="treatmentPlan" rows="3" placeholder="Describe the treatment plan for this patient..." required></textarea>
+                        </div>
+
+                        <h4 style="margin:20px 0 12px;font-size:15px;"><i data-lucide="pill" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> Prescribed Medications</h4>
+                        <div id="medicationsList"></div>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="addMedication()" style="margin-bottom:16px;"><i data-lucide="plus"></i> Add Medication</button>
+
+                        <div class="form-group">
+                            <label>Follow-up Required</label>
+                            <select id="followUp">
+                                <option value="no">No follow-up needed</option>
+                                <option value="1-week">1 week</option>
+                                <option value="2-weeks">2 weeks</option>
+                                <option value="1-month">1 month</option>
+                                <option value="as-needed">As needed</option>
+                            </select>
+                        </div>
+
+                        <div id="formAlert" class="alert" style="display:none;"></div>
+
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+                            <a href="doctor-queue.html" class="btn btn-outline">Back to Queue</a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <span class="btn-text"><i data-lucide="check-circle"></i> Send Treatment to Nurse</span>
+                                <span class="spinner" style="display:none;"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script>
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        let currentUser = null;
+        let userData = null;
+        let requestData = null;
+        let requestId = null;
+        let medications = [];
+        let medCount = 0;
+
+        (async function() {
+            const result = await guardPage(['doctor']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            initTheme();
+
+            const params = new URLSearchParams(window.location.search);
+            requestId = params.get('id');
+            if (!requestId) {
+                showToast('No request specified', 'error');
+                window.location.href = 'doctor-queue.html';
+                return;
+            }
+            await loadRequest();
+            addMedication();
+        })();
+
+        async function loadRequest() {
+            try {
+                const doc = await db.collection('treatment_requests').doc(requestId).get();
+                if (!doc.exists) {
+                    showToast('Request not found', 'error');
+                    window.location.href = 'doctor-queue.html';
+                    return;
+                }
+                requestData = doc.data();
+
+                const patientDoc = await db.collection('users').doc(requestData.patientId).get();
+                const patient = patientDoc.exists ? patientDoc.data() : null;
+
+                document.getElementById('patientDetails').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div>
+                            <p><strong>Patient:</strong> ${escapeHtml(requestData.patientName)}</p>
+                            <p><strong>ID:</strong> ${patient ? escapeHtml(patient.studentId || patient.staffId || 'N/A') : 'N/A'}</p>
+                            <p><strong>Department:</strong> ${patient ? escapeHtml(patient.department || 'N/A') : 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p><strong>Complaint:</strong> ${escapeHtml(requestData.complaint)}</p>
+                            <p><strong>Severity:</strong> <span class="badge badge-${requestData.severity === 'severe' ? 'danger' : requestData.severity === 'moderate' ? 'warning' : 'info'}">${requestData.severity}</span></p>
+                        </div>
+                    </div>
+                    <div style="margin-top:12px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);">
+                        <strong>Symptoms:</strong>
+                        <p style="margin:4px 0 0;font-size:13px;">${escapeHtml(requestData.symptoms)}</p>
+                        ${requestData.nurseNotes ? `<p style="margin:8px 0 0;font-size:13px;"><strong>Nurse Notes:</strong> ${escapeHtml(requestData.nurseNotes)}</p>` : ''}
+                    </div>
+                `;
+
+                // Load vitals
+                if (requestData.vitalsId) {
+                    const vDoc = await db.collection('vitals').doc(requestData.vitalsId).get();
+                    if (vDoc.exists) {
+                        const v = vDoc.data();
+                        document.getElementById('vitalsDisplay').style.display = 'block';
+                        document.getElementById('vitalsGrid').innerHTML = `
+                            <div class="vitals-item"><div class="value">${v.temperature || '--'}°C</div><div class="label">Temperature</div></div>
+                            <div class="vitals-item"><div class="value">${v.pulse || '--'}</div><div class="label">Pulse (bpm)</div></div>
+                            <div class="vitals-item"><div class="value">${v.spo2 || '--'}%</div><div class="label">SpO2</div></div>
+                            <div class="vitals-item"><div class="value">${v.bpSystolic || '--'}/${v.bpDiastolic || '--'}</div><div class="label">Blood Pressure</div></div>
+                        `;
+                    }
+                }
+
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            } catch (error) {
+                console.error('Error loading request:', error);
+                showToast('Error loading request', 'error');
+            }
+        }
+
+        function addMedication() {
+            medCount++;
+            const div = document.createElement('div');
+            div.className = 'medication-row';
+            div.id = `medRow_${medCount}`;
+            div.innerHTML = `
+                <input type="text" id="medName_${medCount}" placeholder="Medication name" style="padding:8px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:13px;">
+                <input type="text" id="medDosage_${medCount}" placeholder="Dosage" style="padding:8px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:13px;">
+                <input type="text" id="medFrequency_${medCount}" placeholder="Frequency" style="padding:8px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:13px;">
+                <input type="text" id="medDuration_${medCount}" placeholder="Duration" style="padding:8px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:13px;">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeMedication(${medCount})" style="padding:6px;"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+            `;
+            document.getElementById('medicationsList').appendChild(div);
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function removeMedication(id) {
+            const row = document.getElementById(`medRow_${id}`);
+            if (row) row.remove();
+        }
+
+        document.getElementById('diagnosisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const primaryDiagnosis = document.getElementById('primaryDiagnosis').value.trim();
+            const diagnosisNotes = document.getElementById('diagnosisNotes').value.trim();
+            const treatmentPlan = document.getElementById('treatmentPlan').value.trim();
+            const followUp = document.getElementById('followUp').value;
+
+            if (!primaryDiagnosis || !treatmentPlan) {
+                showAlert('formAlert', 'Please fill in diagnosis and treatment plan', 'error');
+                return;
+            }
+
+            // Collect medications
+            const meds = [];
+            for (let i = 1; i <= medCount; i++) {
+                const row = document.getElementById(`medRow_${i}`);
+                if (!row) continue;
+                const name = document.getElementById(`medName_${i}`)?.value.trim();
+                const dosage = document.getElementById(`medDosage_${i}`)?.value.trim();
+                const frequency = document.getElementById(`medFrequency_${i}`)?.value.trim();
+                const duration = document.getElementById(`medDuration_${i}`)?.value.trim();
+                if (name) {
+                    meds.push({ name, dosage: dosage || '', frequency: frequency || '', duration: duration || '' });
+                }
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.spinner').style.display = 'inline-block';
+
+            try {
+                // Update treatment request
+                await db.collection('treatment_requests').doc(requestId).update({
+                    status: 'treatment_ready',
+                    diagnosis: primaryDiagnosis,
+                    diagnosisNotes: diagnosisNotes || '',
+                    treatmentPlan: treatmentPlan,
+                    medications: meds,
+                    followUp: followUp,
+                    reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Create health record
+                await db.collection('health_records').add({
+                    patientId: requestData.patientId,
+                    patientName: requestData.patientName,
+                    doctorId: currentUser.uid,
+                    doctorName: `${userData.firstName} ${userData.lastName}`,
+                    diagnosis: primaryDiagnosis,
+                    notes: diagnosisNotes,
+                    treatmentPlan: treatmentPlan,
+                    treatmentRequestId: requestId,
+                    type: 'consultation',
+                    status: 'active',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Create prescriptions for each medication
+                for (const med of meds) {
+                    await db.collection('prescriptions').add({
+                        patientId: requestData.patientId,
+                        patientName: requestData.patientName,
+                        doctorId: currentUser.uid,
+                        doctorName: `${userData.firstName} ${userData.lastName}`,
+                        medication: med.name,
+                        dosage: med.dosage,
+                        frequency: med.frequency,
+                        duration: med.duration,
+                        status: 'pending',
+                        treatmentRequestId: requestId,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                await logActivity(currentUser.uid, 'diagnosis', `Diagnosed ${requestData.patientName}: ${primaryDiagnosis}`);
+
+                // Notify the nurse
+                await db.collection('notifications').add({
+                    userId: requestData.nurseId,
+                    type: 'treatment_ready',
+                    title: 'Treatment Ready to Dispense',
+                    message: `${requestData.patientName} - ${primaryDiagnosis} - Treatment plan ready by Dr. ${userData.firstName} ${userData.lastName}`,
+                    read: false,
+                    treatmentRequestId: requestId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast('Treatment plan sent to nurse!', 'success');
+
+                setTimeout(() => {
+                    window.location.href = 'doctor-queue.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error saving diagnosis:', error);
+                showAlert('formAlert', 'Error saving diagnosis. Please try again.', 'error');
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.spinner').style.display = 'none';
+            }
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

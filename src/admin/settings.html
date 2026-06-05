@@ -3,11 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>System Settings</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/mobile-responsive.css">
     <script src="../js/theme.js"></script>
+    <style>
+        .backup-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .backup-table th, .backup-table td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--border-color, #e2e8f0); }
+        .backup-table th { font-weight:600; color:var(--text-muted, #64748b); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+        .backup-actions { display:flex; gap:6px; }
+        .backup-actions .btn { padding:4px 8px; font-size:12px; }
+        .backup-status { font-size:13px; color:var(--text-muted, #64748b); margin-top:8px; }
+        .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000; }
+        .modal-content { background:var(--bg-primary, #fff); border-radius:12px; padding:24px; max-width:480px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+        .modal-content h3 { margin:0 0 12px 0; }
+        .modal-content p { color:var(--text-muted, #64748b); font-size:14px; line-height:1.5; margin-bottom:20px; }
+        .modal-actions { display:flex; gap:12px; justify-content:flex-end; }
+        .btn-warning { background:var(--color-warning, #f59e0b); color:#fff; }
+        .btn-warning:hover { background:var(--color-warning-hover, #d97706); }
+    </style>
     </head>
 <body>
     <div class="dashboard">
@@ -30,12 +49,21 @@
                     <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
                 </div>
             </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile" id="userProfile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-role" id="userRole">Role</span>
+                    </div>
+                </div>
+            </div>
         </aside>
         
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
                     <div class="page-title"><h1>System Settings</h1><p>Configure system preferences</p></div>
                 </div>
             </header>
@@ -65,33 +93,60 @@
                     </form>
                 </div>
                 
-                <div class="card">
-                    <div class="card-header"><h3 class="card-title"><i data-lucide="database" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px"></i>Backup & Data</h3></div>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap">
-                        <button class="btn btn-primary" onclick="exportAllData()"><i data-lucide="download"></i> Export All Data</button>
+                <div class="card" style="margin-bottom:20px">
+                    <div class="card-header"><h3 class="card-title"><i data-lucide="database" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:8px"></i>Backup & Restore</h3></div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+                        <button class="btn btn-primary" id="createBackupBtn" onclick="createBackup()"><i data-lucide="download"></i> Create Backup</button>
+                        <button class="btn btn-outline" onclick="exportAllData()"><i data-lucide="file-text"></i> Export as Text</button>
                         <button class="btn btn-danger" onclick="clearCache()"><i data-lucide="trash-2"></i> Clear Cache</button>
+                    </div>
+                    <div class="backup-status" id="backupStatus"></div>
+                    <div id="backupList" style="margin-top:12px;">
+                        <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading backups...</div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <div class="modal-overlay" id="restoreModal">
+        <div class="modal-content">
+            <h3>Restore Backup</h3>
+            <p id="restoreMessage">Are you sure you want to restore this backup?</p>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="cancelRestore()">Cancel</button>
+                <button class="btn btn-warning" id="restoreConfirmBtn">Restore</button>
+            </div>
+        </div>
+    </div>
     
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/key-manager.js"></script>
     <script src="../js/auth.js"></script>
     <script src="admin-settings.js"></script>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
     <script>
+        initTheme();
+        guardPage(['admin']).then(result => {
+            if (result) {
+                currentUser = result.user;
+                userData = result.userData;
+                populateUserProfile();
+                loadSettings();
+                loadBackupList();
+            }
+        }).catch(err => console.error('Auth guard error:', err));
+
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('sidebar-open');
             document.getElementById('sidebarToggle').classList.toggle('active');
             document.getElementById('sidebarOverlay').classList.toggle('active');
         }
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     </script>
 </body>
 </html>

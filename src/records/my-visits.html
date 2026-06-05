@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>My Visits - Koladaisi University</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
@@ -90,6 +94,15 @@
                 <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
             </div>
             <nav class="sidebar-nav" id="sidebarNav"></nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-role" id="userRole">Role</div>
+                    </div>
+                </div>
+            </div>
         </aside>
         
         <main class="main-content">
@@ -168,16 +181,15 @@
     </div>
 
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
     <script src="../js/auth-guard.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/theme.js"></script>
     <script>
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         
         let currentUser = null;
         let userData = null;
@@ -192,6 +204,122 @@
             { id: 'discharge', name: 'Discharge', icon: 'log-out' }
         ];
         
+        const NAV_ITEMS = {
+            student: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
+                    { icon: 'git-branch', label: 'My Visits', href: 'my-visits.html', active: true },
+                    { icon: 'file-text', label: 'My Records', href: 'my-records.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'pill', label: 'Prescriptions', href: 'my-prescriptions.html' },
+                    { icon: 'activity', label: 'My Vitals', href: 'my-vitals.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'user-circle', label: 'My Profile', href: '../settings/profile-form.html' },
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            doctor: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
+                    { icon: 'file-text', label: 'Health Records', href: 'index.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'git-branch', label: 'Visit Workflow', href: 'visit-workflow.html' },
+                    { icon: 'users', label: 'My Patients', href: 'patient-list.html' },
+                    { icon: 'pill', label: 'Prescriptions', href: 'prescriptions.html' },
+                    { icon: 'flask-conical', label: 'Lab Results', href: 'lab-results.html' },
+                    { icon: 'activity', label: 'Vitals', href: 'vitals.html' },
+                ]},
+                { section: 'Pharmacy', items: [
+                    { icon: 'pill', label: 'Pharmacy', href: '../pharmacy/index.html' },
+                    { icon: 'package', label: 'Inventory', href: '../pharmacy/inventory.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'user-circle', label: 'My Profile', href: '../settings/profile-form.html' },
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            nurse: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
+                    { icon: 'file-text', label: 'Health Records', href: 'index.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'git-branch', label: 'Visit Workflow', href: 'visit-workflow.html' },
+                    { icon: 'activity', label: 'Record Vitals', href: 'vitals.html' },
+                    { icon: 'flask-conical', label: 'Lab Results', href: 'lab-results.html' },
+                    { icon: 'list-todo', label: 'Tasks', href: 'tasks.html' },
+                ]},
+                { section: 'Pharmacy', items: [
+                    { icon: 'pill', label: 'Pharmacy', href: '../pharmacy/index.html' },
+                    { icon: 'package', label: 'Inventory', href: '../pharmacy/inventory.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'user-circle', label: 'My Profile', href: '../settings/profile-form.html' },
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+            admin: [
+                { section: 'Main', items: [
+                    { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
+                    { icon: 'file-text', label: 'Health Records', href: 'index.html' },
+                    { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
+                    { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
+                ]},
+                { section: 'Medical', items: [
+                    { icon: 'users', label: 'Patient List', href: 'patient-list.html' },
+                    { icon: 'pill', label: 'Prescriptions', href: 'prescriptions.html' },
+                    { icon: 'flask-conical', label: 'Lab Results', href: 'lab-results.html' },
+                    { icon: 'activity', label: 'Vitals', href: 'vitals.html' },
+                ]},
+                { section: 'Pharmacy', items: [
+                    { icon: 'pill', label: 'Pharmacy', href: '../pharmacy/index.html' },
+                    { icon: 'package', label: 'Inventory', href: '../pharmacy/inventory.html' },
+                ]},
+                { section: 'Administration', items: [
+                    { icon: 'user-cog', label: 'User Management', href: '../admin/users.html' },
+                    { icon: 'bar-chart-3', label: 'Reports', href: '../admin/reports.html' },
+                    { icon: 'clipboard-list', label: 'Activity Logs', href: '../admin/logs.html' },
+                    { icon: 'settings', label: 'System Settings', href: '../admin/settings.html' },
+                ]},
+                { section: 'Account', items: [
+                    { icon: 'user-circle', label: 'My Profile', href: '../settings/profile-form.html' },
+                    { icon: 'settings-2', label: 'Settings', href: '../settings/index.html' },
+                    { icon: 'log-out', label: 'Logout', href: '#', action: 'logout' },
+                ]},
+            ],
+        };
+        
+        function renderSidebar(role) {
+            const nav = document.getElementById('sidebarNav');
+            const items = NAV_ITEMS[role];
+            if (!items) return;
+            
+            nav.innerHTML = items.map(section => `
+                <div class="nav-section">
+                    <div class="nav-section-title">${section.section}</div>
+                    ${section.items.map(item => `
+                        <a href="${item.href}" class="nav-item ${item.active ? 'active' : ''}" ${item.action ? `onclick="${item.action}(); return false;"` : ''}>
+                            <i data-lucide="${item.icon}"></i>
+                            ${item.label}
+                        </a>
+                    `).join('')}
+                </div>
+            `).join('');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        
         (async function() {
             const result = await guardPage();
             if (!result) return;
@@ -199,6 +327,10 @@
             userData = result.userData;
             
             initTheme();
+            renderSidebar(userData.role);
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            document.getElementById('userRole').textContent = userData.role;
             loadVisits();
             
             document.getElementById('visitFilter').addEventListener('change', filterVisits);
@@ -243,7 +375,7 @@
                         <p>Your visit history will appear here</p>
                     </div>
                 `;
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') lucide.createIcons();
                 return;
             }
             
@@ -275,7 +407,7 @@
                 `;
             }).join('');
             
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         
         async function viewVisitDetail(visitId) {
@@ -405,7 +537,7 @@
             `;
             
             document.getElementById('visitDetailModal').classList.add('active');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         
         function printVisitSummary(visitId) {

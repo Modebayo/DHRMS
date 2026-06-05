@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Doctor Review Queue - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="../js/theme.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <style>
+        .queue-card { border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; margin-bottom:12px; cursor:pointer; transition:var(--transition); }
+        .queue-card:hover { border-color:var(--primary-300); box-shadow:var(--shadow-sm); }
+        .vitals-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:8px 0; }
+        .vitals-summary div { background:var(--bg-secondary); padding:8px; border-radius:var(--radius-sm); text-align:center; }
+        .vitals-summary small { display:block; font-size:11px; color:var(--text-muted); }
+        .vitals-summary strong { font-size:14px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+                <a href="../dashboard/index.html" class="sidebar-back" title="Back to Dashboard"><i data-lucide="arrow-left"></i></a>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="doctor-queue.html" class="nav-item active"><i data-lucide="clipboard-list"></i>Review Queue</a>
+                    <a href="../messages/index.html" class="nav-item"><i data-lucide="message-square"></i>Messages</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../records/visit-workflow.html" class="nav-item"><i data-lucide="git-branch"></i>Visit Workflow</a>
+                    <a href="../records/patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
+                    <a href="../records/prescriptions.html" class="nav-item"><i data-lucide="pill"></i>Prescriptions</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">D</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Doctor</div>
+                        <div class="user-role">Doctor</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>Review Queue</h1>
+                        <p>Patients awaiting your diagnosis</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <span id="pendingCount" class="badge badge-warning" style="font-size:14px;padding:6px 12px;">0 pending</span>
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="stats-grid" style="margin-bottom:20px;">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i data-lucide="clock"></i></div>
+                        <div class="stat-value" id="pendingReview">0</div>
+                        <div class="stat-label">Awaiting Review</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i data-lucide="check-circle"></i></div>
+                        <div class="stat-value" id="reviewedToday">0</div>
+                        <div class="stat-label">Reviewed Today</div>
+                    </div>
+                </div>
+
+                <div id="queueList" class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Patients Awaiting Review</h3>
+                    </div>
+                    <div id="requestsContainer">
+                        <div class="empty-state" style="padding:40px;">
+                            <i data-lucide="inbox" style="width:48px;height:48px;color:var(--gray-300);"></i>
+                            <h3>No patients awaiting review</h3>
+                            <p>Triaged patients will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <script>
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        let currentUser = null;
+        let userData = null;
+        let requestsUnsub = null;
+
+        (async function() {
+            const result = await guardPage(['doctor']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+            document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
+            initTheme();
+            loadRequests();
+        })();
+
+        function loadRequests() {
+            if (requestsUnsub) requestsUnsub();
+
+            requestsUnsub = db.collection('treatment_requests')
+                .where('doctorId', '==', currentUser.uid)
+                .where('status', '==', 'with_doctor')
+                .onSnapshot(async (snapshot) => {
+                    const container = document.getElementById('requestsContainer');
+
+                    // Sort client-side by updatedAt desc
+                    const sorted = snapshot.docs.slice().sort((a, b) => {
+                        const aTime = a.data().updatedAt?.toDate?.()?.getTime() || 0;
+                        const bTime = b.data().updatedAt?.toDate?.()?.getTime() || 0;
+                        return bTime - aTime;
+                    });
+
+                    document.getElementById('pendingReview').textContent = sorted.length;
+
+                    // Count today's reviews
+                    const today = new Date().toISOString().split('T')[0];
+                    const allSnap = await db.collection('treatment_requests')
+                        .where('doctorId', '==', currentUser.uid)
+                        .where('status', '==', 'treatment_ready')
+                        .get();
+                    let reviewedToday = 0;
+                    allSnap.forEach(doc => {
+                        const d = doc.data().updatedAt?.toDate();
+                        if (d && d.toISOString().split('T')[0] === today) reviewedToday++;
+                    });
+                    document.getElementById('reviewedToday').textContent = reviewedToday;
+                    document.getElementById('pendingCount').textContent = sorted.length + ' pending';
+
+                    if (sorted.length === 0) {
+                        container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><i data-lucide="inbox" style="width:48px;height:48px;margin-bottom:12px;"></i><h3>No patients awaiting review</h3><p>Triaged patients will appear here</p></div>';
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                        return;
+                    }
+
+                    container.innerHTML = '';
+                    for (const doc of sorted) {
+                        const r = doc.data();
+
+                        // Load vitals summary
+                        let vitalsHTML = '';
+                        if (r.vitalsId) {
+                            const vDoc = await db.collection('vitals').doc(r.vitalsId).get();
+                            if (vDoc.exists) {
+                                const v = vDoc.data();
+                                vitalsHTML = `
+                                    <div class="vitals-summary">
+                                        <div><small>Temp</small><strong>${v.temperature || '--'}°C</strong></div>
+                                        <div><small>Pulse</small><strong>${v.pulse || '--'} bpm</strong></div>
+                                        <div><small>BP</small><strong>${v.bpSystolic || '--'}/${v.bpDiastolic || '--'}</strong></div>
+                                        <div><small>SpO2</small><strong>${v.spo2 || '--'}%</strong></div>
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        container.innerHTML += `
+                            <div class="queue-card" onclick="goToReview('${doc.id}')">
+                                <div style="display:flex;justify-content:space-between;align-items:start;">
+                                    <div style="flex:1;">
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <strong>${escapeHtml(r.patientName)}</strong>
+                                            <span class="badge badge-${r.severity === 'severe' ? 'danger' : r.severity === 'moderate' ? 'warning' : 'info'}">${r.severity}</span>
+                                        </div>
+                                        <p style="margin:4px 0 0;font-size:13px;color:var(--text-secondary);"><strong>Complaint:</strong> ${escapeHtml(r.complaint)}</p>
+                                        ${vitalsHTML}
+                                        ${r.nurseNotes ? `<p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;"><strong>Nurse notes:</strong> ${escapeHtml(r.nurseNotes)}</p>` : ''}
+                                        <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">${formatTimestamp(r.updatedAt)}</p>
+                                    </div>
+                                    <button class="btn btn-sm btn-primary"><i data-lucide="arrow-right" style="width:14px;height:14px;"></i> Review</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                });
+        }
+
+        function goToReview(id) {
+            window.location.href = `review.html?id=${id}`;
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

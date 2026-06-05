@@ -3,85 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>Visit Workflow - Koladaisi University</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/mobile-responsive.css">
-    <style>
-        .workflow-container { padding: 20px; }
-        .workflow-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .workflow-timeline { position: relative; padding-left: 40px; }
-        .workflow-timeline::before {
-            content: '';
-            position: absolute;
-            left: 15px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--border-color);
-        }
-        .workflow-step {
-            position: relative;
-            padding: 20px;
-            margin-bottom: 16px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            transition: all 0.3s;
-        }
-        .workflow-step::before {
-            content: '';
-            position: absolute;
-            left: -33px;
-            top: 24px;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border-color);
-            z-index: 1;
-        }
-        .workflow-step.completed::before {
-            background: var(--success-500);
-            border-color: var(--success-500);
-            content: '✓';
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-        .workflow-step.active::before {
-            background: var(--primary-500);
-            border-color: var(--primary-500);
-            content: '';
-            animation: pulse 2s infinite;
-        }
-        .workflow-step.pending::before {
-            background: var(--bg-secondary);
-            border-color: var(--border-color);
-        }
-        .workflow-step.completed { border-color: var(--success-200); background: var(--success-50); }
-        .workflow-step.active { border-color: var(--primary-300); background: var(--primary-50); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .step-title { font-weight: 600; font-size: 16px; }
-        .step-time { font-size: 12px; color: var(--text-muted); }
-        .step-description { color: var(--text-secondary); margin-bottom: 16px; }
-        .step-actions { display: flex; gap: 8px; }
-        .visit-summary { background: var(--bg-secondary); padding: 20px; border-radius: var(--radius-md); margin-top: 16px; }
-        .visit-summary h4 { margin-bottom: 12px; }
-        .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .summary-item { background: var(--bg-primary); padding: 12px; border-radius: var(--radius-sm); }
-        .summary-item label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
-        .summary-item span { font-weight: 500; }
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
-            50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-        }
-        .patient-visit-card { background: linear-gradient(135deg, var(--primary-500), var(--primary-700)); color: white; padding: 20px; border-radius: var(--radius-lg); margin-bottom: 24px; }
-        .patient-visit-card h3 { margin: 0 0 8px 0; }
-        .patient-visit-card p { margin: 0; opacity: 0.9; }
-    </style>
 </head>
 <body>
     <div class="dashboard">
@@ -90,65 +19,84 @@
                 <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
                 <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
             </div>
-            <nav class="sidebar-nav" id="sidebarNav"></nav>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="index.html" class="nav-item"><i data-lucide="file-text"></i>Health Records</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
+                    <a href="visit-workflow.html" class="nav-item active"><i data-lucide="git-branch"></i>Visit Workflow</a>
+                    <a href="prescriptions.html" class="nav-item"><i data-lucide="pill"></i>Prescriptions</a>
+                    <a href="lab-results.html" class="nav-item"><i data-lucide="flask-conical"></i>Lab Results</a>
+                    <a href="vitals.html" class="nav-item"><i data-lucide="activity"></i>Vitals</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile" id="userProfile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-role" id="userRole">Role</span>
+                    </div>
+                </div>
+            </div>
         </aside>
-        
+
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
                     <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
-                        <div class="hamburger"><span></span><span></span><span></span></div>
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
                     </button>
                     <div class="page-title">
                         <h1>Visit Workflow</h1>
-                        <p>Track patient visit from arrival to discharge</p>
+                        <p>Manage patient visits through clinical stages</p>
                     </div>
                 </div>
                 <div class="header-right">
-                    <button class="btn btn-primary" onclick="openNewVisitModal()"><i data-lucide="plus"></i> Start New Visit</button>
-                </div>
-            </header>
-            
-            <div class="content">
-                <div class="grid-2" style="margin-bottom: 24px;">
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Active Visits</h3></div>
-                        <div id="activeVisitsList" style="padding: 16px;"></div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Today's Summary</h3></div>
-                        <div style="padding: 16px;">
-                            <div class="stat-item" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light)">
-                                <span>Total Visits</span><strong id="totalVisits">0</strong>
-                            </div>
-                            <div class="stat-item" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light)">
-                                <span>Waiting</span><strong id="waitingVisits">0</strong>
-                            </div>
-                            <div class="stat-item" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light)">
-                                <span>In Progress</span><strong id="inProgressVisits">0</strong>
-                            </div>
-                            <div class="stat-item" style="display:flex;justify-content:space-between;padding:8px 0;">
-                                <span>Completed</span><strong id="completedVisits">0</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Visit Timeline</h3>
-                        <select id="visitFilter" style="padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md)">
-                            <option value="all">All Visits</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
+                    <div class="form-group" style="margin-bottom:0;width:200px">
+                        <select id="visitFilter" style="height:38px;font-size:13px">
+                            <option value="today">Today's Visits</option>
+                            <option value="active">Active Visits</option>
+                            <option value="completed">Completed (Recent)</option>
                         </select>
                     </div>
-                    <div id="visitWorkflowList" style="padding: 20px;"></div>
+                    <button class="btn btn-primary" onclick="openNewVisitModal()"><i data-lucide="plus"></i> New Visit</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="stats-row" style="margin-bottom:20px">
+                    <div class="stat-card"><div class="stat-value" id="totalVisits">0</div><div class="stat-label">Total Visits</div></div>
+                    <div class="stat-card"><div class="stat-value" id="waitingVisits">0</div><div class="stat-label">Waiting</div></div>
+                    <div class="stat-card"><div class="stat-value" id="inProgressVisits">0</div><div class="stat-label">In Progress</div></div>
+                    <div class="stat-card"><div class="stat-value" id="completedVisits">0</div><div class="stat-label">Completed</div></div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:320px 1fr;gap:20px">
+                    <div class="card">
+                        <div class="card-header"><h3>Active Visits</h3></div>
+                        <div id="activeVisitsList" style="padding:0">
+                            <p style="color:var(--text-muted);text-align:center;padding:20px">Loading...</p>
+                        </div>
+                    </div>
+                    <div id="visitWorkflowList">
+                        <p style="color:var(--text-muted);text-align:center;padding:40px">Loading visits...</p>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
-    
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
     <div class="modal-overlay" id="newVisitModal">
         <div class="modal">
             <div class="modal-header">
@@ -161,654 +109,118 @@
                         <label>Patient</label>
                         <select id="visitPatient" required><option value="">Select patient</option></select>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Visit Type</label>
-                            <select id="visitType" required>
-                                <option value="">Select type</option>
-                                <option value="consultation">Consultation</option>
-                                <option value="follow-up">Follow-up</option>
-                                <option value="emergency">Emergency</option>
-                                <option value="lab-test">Lab Test</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Priority</label>
-                            <select id="visitPriority">
-                                <option value="normal">Normal</option>
-                                <option value="urgent">Urgent</option>
-                                <option value="critical">Critical</option>
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label>Visit Type</label>
+                        <select id="visitType" required>
+                            <option value="">Select type</option>
+                            <option value="General Checkup">General Checkup</option>
+                            <option value="Follow-up">Follow-up</option>
+                            <option value="Emergency">Emergency</option>
+                            <option value="Specialist">Specialist</option>
+                            <option value="Treatment">Treatment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="visitPriority">
+                            <option value="normal">Normal</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="critical">Critical</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Chief Complaint</label>
-                        <textarea id="chiefComplaint" rows="2" placeholder="Main reason for visit"></textarea>
+                        <textarea id="chiefComplaint" rows="2" placeholder="Describe the patient's complaint..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Nurse</label>
-                        <select id="assignedNurse"><option value="">Select nurse</option></select>
+                        <label>Assign Nurse</label>
+                        <select id="assignedNurse"><option value="">Not assigned</option></select>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeNewVisitModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="startVisit()"><i data-lucide="play"></i> Start Visit</button>
+                <button class="btn btn-primary" onclick="startVisit()">Start Visit</button>
             </div>
         </div>
     </div>
-    
-    <div class="modal-overlay" id="workflowDetailModal">
-        <div class="modal modal-large">
-            <div class="modal-header">
-                <h3 class="modal-title" id="workflowDetailTitle">Visit Details</h3>
-                <button class="modal-close" onclick="closeWorkflowDetail()"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body" id="workflowDetailBody"></div>
-        </div>
-    </div>
-    
+
     <div class="modal-overlay" id="dischargeModal">
-        <div class="modal">
+        <div class="modal" style="max-width:600px">
             <div class="modal-header">
-                <h3 class="modal-title">Patient Discharge</h3>
+                <h3 class="modal-title">Discharge Patient</h3>
                 <button class="modal-close" onclick="closeDischargeModal()"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
                 <form id="dischargeForm">
                     <input type="hidden" id="dischargeVisitId">
                     <div class="form-group">
-                        <label>Final Diagnosis</label>
-                        <textarea id="finalDiagnosis" rows="2" required></textarea>
+                        <label>Final Diagnosis *</label>
+                        <textarea id="finalDiagnosis" rows="2" placeholder="Enter final diagnosis..." required></textarea>
                     </div>
                     <div class="form-group">
                         <label>Treatment Summary</label>
-                        <textarea id="treatmentSummary" rows="3"></textarea>
+                        <textarea id="treatmentSummary" rows="2" placeholder="Summarize treatment provided..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Prescription (if any)</label>
-                        <textarea id="dischargePrescription" rows="2" placeholder="Medications prescribed"></textarea>
+                        <label>Prescription</label>
+                        <textarea id="dischargePrescription" rows="2" placeholder="Enter any prescriptions..."></textarea>
                     </div>
                     <div class="form-group">
                         <label>Follow-up Required</label>
                         <select id="followUpRequired">
-                            <option value="no">No follow-up needed</option>
-                            <option value="1-week">Follow-up in 1 week</option>
-                            <option value="2-weeks">Follow-up in 2 weeks</option>
-                            <option value="1-month">Follow-up in 1 month</option>
-                            <option value="as-needed">As needed</option>
+                            <option value="no">No follow-up</option>
+                            <option value="1-week">1 Week</option>
+                            <option value="2-weeks">2 Weeks</option>
+                            <option value="1-month">1 Month</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Special Instructions</label>
-                        <textarea id="specialInstructions" rows="2" placeholder="Diet, rest, activities..."></textarea>
+                        <textarea id="specialInstructions" rows="2" placeholder="Enter discharge instructions..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Patient Conditions at Discharge</label>
-                        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
-                            <label class="checkbox"><input type="checkbox" id="condition-stable" checked><span>Stable</span></label>
-                            <label class="checkbox"><input type="checkbox" id="condition-improved"><span>Improved</span></label>
-                            <label class="checkbox"><input type="checkbox" id="condition-recovered"><span>Recovered</span></label>
-                            <label class="checkbox"><input type="checkbox" id="condition-referred"><span>Referred</span></label>
+                        <label>Condition at Discharge</label>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap">
+                            <label class="checkbox-label"><input type="checkbox" id="condition-stable"> Stable</label>
+                            <label class="checkbox-label"><input type="checkbox" id="condition-improved"> Improved</label>
+                            <label class="checkbox-label"><input type="checkbox" id="condition-recovered"> Recovered</label>
+                            <label class="checkbox-label"><input type="checkbox" id="condition-referred"> Referred</label>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeDischargeModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="completeDischarge()"><i data-lucide="check-circle"></i> Discharge Patient</button>
+                <button class="btn btn-primary" onclick="completeDischarge()">Complete Discharge</button>
             </div>
         </div>
     </div>
 
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <div class="modal-overlay" id="workflowDetailModal">
+        <div class="modal" style="max-width:600px">
+            <div class="modal-header">
+                <h3 class="modal-title" id="workflowDetailTitle">Visit Details</h3>
+                <button class="modal-close" onclick="closeWorkflowDetail()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="workflowDetailBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeWorkflowDetail()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" style="position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:8px"></div>
+
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
     <script src="../js/auth-guard.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/theme.js"></script>
-    <script>
-        lucide.createIcons();
-        
-        let currentUser = null;
-        let userData = null;
-        let activeVisits = [];
-        
-        const WORKFLOW_STAGES = [
-            { id: 'arrival', name: 'Patient Arrival', icon: 'log-in', description: 'Patient checks in at the clinic' },
-            { id: 'triage', name: 'Triage & Vitals', icon: 'activity', description: 'Nurse records vitals and triages patient' },
-            { id: 'consultation', name: 'Doctor Consultation', icon: 'stethoscope', description: 'Doctor examines patient' },
-            { id: 'diagnosis', name: 'Diagnosis & Plan', icon: 'clipboard-list', description: 'Diagnosis made and treatment plan created' },
-            { id: 'treatment', name: 'Treatment', icon: 'pill', description: 'Treatment administered' },
-            { id: 'discharge', name: 'Discharge', icon: 'log-out', description: 'Patient discharged with instructions' }
-        ];
-        
-        (async function() {
-            const result = await guardPage();
-            if (!result) return;
-            currentUser = result.user;
-            userData = result.userData;
-            
-            initTheme();
-            loadVisits();
-            loadPatients();
-            loadNurses();
-            
-            document.getElementById('visitFilter').addEventListener('change', loadVisits);
-        })();
-        
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('sidebar-open');
-            document.getElementById('sidebarOverlay').classList.toggle('active');
-        }
-        
-        async function loadPatients() {
-            const select = document.getElementById('visitPatient');
-            const snapshot = await db.collection('users').where('role', '==', 'student').where('status', '==', 'active').get();
-            snapshot.forEach(doc => {
-                const u = doc.data();
-                select.innerHTML += `<option value="${doc.id}">${u.firstName} ${u.lastName}</option>`;
-            });
-        }
-        
-        async function loadNurses() {
-            const select = document.getElementById('assignedNurse');
-            const snapshot = await db.collection('users').where('role', '==', 'nurse').where('status', '==', 'active').get();
-            snapshot.forEach(doc => {
-                const u = doc.data();
-                select.innerHTML += `<option value="${doc.id}">${u.firstName} ${u.lastName}</option>`;
-            });
-        }
-        
-        async function loadVisits() {
-            const filter = document.getElementById('visitFilter').value;
-            const today = new Date().toISOString().split('T')[0];
-            
-            let query;
-            if (filter === 'active') {
-                query = await db.collection('visits').where('status', 'in', ['waiting', 'in-progress']).orderBy('createdAt', 'desc').get();
-            } else if (filter === 'completed') {
-                query = await db.collection('visits').where('status', '==', 'completed').orderBy('completedAt', 'desc').limit(20).get();
-            } else {
-                query = await db.collection('visits').where('date', '==', today).orderBy('createdAt', 'desc').get();
-            }
-            
-            activeVisits = query.docs;
-            
-            let waiting = 0, inProgress = 0, completed = 0;
-            activeVisits.forEach(doc => {
-                const v = doc.data();
-                if (v.status === 'waiting') waiting++;
-                else if (v.status === 'in-progress') inProgress++;
-                else if (v.status === 'completed') completed++;
-            });
-            
-            document.getElementById('totalVisits').textContent = activeVisits.length;
-            document.getElementById('waitingVisits').textContent = waiting;
-            document.getElementById('inProgressVisits').textContent = inProgress;
-            document.getElementById('completedVisits').textContent = completed;
-            
-            renderActiveVisits();
-            renderVisitWorkflows();
-        }
-        
-        function renderActiveVisits() {
-            const list = document.getElementById('activeVisitsList');
-            const active = activeVisits.filter(doc => doc.data().status !== 'completed');
-            
-            if (active.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No active visits</p>';
-                return;
-            }
-            
-            list.innerHTML = active.slice(0, 5).map(doc => {
-                const v = doc.data();
-                const statusColor = v.status === 'waiting' ? 'warning' : 'info';
-                return `
-                    <div style="padding:12px;border-bottom:1px solid var(--border-light);cursor:pointer" onclick="viewVisitDetail('${doc.id}')">
-                        <div style="display:flex;justify-content:space-between;align-items:center">
-                            <strong>${v.patientName}</strong>
-                            <span class="badge badge-${statusColor}">${v.status}</span>
-                        </div>
-                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">
-                            ${v.visitType} • ${v.currentStage || 'Arrival'}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        function renderVisitWorkflows() {
-            const list = document.getElementById('visitWorkflowList');
-            
-            if (activeVisits.length === 0) {
-                list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:40px">No visits found</p>';
-                return;
-            }
-            
-            list.innerHTML = activeVisits.map(doc => {
-                const v = doc.data();
-                return renderWorkflowCard(doc.id, v);
-            }).join('');
-            
-            lucide.createIcons();
-        }
-        
-        function renderWorkflowCard(visitId, visit) {
-            const currentIndex = WORKFLOW_STAGES.findIndex(s => s.id === visit.currentStage) || 0;
-            const status = visit.status === 'completed' ? 'completed' : 
-                          (visit.status === 'waiting' && visit.currentStage === 'arrival') ? 'active' : 
-                          (visit.status === 'in-progress') ? 'active' : 'pending';
-            
-            const stages = WORKFLOW_STAGES.map((stage, index) => {
-                let stageStatus = 'pending';
-                if (index < currentIndex) stageStatus = 'completed';
-                else if (index === currentIndex && visit.status !== 'completed') stageStatus = 'active';
-                
-                return { ...stage, stageStatus };
-            });
-            
-            return `
-                <div style="background:var(--bg-secondary);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
-                    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
-                        <div>
-                            <h4 style="margin:0 0 4px 0">${visit.patientName}</h4>
-                            <p style="margin:0;font-size:13px;color:var(--text-muted)">${visit.visitType} • ${formatDate(visit.date)}</p>
-                        </div>
-                        <div style="text-align:right">
-                            <span class="badge badge-${visit.status === 'completed' ? 'success' : visit.priority === 'urgent' ? 'danger' : 'primary'}">
-                                ${visit.status === 'completed' ? 'Discharged' : visit.status}
-                            </span>
-                            ${visit.priority !== 'normal' ? `<span class="badge badge-${visit.priority === 'critical' ? 'danger' : 'warning'}" style="margin-left:4px">${visit.priority}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="workflow-timeline">
-                        ${stages.map(stage => `
-                            <div class="workflow-step ${stage.stageStatus}" onclick="advanceStage('${visitId}', '${stage.id}', ${stage.stageStatus === 'completed' ? false : true})">
-                                <div class="step-header">
-                                    <span class="step-title"><i data-lucide="${stage.icon}" style="width:16px;height:16px;display:inline;margin-right:8px"></i>${stage.name}</span>
-                                    ${stage.stageStatus === 'active' ? '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();advanceToNextStage(\'' + visitId + '\')"><i data-lucide="arrow-right" style="width:14px;height:14px"></i> Complete</button>' : ''}
-                                </div>
-                                <div class="step-description">${stage.description}</div>
-                                ${stage.stageStatus === 'completed' && visit.stageData && visit.stageData[stage.id] ? `
-                                    <div style="font-size:12px;color:var(--success-600);margin-top:8px">
-                                        <i data-lucide="check" style="width:12px;height:12px"></i> Completed: ${formatTimestamp(visit.stageData[stage.id].completedAt)}
-                                    </div>
-                                ` : ''}
-                                ${stage.id === 'treatment' && stage.stageStatus === 'active' ? `
-                                    <div style="margin-top:8px">
-                                        <a href="treatment.html?visitId=${visitId}" class="btn btn-sm btn-warning"><i data-lucide="pill" style="width:14px;height:14px"></i> Administer Treatment</a>
-                                    </div>
-                                ` : ''}
-                                ${stage.id === 'consultation' && stage.stageStatus === 'active' ? `
-                                    <div style="margin-top:8px">
-                                        <a href="add-diagnosis.html?visitId=${visitId}" class="btn btn-sm btn-primary"><i data-lucide="stethoscope" style="width:14px;height:14px"></i> Add Diagnosis</a>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                    ${visit.status !== 'completed' ? `
-                        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);display:flex;gap:8px">
-                            <button class="btn btn-sm btn-outline" onclick="viewVisitDetail('${visitId}')"><i data-lucide="eye" style="width:14px;height:14px"></i> View Details</button>
-                            <button class="btn btn-sm btn-primary" onclick="openDischargeModal('${visitId}')"><i data-lucide="log-out" style="width:14px;height:14px"></i> Discharge</button>
-                        </div>
-                    ` : `
-                        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color)">
-                            <button class="btn btn-sm btn-outline" onclick="viewDischargeSummary('${visitId}')"><i data-lucide="file-text" style="width:14px;height:14px"></i> View Discharge Summary</button>
-                        </div>
-                    `}
-                </div>
-            `;
-        }
-        
-        async function advanceToNextStage(visitId) {
-            const doc = await db.collection('visits').doc(visitId).get();
-            if (!doc.exists) return;
-            
-            const visit = doc.data();
-            const currentIndex = WORKFLOW_STAGES.findIndex(s => s.id === visit.currentStage);
-            const nextStage = WORKFLOW_STAGES[currentIndex + 1];
-            
-            if (!nextStage) {
-                openDischargeModal(visitId);
-                return;
-            }
-            
-            const updates = {
-                currentStage: nextStage.id,
-                status: nextStage.id === 'consultation' || nextStage.id === 'diagnosis' ? 'in-progress' : 'waiting',
-                [`stageData.${visit.currentStage}`]: {
-                    completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    completedBy: currentUser.uid
-                }
-            };
-            
-            await db.collection('visits').doc(visitId).update(updates);
-            
-            await notifyStageTransition(visit, nextStage);
-            showToast(`${nextStage.name} started`, 'success');
-            loadVisits();
-        }
-        
-        async function notifyStageTransition(visit, nextStage) {
-            const patientDoc = await db.collection('users').doc(visit.patientId).get();
-            
-            let message = '';
-            if (nextStage.id === 'triage') message = `Patient ${visit.patientName} is waiting for triage. Please record vitals.`;
-            else if (nextStage.id === 'consultation') message = `Patient ${visit.patientName} is ready for consultation.`;
-            else if (nextStage.id === 'diagnosis') message = `Consultation completed for ${visit.patientName}. Please create diagnosis.`;
-            else if (nextStage.id === 'treatment') message = `Treatment plan ready for ${visit.patientName}.`;
-            
-            if (message) {
-                const targetRole = nextStage.id === 'triage' ? 'nurse' : 'doctor';
-                const snapshot = await db.collection('users').where('role', '==', targetRole).where('status', '==', 'active').get();
-                snapshot.forEach(doc => {
-                    db.collection('notifications').add({
-                        userId: doc.id,
-                        type: 'workflow',
-                        title: `Visit Update: ${nextStage.name}`,
-                        message: message,
-                        read: false,
-                        visitId: visitId,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                });
-            }
-        }
-        
-        function openNewVisitModal() {
-            document.getElementById('newVisitForm').reset();
-            document.getElementById('newVisitModal').classList.add('active');
-        }
-        
-        function closeNewVisitModal() {
-            document.getElementById('newVisitModal').classList.remove('active');
-        }
-        
-        async function startVisit() {
-            const patientId = document.getElementById('visitPatient').value;
-            const visitType = document.getElementById('visitType').value;
-            const priority = document.getElementById('visitPriority').value;
-            const complaint = document.getElementById('chiefComplaint').value;
-            const nurseId = document.getElementById('assignedNurse').value;
-            
-            if (!patientId || !visitType) {
-                showToast('Please select patient and visit type', 'warning');
-                return;
-            }
-            
-            const patientDoc = await db.collection('users').doc(patientId).get();
-            const patient = patientDoc.data();
-            
-            await db.collection('visits').add({
-                patientId: patientId,
-                patientName: `${patient.firstName} ${patient.lastName}`,
-                visitType: visitType,
-                priority: priority,
-                chiefComplaint: complaint,
-                assignedNurse: nurseId,
-                currentStage: 'arrival',
-                status: 'waiting',
-                date: new Date().toISOString().split('T')[0],
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                createdBy: currentUser.uid,
-                stageData: {
-                    arrival: {
-                        completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        completedBy: currentUser.uid
-                    }
-                }
-            });
-            
-            showToast('Visit started successfully', 'success');
-            logActivity(currentUser.uid, 'visit-start', `Started visit for ${patient.firstName} ${patient.lastName}`);
-            closeNewVisitModal();
-            loadVisits();
-        }
-        
-        function openDischargeModal(visitId) {
-            document.getElementById('dischargeVisitId').value = visitId;
-            document.getElementById('dischargeForm').reset();
-            document.getElementById('dischargeModal').classList.add('active');
-        }
-        
-        function closeDischargeModal() {
-            document.getElementById('dischargeModal').classList.remove('active');
-        }
-        
-        async function completeDischarge() {
-            const visitId = document.getElementById('dischargeVisitId').value;
-            const diagnosis = document.getElementById('finalDiagnosis').value;
-            const treatment = document.getElementById('treatmentSummary').value;
-            const prescription = document.getElementById('dischargePrescription').value;
-            const followUp = document.getElementById('followUpRequired').value;
-            const instructions = document.getElementById('specialInstructions').value;
-            
-            const conditions = [];
-            if (document.getElementById('condition-stable').checked) conditions.push('Stable');
-            if (document.getElementById('condition-improved').checked) conditions.push('Improved');
-            if (document.getElementById('condition-recovered').checked) conditions.push('Recovered');
-            if (document.getElementById('condition-referred').checked) conditions.push('Referred');
-            
-            if (!diagnosis) {
-                showToast('Final diagnosis is required', 'warning');
-                return;
-            }
-            
-            const visitDoc = await db.collection('visits').doc(visitId).get();
-            const visit = visitDoc.data();
-            
-            await db.collection('visits').doc(visitId).update({
-                status: 'completed',
-                currentStage: 'discharge',
-                completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                dischargeData: {
-                    diagnosis: diagnosis,
-                    treatmentSummary: treatment,
-                    prescription: prescription,
-                    followUpRequired: followUp,
-                    specialInstructions: instructions,
-                    conditions: conditions,
-                    dischargedBy: currentUser.uid,
-                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }
-            });
-            
-            if (prescription) {
-                await db.collection('prescriptions').add({
-                    patientId: visit.patientId,
-                    patientName: visit.patientName,
-                    medication: prescription,
-                    prescribedBy: currentUser.uid,
-                    status: 'pending',
-                    visitId: visitId,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
-            
-            if (followUp !== 'no') {
-                const followUpDate = new Date();
-                if (followUp === '1-week') followUpDate.setDate(followUpDate.getDate() + 7);
-                else if (followUp === '2-weeks') followUpDate.setDate(followUpDate.getDate() + 14);
-                else if (followUp === '1-month') followUpDate.setMonth(followUpDate.getMonth() + 1);
-                
-                await db.collection('appointments').add({
-                    patientId: visit.patientId,
-                    patientName: visit.patientName,
-                    type: 'follow-up',
-                    reason: `Follow-up: ${diagnosis}`,
-                    date: followUpDate.toISOString().split('T')[0],
-                    status: 'pending',
-                    visitId: visitId,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
-            
-            await db.collection('notifications').add({
-                userId: visit.patientId,
-                type: 'discharge',
-                title: 'Visit Completed',
-                message: `Your visit has been completed. ${followUp !== 'no' ? 'A follow-up appointment has been scheduled.' : 'No follow-up needed.'}`,
-                visitId: visitId,
-                read: false,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            showToast('Patient discharged successfully', 'success');
-            logActivity(currentUser.uid, 'patient-discharge', `Discharged patient: ${visit.patientName}`);
-            closeDischargeModal();
-            loadVisits();
-        }
-        
-        async function viewVisitDetail(visitId) {
-            const doc = await db.collection('visits').doc(visitId).get();
-            if (!doc.exists) return;
-            
-            const visit = doc.data();
-            const patientDoc = await db.collection('users').doc(visit.patientId).get();
-            const patient = patientDoc.exists ? patientDoc.data() : null;
-            
-            document.getElementById('workflowDetailTitle').textContent = `Visit: ${visit.patientName}`;
-            document.getElementById('workflowDetailBody').innerHTML = `
-                <div class="visit-summary">
-                    <h4><i data-lucide="user" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Patient Information</h4>
-                    <div class="summary-grid">
-                        <div class="summary-item"><label>Name</label><span>${visit.patientName}</span></div>
-                        <div class="summary-item"><label>Student ID</label><span>${patient?.studentId || 'N/A'}</span></div>
-                        <div class="summary-item"><label>Department</label><span>${patient?.department || 'N/A'}</span></div>
-                        <div class="summary-item"><label>Contact</label><span>${patient?.phone || 'N/A'}</span></div>
-                    </div>
-                </div>
-                <div class="visit-summary">
-                    <h4><i data-lucide="clipboard" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Visit Information</h4>
-                    <div class="summary-grid">
-                        <div class="summary-item"><label>Visit Type</label><span>${visit.visitType}</span></div>
-                        <div class="summary-item"><label>Priority</label><span class="badge badge-${visit.priority === 'critical' ? 'danger' : visit.priority === 'urgent' ? 'warning' : 'primary'}">${visit.priority}</span></div>
-                        <div class="summary-item"><label>Status</label><span>${visit.status}</span></div>
-                        <div class="summary-item"><label>Current Stage</label><span>${visit.currentStage}</span></div>
-                    </div>
-                    <div style="margin-top:12px">
-                        <label style="font-size:12px;color:var(--text-muted)">Chief Complaint</label>
-                        <p>${visit.chiefComplaint || 'Not specified'}</p>
-                    </div>
-                </div>
-                ${visit.vitals ? `
-                    <div class="visit-summary">
-                        <h4><i data-lucide="activity" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Vitals Recorded</h4>
-                        <div class="summary-grid">
-                            <div class="summary-item"><label>Temperature</label><span>${visit.vitals.temperature || 'N/A'} °C</span></div>
-                            <div class="summary-item"><label>Pulse</label><span>${visit.vitals.pulse || 'N/A'} bpm</span></div>
-                            <div class="summary-item"><label>BP</label><span>${visit.vitals.bpSystolic || 'N/A'}/${visit.vitals.bpDiastolic || 'N/A'}</span></div>
-                            <div class="summary-item"><label>SpO2</label><span>${visit.vitals.spo2 || 'N/A'} %</span></div>
-                        </div>
-                    </div>
-                ` : ''}
-            `;
-            
-            document.getElementById('workflowDetailModal').classList.add('active');
-            lucide.createIcons();
-        }
-        
-        async function viewDischargeSummary(visitId) {
-            const doc = await db.collection('visits').doc(visitId).get();
-            if (!doc.exists) return;
-            
-            const visit = doc.data();
-            if (!visit.dischargeData) {
-                showToast('No discharge data found', 'error');
-                return;
-            }
-            
-            const dd = visit.dischargeData;
-            
-            document.getElementById('workflowDetailTitle').textContent = `Discharge Summary: ${visit.patientName}`;
-            document.getElementById('workflowDetailBody').innerHTML = `
-                <div style="text-align:center;margin-bottom:24px">
-                    <h2 style="color:var(--success-600);margin-bottom:8px"><i data-lucide="check-circle" style="width:48px;height:48px"></i></h2>
-                    <h3 style="margin:0">Visit Completed</h3>
-                    <p style="color:var(--text-muted);margin:4px 0 0">Completed on ${formatDate(dd.completedAt)}</p>
-                </div>
-                <div class="visit-summary">
-                    <h4><i data-lucide="clipboard-list" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Final Diagnosis</h4>
-                    <p style="font-size:16px;font-weight:500">${dd.diagnosis}</p>
-                </div>
-                <div class="visit-summary">
-                    <h4><i data-lucide="pill" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Treatment & Prescription</h4>
-                    <p>${dd.treatmentSummary || 'Standard treatment provided'}</p>
-                    ${dd.prescription ? `<div style="background:var(--primary-50);padding:12px;border-radius:var(--radius-md);margin-top:8px"><strong>Prescription:</strong> ${dd.prescription}</div>` : ''}
-                </div>
-                <div class="visit-summary">
-                    <h4><i data-lucide="heart" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Condition at Discharge</h4>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
-                        ${dd.conditions.map(c => `<span class="badge badge-success">${c}</span>`).join('')}
-                    </div>
-                </div>
-                ${dd.followUpRequired !== 'no' ? `
-                    <div class="visit-summary" style="border-color:var(--warning-300);background:var(--warning-50)">
-                        <h4><i data-lucide="calendar" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Follow-up Required</h4>
-                        <p>${dd.followUpRequired === '1-week' ? '1 Week' : dd.followUpRequired === '2-weeks' ? '2 Weeks' : dd.followUpRequired === '1-month' ? '1 Month' : 'As Needed'}</p>
-                    </div>
-                ` : ''}
-                ${dd.specialInstructions ? `
-                    <div class="visit-summary">
-                        <h4><i data-lucide="info" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Special Instructions</h4>
-                        <p>${dd.specialInstructions}</p>
-                    </div>
-                ` : ''}
-                <div style="margin-top:20px;text-align:center">
-                    <button class="btn btn-outline" onclick="printDischargeSummary('${visitId}')"><i data-lucide="printer" style="width:16px;height:16px"></i> Print Summary</button>
-                    <button class="btn btn-primary" onclick="sendDischargeSummary('${visitId}')"><i data-lucide="send" style="width:16px;height:16px"></i> Send to Patient</button>
-                </div>
-            `;
-            
-            document.getElementById('workflowDetailModal').classList.add('active');
-            lucide.createIcons();
-        }
-        
-        function printDischargeSummary(visitId) {
-            const content = document.getElementById('workflowDetailBody').innerHTML;
-            const win = window.open('', '_blank');
-            win.document.write(`
-                <html><head><title>Discharge Summary</title>
-                <style>body{font-family:Arial;padding:20px}.visit-summary{background:#f5f5f5;padding:16px;border-radius:8px;margin-bottom:16px}h4{margin-top:0}</style>
-                </head><body>${content}</body></html>
-            `);
-            win.document.close();
-            win.print();
-        }
-        
-        async function sendDischargeSummary(visitId) {
-            const doc = await db.collection('visits').doc(visitId).get();
-            const visit = doc.data();
-            
-            await db.collection('messages').add({
-                participants: [currentUser.uid, visit.patientId].sort(),
-                subject: 'Visit Discharge Summary',
-                lastMessage: 'Your visit summary has been sent. Please check your records.',
-                lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            await db.collection('notifications').add({
-                userId: visit.patientId,
-                type: 'discharge',
-                title: 'Discharge Summary Available',
-                message: 'Your visit summary is now available. Please check your records.',
-                visitId: visitId,
-                read: false,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            showToast('Summary sent to patient', 'success');
-        }
-        
-        function closeWorkflowDetail() {
-            document.getElementById('workflowDetailModal').classList.remove('active');
-        }
-    </script>
+    <script src="visit-workflow.js"></script>
 </body>
 </html>

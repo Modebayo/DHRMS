@@ -2,17 +2,6 @@ let currentUser = null;
 let userData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) { window.location.href = '../auth/login.html'; return; }
-        currentUser = user;
-        const doc = await db.collection('users').doc(user.uid).get();
-        if (!doc.exists) { window.location.href = '../auth/login.html'; return; }
-        userData = doc.data();
-        
-        document.getElementById('bookDate').min = new Date().toISOString().split('T')[0];
-        loadDoctors();
-    });
-    
     document.getElementById('bookAppointmentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         

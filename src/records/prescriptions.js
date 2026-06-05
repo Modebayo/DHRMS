@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     currentUser = result.user;
     userData = result.userData;
+    if (userData.status === 'inactive') {
+        window.location.href = '../dashboard/index.html';
+        return;
+    }
+    populateUserProfile();
     
     loadPatients();
     loadPrescriptions();
@@ -101,6 +106,7 @@ async function savePrescription() {
     const medication = sanitizeInput(document.getElementById('prescMedication').value);
     const dosage = sanitizeInput(document.getElementById('prescDosage').value);
     const frequency = document.getElementById('prescFreq').value;
+    const route = document.getElementById('prescRoute')?.value || 'oral';
     const duration = sanitizeInput(document.getElementById('prescDuration').value);
     const instructions = sanitizeInput(document.getElementById('prescInstructions').value);
     
@@ -116,6 +122,7 @@ async function savePrescription() {
             medication,
             dosage,
             frequency,
+            route,
             duration,
             notes: instructions,
             status: 'pending',
@@ -131,4 +138,13 @@ async function savePrescription() {
         console.error('Error creating prescription:', error);
         showToast('Error creating prescription', 'error');
     }
+}
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
 }

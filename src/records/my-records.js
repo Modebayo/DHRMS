@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     currentUser = result.user;
     userData = result.userData;
+    populateUserProfile();
     
     loadPatientInfo();
     loadMyRecords();
@@ -74,4 +75,13 @@ function formatDate(date) {
         month: 'short',
         day: 'numeric'
     });
+}
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
 }

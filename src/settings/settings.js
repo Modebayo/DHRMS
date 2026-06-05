@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     currentUser = result.user;
     userData = result.userData;
+    populateUserProfile();
     
     loadSettings();
 });
@@ -50,7 +51,6 @@ async function updateProfile() {
             lastName,
             phone
         });
-        await currentUser.updateProfile({ displayName: `${firstName} ${lastName}` });
         showToast('Profile updated successfully', 'success');
         document.getElementById('profileAvatar').textContent = getInitials(firstName, lastName);
         logActivity(currentUser.uid, 'profile-update', 'Updated profile information');
@@ -81,9 +81,16 @@ async function changePassword() {
     }
     
     try {
-        const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
-        await currentUser.reauthenticateWithCredential(credential);
-        await currentUser.updatePassword(newPass);
+        const token = getAuthToken();
+        const res = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword: current, newPassword: newPass })
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw { code: err.code || 'auth/unknown', message: err.error };
+        }
         
         try {
             await KeyManager.reEncryptPrivateKey(current, newPass);
@@ -129,19 +136,28 @@ async function deleteAccount() {
     
     try {
         await db.collection('users').doc(currentUser.uid).delete();
-        await currentUser.delete();
+        const token = getAuthToken();
+        await fetch('/api/auth/delete-account', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        });
         showToast('Account deleted', 'success');
         setTimeout(() => {
             window.location.href = '../auth/login.html';
         }, 1500);
     } catch (error) {
         console.error('Error deleting account:', error);
-        if (error.code === 'auth/requires-recent-login') {
-            showToast('Please log in again before deleting your account', 'warning');
-        } else {
-            showToast('Error deleting account', 'error');
-        }
+        showToast('Error deleting account', 'error');
     }
+}
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
 }
 
 document.getElementById('avatarUpload')?.addEventListener('change', async (e) => {
@@ -169,3 +185,7 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
         showToast('Error uploading photo', 'error');
     }
 });
+
+function getAuthToken() {
+    try { return sessionStorage.getItem('ku_dhrms_jwt') || ''; } catch { return ''; }
+}

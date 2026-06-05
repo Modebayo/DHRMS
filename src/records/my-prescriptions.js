@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     currentUser = result.user;
     userData = result.userData;
+    populateUserProfile();
     
     loadMyPrescriptions();
 });
@@ -30,7 +31,8 @@ async function loadMyPrescriptions() {
         
         tbody.innerHTML = snapshot.docs.map(doc => {
             const presc = doc.data();
-            const statusClass = presc.status === 'active' ? 'success' : presc.status === 'completed' ? 'info' : 'warning';
+            const statusClass = presc.status === 'dispensed' ? 'success' : presc.status === 'pending' ? 'warning' : 'info';
+            const statusLabel = presc.status ? presc.status.charAt(0).toUpperCase() + presc.status.slice(1) : 'Pending';
             
             return `
                 <tr>
@@ -40,7 +42,7 @@ async function loadMyPrescriptions() {
                     <td>${presc.duration || 'N/A'}</td>
                     <td>${presc.doctorName || 'Dr. Not assigned'}</td>
                     <td>${formatDate(presc.createdAt)}</td>
-                    <td><span class="badge badge-${statusClass}">${presc.status || 'Pending'}</span></td>
+                    <td><span class="badge badge-${statusClass}">${statusLabel}</span></td>
                 </tr>
             `;
         }).join('');
@@ -61,4 +63,13 @@ function formatDate(date) {
         month: 'short',
         day: 'numeric'
     });
+}
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
 }

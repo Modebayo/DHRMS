@@ -144,9 +144,17 @@ function checkAuth() {
 }
 
 async function logout() {
+    if (!confirm('Are you sure you want to log out?')) return;
     try {
-        KeyManager.clearSession();
+        if (typeof KeyManager !== 'undefined' && KeyManager.clearSession) {
+            KeyManager.clearSession();
+        }
+        const user = auth.currentUser;
+        const uid = user ? user.uid : null;
         await auth.signOut();
+        if (uid) {
+            logActivity(uid, 'logout', 'User logged out');
+        }
         window.location.href = '../auth/login.html';
     } catch (error) {
         console.error('Logout error:', error);
@@ -156,7 +164,8 @@ async function logout() {
 
 async function initUserKeys(user, password) {
     try {
-        await KeyManager.initKeys(user, password);
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Key init timeout')), 15000));
+        await Promise.race([KeyManager.initKeys(user, password), timeout]);
         return true;
     } catch (error) {
         console.error('Key initialization error:', error);
@@ -166,15 +175,57 @@ async function initUserKeys(user, password) {
 
 async function logActivity(userId, type, description) {
     try {
+        let ipAddress = 'N/A';
+        try {
+            const resp = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(3000) });
+            const data = await resp.json();
+            ipAddress = data.ip;
+        } catch (e) {}
+
+        await db.collection('audit_logs').add({
+            userId,
+            actionType: type,
+            collectionName: '',
+            documentId: '',
+            description,
+            ipAddress,
+            userAgent: navigator.userAgent,
+            actionTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
         await db.collection('activity_logs').add({
             userId,
             type,
             description,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            ipAddress: 'N/A',
+            ipAddress,
             userAgent: navigator.userAgent
         });
     } catch (error) {
         console.error('Activity log error:', error);
+    }
+}
+
+async function logAuditEvent(userId, actionType, collectionName, documentId, description) {
+    try {
+        let ipAddress = 'N/A';
+        try {
+            const resp = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(3000) });
+            const data = await resp.json();
+            ipAddress = data.ip;
+        } catch (e) {}
+
+        await db.collection('audit_logs').add({
+            userId,
+            actionType,
+            collectionName,
+            documentId,
+            description: description || '',
+            ipAddress,
+            userAgent: navigator.userAgent,
+            actionTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (error) {
+        console.error('Audit log error:', error);
     }
 }

@@ -1,22 +1,19 @@
 let currentUser = null;
+let userData = null;
 let allUsersData = [];
 let selectedUsers = [];
+let usersUnsub = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) { window.location.href = '../auth/login.html'; return; }
-        currentUser = user;
-        const doc = await db.collection('users').doc(user.uid).get();
-        if (!doc.exists || doc.data().role !== 'admin') { 
-            window.location.href = '../dashboard/index.html'; 
-            return; 
-        }
-        loadUsers();
-        setupFilters();
-        setupSearch();
-        setupBulkActions();
-    });
-});
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
+}
+
+// Auth handled by guardPage() in HTML
 
 function setupSearch() {
     const searchInput = document.getElementById('searchUsers');
@@ -71,15 +68,19 @@ function updateBulkActions() {
     document.getElementById('bulkActions').style.display = selectedUsers.length > 0 ? 'flex' : 'none';
 }
 
-async function loadUsers() {
+let usersInitialized = false;
+
+function subscribeUsers() {
     const tbody = document.getElementById('usersTable');
     if (!tbody) return;
 
-    try {
-        const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+    if (usersUnsub) usersUnsub();
+    usersInitialized = false;
+
+    usersUnsub = db.collection('users').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         allUsersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        let students = 0, doctors = 0, nurses = 0, admins = 0, pending = 0, suspended = 0, active = 0;
+        let students = 0, doctors = 0, nurses = 0, admins = 0, pending = 0, suspended = 0, active = 0, inactive = 0;
         
         allUsersData.forEach(user => {
             if (user.role === 'student') students++;
@@ -90,6 +91,7 @@ async function loadUsers() {
             if (user.status === 'pending_approval') pending++;
             else if (user.status === 'suspended') suspended++;
             else if (user.status === 'active') active++;
+            else if (user.status === 'inactive') inactive++;
         });
         
         document.getElementById('totalUsers').textContent = snapshot.size;
@@ -98,13 +100,19 @@ async function loadUsers() {
         document.getElementById('pendingApproval').textContent = pending;
         document.getElementById('activeUsers').textContent = active;
         document.getElementById('suspendedUsers').textContent = suspended;
+        document.getElementById('inactiveUsers').textContent = inactive;
         
         renderUsersTable(allUsersData);
         if (typeof lucide !== 'undefined') lucide.createIcons();
-    } catch (error) {
+
+        if (!usersInitialized) {
+            usersInitialized = true;
+            if (typeof applyUrlFilters === 'function') applyUrlFilters();
+        }
+    }, error => {
         console.error('Error loading users:', error);
         showToast('Error loading users', 'error');
-    }
+    });
 }
 
 function renderUsersTable(users) {
@@ -117,7 +125,7 @@ function renderUsersTable(users) {
     }
     
     tbody.innerHTML = users.map(user => {
-        const statusClass = user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : 'warning';
+        const statusClass = user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'inactive' ? 'secondary' : 'warning';
         const userId = user.studentId || user.staffId || 'N/A';
         const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
         
@@ -143,8 +151,11 @@ function renderUsersTable(users) {
                     <div style="display:flex;gap:4px;">
                         <button class="btn btn-sm btn-ghost" onclick="viewUser('${user.id}')" title="View"><i data-lucide="eye" style="width:14px;height:14px"></i></button>
                         <button class="btn btn-sm btn-ghost" onclick="openEditUser('${user.id}')" title="Edit"><i data-lucide="pencil" style="width:14px;height:14px"></i></button>
-                        ${user.status === 'pending_approval' ? `<button class="btn btn-sm btn-success" onclick="approveUser('${user.id}')" title="Approve"><i data-lucide="check" style="width:14px;height:14px"></i></button>` : ''}
-                        ${user.status !== 'suspended' ? `<button class="btn btn-sm btn-warning" onclick="suspendUser('${user.id}')" title="Suspend"><i data-lucide="ban" style="width:14px;height:14px"></i></button>` : '<button class="btn btn-sm btn-success" onclick="activateUser(\'' + user.id + '\')" title="Activate"><i data-lucide="check-circle" style="width:14px;height:14px"></i></button>'}
+                        ${user.status === 'pending_approval' ? `<button class="btn btn-sm btn-success" onclick="approveUser('${user.id}')" title="Approve"><i data-lucide="check" style="width:14px;height:14px"></i></button><button class="btn btn-sm btn-danger" onclick="rejectUser('${user.id}')" title="Reject"><i data-lucide="x" style="width:14px;height:14px"></i></button>` : ''}
+                        ${user.status === 'active' ? `<button class="btn btn-sm btn-ghost" onclick="markInactive('${user.id}')" title="Mark Inactive"><i data-lucide="pause-circle" style="width:14px;height:14px"></i></button>` : ''}
+                        ${user.status === 'inactive' ? `<button class="btn btn-sm btn-success" onclick="activateUser('${user.id}')" title="Activate"><i data-lucide="play-circle" style="width:14px;height:14px"></i></button>` : ''}
+                        ${user.status !== 'suspended' && user.status !== 'inactive' ? `<button class="btn btn-sm btn-warning" onclick="suspendUser('${user.id}')" title="Suspend"><i data-lucide="ban" style="width:14px;height:14px"></i></button>` : ''}
+                        ${user.status === 'suspended' ? `<button class="btn btn-sm btn-success" onclick="activateUser('${user.id}')" title="Activate"><i data-lucide="check-circle" style="width:14px;height:14px"></i></button>` : ''}
                         ${user.id !== currentUser.uid ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')" title="Delete"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>` : ''}
                     </div>
                 </td>
@@ -229,7 +240,6 @@ window.createUser = async function() {
         
         showToast('User created successfully!', 'success');
         closeCreateModal();
-        loadUsers();
         
     } catch (error) {
         let msg = 'Error creating user';
@@ -298,7 +308,6 @@ window.updateUser = async function() {
         await logActivity(currentUser.uid, 'user_update', `Updated user: ${firstName} ${lastName}`);
         showToast('User updated successfully', 'success');
         closeUserModal();
-        loadUsers();
     } catch (error) {
         showToast('Error updating user', 'error');
     }
@@ -309,7 +318,7 @@ window.viewUser = async function(id) {
     if (!doc.exists) return;
     
     const user = doc.data();
-    const statusClass = user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : 'warning';
+    const statusClass = user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'inactive' ? 'secondary' : 'warning';
     const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
     
     const profileHTML = `
@@ -355,6 +364,20 @@ window.viewUser = async function(id) {
     lucide.createIcons();
 };
 
+function applyUrlFilters() {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+    if (status) {
+        const statusSelect = document.getElementById('filterStatus');
+        if (statusSelect) {
+            statusSelect.value = status;
+            const query = document.getElementById('searchUsers')?.value.toLowerCase() || '';
+            const role = document.getElementById('filterRole').value;
+            filterUsers(query, role, status);
+        }
+    }
+}
+
 window.closeViewModal = function() {
     document.getElementById('viewUserModal').classList.remove('active');
 };
@@ -364,9 +387,19 @@ window.approveUser = async function(id) {
         await db.collection('users').doc(id).update({ status: 'active' });
         await logActivity(currentUser.uid, 'user_approve', `Approved user: ${id}`);
         showToast('User approved', 'success');
-        loadUsers();
     } catch (error) {
         showToast('Error approving user', 'error');
+    }
+};
+
+window.rejectUser = async function(id) {
+    if (!confirm('Reject this user? This will delete their account.')) return;
+    try {
+        await db.collection('users').doc(id).delete();
+        await logActivity(currentUser.uid, 'user_reject', `Rejected user: ${id}`);
+        showToast('User rejected and removed', 'success');
+    } catch (error) {
+        showToast('Error rejecting user', 'error');
     }
 };
 
@@ -374,9 +407,19 @@ window.activateUser = async function(id) {
     try {
         await db.collection('users').doc(id).update({ status: 'active' });
         showToast('User activated', 'success');
-        loadUsers();
     } catch (error) {
         showToast('Error activating user', 'error');
+    }
+};
+
+window.markInactive = async function(id) {
+    if (!confirm('Mark this user as inactive? They will have read-only access.')) return;
+    try {
+        await db.collection('users').doc(id).update({ status: 'inactive' });
+        await logActivity(currentUser.uid, 'user_deactivate', `Marked user inactive: ${id}`);
+        showToast('User marked inactive', 'success');
+    } catch (error) {
+        showToast('Error marking user inactive', 'error');
     }
 };
 
@@ -385,7 +428,6 @@ window.suspendUser = function(id) {
     db.collection('users').doc(id).update({ status: 'suspended' }).then(async () => {
         await logActivity(currentUser.uid, 'user_suspend', `Suspended user: ${id}`);
         showToast('User suspended', 'success');
-        loadUsers();
     }).catch(() => showToast('Error suspending user', 'error'));
 };
 
@@ -394,8 +436,18 @@ window.deleteUser = function(id) {
     db.collection('users').doc(id).delete().then(async () => {
         await logActivity(currentUser.uid, 'user_delete', `Deleted user: ${id}`);
         showToast('User deleted', 'success');
-        loadUsers();
     }).catch(() => showToast('Error deleting user', 'error'));
+};
+
+window.rejectUser = async function(id) {
+    if (!confirm('Reject this user? The user account will be deleted.')) return;
+    try {
+        await db.collection('users').doc(id).delete();
+        await logActivity(currentUser.uid, 'user_reject', `Rejected user: ${id}`);
+        showToast('User rejected and removed', 'success');
+    } catch (error) {
+        showToast('Error rejecting user', 'error');
+    }
 };
 
 window.bulkApprove = async function() {
@@ -406,7 +458,6 @@ window.bulkApprove = async function() {
     showToast(`${selectedUsers.length} users approved`, 'success');
     selectedUsers = [];
     updateBulkActions();
-    loadUsers();
 };
 
 window.bulkSuspend = async function() {
@@ -417,7 +468,6 @@ window.bulkSuspend = async function() {
     showToast(`${selectedUsers.length} users suspended`, 'success');
     selectedUsers = [];
     updateBulkActions();
-    loadUsers();
 };
 
 window.bulkDelete = async function() {
@@ -429,5 +479,4 @@ window.bulkDelete = async function() {
     showToast(`${selectedUsers.length} users deleted`, 'success');
     selectedUsers = [];
     updateBulkActions();
-    loadUsers();
 };

@@ -9,8 +9,21 @@ const KeyManager = (() => {
         return cachedPrivateKey !== null;
     }
 
+    async function getKeySecret(user, password) {
+        if (password && password.length > 0) return password;
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (!doc.exists) throw new Error('User document not found');
+        let secret = doc.data().keySecret;
+        if (!secret) {
+            secret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+            await db.collection('users').doc(user.uid).update({ keySecret: secret });
+        }
+        return secret;
+    }
+
     async function initKeys(user, password) {
-        if (!user || !password) throw new Error('User and password required');
+        if (!user) throw new Error('User required');
         currentUser = user;
         cachedUserId = user.uid;
 
@@ -18,11 +31,12 @@ const KeyManager = (() => {
         if (!doc.exists) throw new Error('User document not found');
 
         const userData = doc.data();
+        const effectiveSecret = await getKeySecret(user, password);
 
         if (userData.publicKey && userData.encryptedPrivateKey) {
-            await loadExistingKeys(userData.encryptedPrivateKey, password);
+            await loadExistingKeys(userData.encryptedPrivateKey, effectiveSecret);
         } else {
-            await createAndStoreKeys(password);
+            await createAndStoreKeys(effectiveSecret);
         }
     }
 

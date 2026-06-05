@@ -1,18 +1,20 @@
 let currentUser = null;
 let userData = null;
+let labUnsub = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
     lucide.createIcons();
     
-    const result = await guardPage();
+    const result = await guardPage(['doctor', 'nurse', 'lab_technician', 'records_officer', 'admin']);
     if (!result) return;
     
     currentUser = result.user;
     userData = result.userData;
     
+    populateUserProfile();
     loadPatients();
-    loadLabResults();
+    subscribeLabResults();
 });
 
 async function loadPatients() {
@@ -31,33 +33,42 @@ async function loadPatients() {
     }
 }
 
-async function loadLabResults() {
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
+}
+
+function subscribeLabResults() {
     const tbody = document.getElementById('labTable');
     if (!tbody) return;
 
-    try {
-        const snapshot = await db.collection('lab_results').orderBy('createdAt', 'desc').get();
-        
+    if (labUnsub) labUnsub();
+
+    const usersCache = {};
+
+    labUnsub = db.collection('lab_results').orderBy('createdAt', 'desc').onSnapshot(async (snapshot) => {
         if (snapshot.empty) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i data-lucide="flask-conical" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Lab Results</h3><p>Lab results will appear here</p></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="flask-conical" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Lab Results</h3><p>Lab results will appear here</p></td></tr>';
             if (typeof lucide !== 'undefined') lucide.createIcons();
             return;
         }
-    
-        const usersCache = {};
+
         const userIds = [...new Set(snapshot.docs.map(d => d.data().patientId))];
-        
-        for (const id of userIds) {
-            const uDoc = await db.collection('users').doc(id).get();
-            usersCache[id] = uDoc.exists ? uDoc.data() : null;
-        }
-        
+        const fetchPromises = userIds.map(id =>
+            db.collection('users').doc(id).get().then(d => { usersCache[id] = d.exists ? d.data() : null; })
+        );
+        await Promise.all(fetchPromises);
+
         tbody.innerHTML = snapshot.docs.map(doc => {
             const lab = doc.data();
             const patient = usersCache[lab.patientId];
             const statusClass = lab.status === 'normal' ? 'success' : lab.status === 'abnormal' ? 'warning' : lab.status === 'critical' ? 'danger' : 'info';
             const testName = lab.testType?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown';
-            
+
             return `
                 <tr>
                     <td><strong>${patient ? `${escapeHtml(patient.firstName)} ${escapeHtml(patient.lastName)}` : 'Unknown'}</strong></td>
@@ -73,13 +84,12 @@ async function loadLabResults() {
                 </tr>
             `;
         }).join('');
-        
+
         if (typeof lucide !== 'undefined') lucide.createIcons();
-        
-    } catch (error) {
-        console.error('Error loading lab results:', error);
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><h3>Error Loading Lab Results</h3><p>Please try again</p></td></tr>';
-    }
+    }, (error) => {
+        console.error('Lab results subscription error:', error);
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><h3>Error Loading Lab Results</h3><p>Please refresh and try again</p></td></tr>';
+    });
 }
 
 function openLabModal() {
@@ -118,7 +128,6 @@ async function saveLabResult() {
         showToast('Lab result added successfully', 'success');
         logActivity(currentUser.uid, 'lab-result', 'Added lab result for patient');
         closeLabModal();
-        loadLabResults();
     } catch (error) {
         console.error('Error saving lab result:', error);
         showToast('Error saving lab result', 'error');
@@ -145,6 +154,7 @@ async function viewLabResult(id) {
                 <div><strong>Status:</strong> <span class="badge badge-${statusClass}">${lab.status}</span></div>
                 <div><strong>Notes:</strong> ${lab.notes || 'None'}</div>
                 <div><strong>Date:</strong> ${formatDate(lab.createdAt)}</div>
+                <div style="padding:12px;background:var(--orange-50);border-radius:8px;font-size:13px;color:var(--orange-700)"><i data-lucide="shield-alert" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"></i> Patient health data is encrypted in transit and at rest</div>
             </div>
         `;
         document.getElementById('viewLabModal').classList.add('active');
@@ -159,7 +169,6 @@ async function deleteLabResult(id) {
     try {
         await db.collection('lab_results').doc(id).delete();
         showToast('Lab result deleted', 'success');
-        loadLabResults();
     } catch (error) {
         showToast('Error deleting lab result', 'error');
     }

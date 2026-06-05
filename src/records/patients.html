@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <title>Patients - Koladaisi University</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/mobile-responsive.css">
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
+
+    <script src="../js/firebase-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/key-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><i data-lucide="heart-pulse"></i></div>
+                <div class="sidebar-brand"><h2>Health Records</h2><p>Koladaisi University</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                    <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>Patient List</a>
+                    <a href="patient-registration.html" class="nav-item"><i data-lucide="user-plus"></i>Register Patient</a>
+                    <a href="patients.html" class="nav-item active"><i data-lucide="folder"></i>All Patients</a>
+                    <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
+                </div>
+                <div class="nav-section">
+                    <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
+                    <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-role" id="userRole">Staff</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                        <div class="hamburger"><span></span><span></span><span></span></div>
+                    </button>
+                    <div class="page-title">
+                        <h1>All Patients</h1>
+                        <p>View registered patients with AES-256 encrypted fields</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <i data-lucide="search" style="width:16px;height:16px;position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);"></i>
+                        <input type="text" id="searchPatients" placeholder="Search patients..." style="padding-left:36px;">
+                    </div>
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="card">
+                    <div style="padding:16px;display:flex;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border-color);">
+                        <select id="filterGender" style="min-width:140px;">
+                            <option value="">All Genders</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                        <select id="filterBloodGroup" style="min-width:160px;">
+                            <option value="">All Blood Groups</option>
+                            <option value="A+">A+</option><option value="A-">A-</option>
+                            <option value="B+">B+</option><option value="B-">B-</option>
+                            <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                            <option value="O+">O+</option><option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Clinic No.</th>
+                                    <th>Surname</th>
+                                    <th>First Name</th>
+                                    <th>Gender</th>
+                                    <th>DOB</th>
+                                    <th>Blood Group</th>
+                                    <th>Phone</th>
+                                    <th>Univ. ID</th>
+                                    <th>Registered</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <script>
+        let currentUser = null;
+        let userData = null;
+        let allPatients = [];
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        (async function() {
+            initTheme();
+            const result = await guardPage(['doctor', 'nurse', 'admin', 'administrator', 'records_officer', 'pharmacist', 'lab_technician']);
+            if (!result) return;
+            currentUser = result.user;
+            userData = result.userData;
+
+            document.getElementById('userName').textContent = userData.firstName + ' ' + userData.lastName;
+            document.getElementById('userAvatar').textContent = (userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '');
+            document.getElementById('userRole').textContent = userData.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+            loadPatients();
+            setupFilters();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        })();
+
+        async function loadPatients() {
+            const tbody = document.getElementById('patientsTable');
+            try {
+                const snapshot = await db.collection('patients').orderBy('createdAt', 'desc').get();
+
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><i data-lucide="users" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Patients</h3><p>Register the first patient</p></td></tr>';
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    return;
+                }
+
+                allPatients = [];
+                for (const doc of snapshot.docs) {
+                    const data = doc.data();
+                    const decrypted = await Encryption.decryptPatientFields(data);
+                    allPatients.push({ id: doc.id, ...data, ...decrypted });
+                }
+
+                renderTable(allPatients);
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            } catch (error) {
+                console.error('Error loading patients:', error);
+                tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><h3>Error Loading Patients</h3><p>' + error.message + '</p></td></tr>';
+            }
+        }
+
+        function renderTable(patients) {
+            const tbody = document.getElementById('patientsTable');
+            if (patients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><p>No patients match your filters</p></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = patients.map(p => {
+                const canEdit = userData.role === 'nurse' || userData.role === 'administrator' || userData.role === 'records_officer';
+                return '<tr>' +
+                    '<td><strong>' + escapeHtml(p.clinicNumber || 'N/A') + '</strong></td>' +
+                    '<td>' + escapeHtml(p.surname || '') + ' <i data-lucide="lock" style="width:12px;height:12px;color:var(--success-600);display:inline;vertical-align:middle" title="AES-256 Encrypted"></i></td>' +
+                    '<td>' + escapeHtml(p.firstname || '') + ' <i data-lucide="lock" style="width:12px;height:12px;color:var(--success-600);display:inline;vertical-align:middle" title="AES-256 Encrypted"></i></td>' +
+                    '<td>' + escapeHtml(p.gender || '') + '</td>' +
+                    '<td>' + escapeHtml(p.dob || '') + '</td>' +
+                    '<td>' + escapeHtml(p.bloodGroup || 'N/A') + '</td>' +
+                    '<td>' + escapeHtml(p.phone || '') + '</td>' +
+                    '<td>' + escapeHtml(p.universityId || '') + '</td>' +
+                    '<td>' + formatDate(p.createdAt) + '</td>' +
+                    '<td>' +
+                        '<button class="btn btn-sm btn-outline" onclick="viewPatient(\'' + p.id + '\')"><i data-lucide="eye" style="width:14px;height:14px"></i></button>' +
+                        (canEdit ? '<button class="btn btn-sm btn-outline" onclick="editPatient(\'' + p.id + '\')"><i data-lucide="pencil" style="width:14px;height:14px"></i></button>' : '') +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function setupFilters() {
+            function applyFilters() {
+                const gender = document.getElementById('filterGender').value;
+                const blood = document.getElementById('filterBloodGroup').value;
+                const query = (document.getElementById('searchPatients').value || '').toLowerCase();
+
+                const filtered = allPatients.filter(p => {
+                    const nameMatch = !query || (p.surname && p.surname.toLowerCase().includes(query)) ||
+                        (p.firstname && p.firstname.toLowerCase().includes(query)) ||
+                        (p.clinicNumber && p.clinicNumber.toLowerCase().includes(query)) ||
+                        (p.universityId && p.universityId.toLowerCase().includes(query));
+                    const genderMatch = !gender || p.gender === gender;
+                    const bloodMatch = !blood || p.bloodGroup === blood;
+                    return nameMatch && genderMatch && bloodMatch;
+                });
+                renderTable(filtered);
+            }
+
+            document.getElementById('filterGender')?.addEventListener('change', applyFilters);
+            document.getElementById('filterBloodGroup')?.addEventListener('change', applyFilters);
+            document.getElementById('searchPatients')?.addEventListener('input', applyFilters);
+        }
+
+        async function viewPatient(id) {
+            const p = allPatients.find(x => x.id === id);
+            if (!p) return;
+
+            const content = document.getElementById('viewPatientContent');
+            if (!content) {
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                modal.id = 'viewModal';
+                modal.innerHTML = '<div class="modal" style="max-width:600px;"><div class="modal-header"><h3 class="modal-title">Patient Details</h3><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()"><i data-lucide="x"></i></button></div><div class="modal-body" id="viewPatientContent"></div><div class="modal-footer"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">Close</button></div></div>';
+                document.body.appendChild(modal);
+                modal.classList.add('active');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+
+            document.getElementById('viewPatientContent').innerHTML =
+                '<div style="display:grid;gap:12px;">' +
+                    '<div style="padding:16px;background:var(--bg-secondary);border-radius:var(--radius-md);text-align:center;">' +
+                        '<h3 style="margin:0 0 4px;">' + escapeHtml(p.surname) + ' ' + escapeHtml(p.firstname) + '</h3>' +
+                        '<span class="badge badge-primary">' + escapeHtml(p.clinicNumber) + '</span>' +
+                        '<span style="margin-left:8px;" class="badge badge-info">AES-256 Encrypted</span>' +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+                        '<div><strong>DOB:</strong> ' + escapeHtml(p.dob || 'N/A') + '</div>' +
+                        '<div><strong>Gender:</strong> ' + escapeHtml(p.gender || 'N/A') + '</div>' +
+                        '<div><strong>Blood Group:</strong> ' + escapeHtml(p.bloodGroup || 'N/A') + '</div>' +
+                        '<div><strong>Genotype:</strong> ' + escapeHtml(p.genotype || 'N/A') + '</div>' +
+                        '<div><strong>Phone:</strong> ' + escapeHtml(p.phone || 'N/A') + '</div>' +
+                        '<div><strong>Email:</strong> ' + escapeHtml(p.email || 'N/A') + '</div>' +
+                        '<div><strong>Univ. ID:</strong> ' + escapeHtml(p.universityId || 'N/A') + '</div>' +
+                        '<div><strong>Address:</strong> ' + escapeHtml(p.address || 'N/A') + '</div>' +
+                        '<div><strong>Emergency:</strong> ' + escapeHtml(p.emergencyName || 'N/A') + '</div>' +
+                        '<div><strong>Emergency Ph:</strong> ' + escapeHtml(p.emergencyPhone || 'N/A') + '</div>' +
+                    '</div>' +
+                    '<div style="font-size:12px;color:var(--text-muted);">Registered: ' + formatDate(p.createdAt) + '</div>' +
+                '</div>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function editPatient(id) {
+            showToast('Edit feature - open patient registration with pre-filled data', 'info');
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            const d = date.toDate ? date.toDate() : new Date(date);
+            return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('sidebar-open');
+            if (toggleBtn) toggleBtn.classList.toggle('active');
+            if (overlay) overlay.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

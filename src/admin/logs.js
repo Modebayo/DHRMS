@@ -1,22 +1,23 @@
 let currentUser = null;
+let userData = null;
 let allLogs = [];
 let usersCache = {};
 let currentPage = 1;
 const logsPerPage = 20;
 
 document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) { window.location.href = '../auth/login.html'; return; }
-        const doc = await db.collection('users').doc(user.uid).get();
-        if (!doc.exists || doc.data().role !== 'admin') { window.location.href = '../dashboard/index.html'; return; }
-        currentUser = user;
-        loadUsers();
-        loadLogs();
-    });
-    
     document.getElementById('filterLogType')?.addEventListener('change', () => filterLogs());
     document.getElementById('filterUser')?.addEventListener('change', () => filterLogs());
 });
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
+}
 
 async function loadUsers() {
     const select = document.getElementById('filterUser');

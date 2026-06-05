@@ -3,17 +3,7 @@ let userData = null;
 let editingDrugId = null;
 let inventoryUnsub = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) { window.location.href = '../auth/login.html'; return; }
-        currentUser = user;
-        const doc = await db.collection('users').doc(user.uid).get();
-        if (!doc.exists) { window.location.href = '../auth/login.html'; return; }
-        userData = doc.data();
-        subscribeInventory();
-        setupInventorySearch();
-    });
-});
+// Auth handled by guardPage() in HTML
 
 function setupInventorySearch() {
     const search = document.getElementById('searchInventory');
@@ -32,6 +22,8 @@ function subscribeInventory() {
     const tbody = document.getElementById('inventoryTable');
     if (!tbody) return;
     
+    let lowStockAlertShown = false;
+
     inventoryUnsub = db.collection('inventory').orderBy('name').onSnapshot((snapshot) => {
         if (snapshot.empty) {
             tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="package" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Inventory</h3><p>Add medications to inventory</p></td></tr>';
@@ -39,10 +31,14 @@ function subscribeInventory() {
             return;
         }
         
+        let lowCount = 0;
+        
         tbody.innerHTML = snapshot.docs.map(doc => {
             const drug = doc.data();
             const stockLevel = drug.quantity <= 10 ? 'danger' : drug.quantity <= 50 ? 'warning' : 'success';
             const stockLabel = drug.quantity <= 10 ? 'Low' : drug.quantity <= 50 ? 'Medium' : 'Good';
+            
+            if (drug.quantity <= 10) lowCount++;
             
             return `
                 <tr>
@@ -60,6 +56,11 @@ function subscribeInventory() {
             `;
         }).join('');
         if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        if (lowCount > 0 && !lowStockAlertShown) {
+            lowStockAlertShown = true;
+            showToast('⚠ ' + lowCount + ' ' + (lowCount === 1 ? 'item' : 'items') + ' low in stock. Please reorder.', 'warning');
+        }
     }, (error) => {
         console.error('Inventory subscription error:', error);
     });
@@ -131,4 +132,13 @@ async function deleteDrug(id) {
     } catch (error) {
         showToast('Error deleting', 'error');
     }
+}
+
+function populateUserProfile() {
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatarEl = document.getElementById('userAvatar');
+    if (nameEl && userData) nameEl.textContent = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
+    if (roleEl && userData) roleEl.textContent = userData.role?.replace(/_/g, ' ') || 'Role';
+    if (avatarEl && userData) avatarEl.textContent = (userData.firstName?.[0] || 'U').toUpperCase();
 }
