@@ -213,7 +213,7 @@ window.createUser = async function() {
     btn.innerHTML = '<span class="spinner"></span> Creating...';
     
     try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const userCredential = await auth.adminCreateUser(email, password, role, firstName + ' ' + lastName);
         const user = userCredential.user;
         
         const userData = {
@@ -236,7 +236,6 @@ window.createUser = async function() {
         }
         
         await db.collection('users').doc(user.uid).set(userData);
-        await user.sendEmailVerification();
         
         showToast('User created successfully!', 'success');
         closeCreateModal();

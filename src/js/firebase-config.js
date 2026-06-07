@@ -6,5 +6,6 @@ const APP_CONFIG = {
     version: '1.0.0',
     encryptionSalt: 'KUdhrms2026v1',
     hkdfInfo: 'ku-health-records-encryption-v1',
-    bcryptRounds: 12
+    bcryptRounds: 12,
+    apiBase: ''
 };

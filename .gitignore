@@ -7,3 +7,5 @@ build/
 database.sqlite
 admin-credentials.txt
 uploads/
+service-account.json
+.jwt_secret

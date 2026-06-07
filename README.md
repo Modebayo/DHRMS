@@ -246,9 +246,9 @@ ALAGBEDE IBRAHIM MODEBAYO FN PROJECT/
 ### Option 2: Python
 ```bash
 cd "ALAGBEDE IBRAHIM MODEBAYO FN PROJECT"
-python -m http.server 8000
+python -m http.server 3002
 ```
-Then open http://localhost:8000
+Then open http://localhost:3002
 
 ### Option 3: Node.js
 ```bash

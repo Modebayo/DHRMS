@@ -1,11 +1,10 @@
 const path = require('path');
 const fs = require('fs');
-const { ZipArchive } = require('archiver');
+const archiver = require('archiver');
 const unzipper = require('unzipper');
 
-const ROOT = __dirname;
+const ROOT = path.join(__dirname, '..');
 const BACKUP_DIR = path.join(ROOT, 'backups');
-const DB_PATH = path.join(ROOT, 'database.sqlite');
 const UPLOADS_DIR = path.join(ROOT, 'uploads');
 const CONFIG_FILES = ['firebase.json', 'firestore.rules', 'storage.rules', 'package.json'];
 
@@ -24,8 +23,7 @@ function getTimestamp() {
 }
 
 function getMetadata() {
-    const stats = {};
-    if (fs.existsSync(DB_PATH)) stats.database = fs.statSync(DB_PATH).size;
+    const stats = { collections: 0, documents: 0 };
     const uploads = fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR) : [];
     stats.uploadCount = uploads.length;
     stats.uploadSize = uploads.reduce((sum, f) => {
@@ -35,35 +33,53 @@ function getMetadata() {
 }
 
 async function createBackup() {
+    const admin = require('firebase-admin');
+    const firestore = admin.firestore();
     const timestamp = getTimestamp();
     const filename = `backup_${timestamp}.zip`;
     const filepath = path.join(BACKUP_DIR, filename);
-    const snapshotPath = path.join(ROOT, `_db_snapshot_${timestamp}.sqlite`);
+    const snapshotDir = path.join(ROOT, `_backup_snapshot_${timestamp}`);
 
-    const { getDb } = require('./database');
-    const db = getDb();
+    if (!fs.existsSync(snapshotDir)) fs.mkdirSync(snapshotDir, { recursive: true });
 
-    db.exec(`VACUUM INTO '${snapshotPath.replace(/\\/g, '\\\\')}'`);
+    const collections = await firestore.listCollections();
+    let totalDocs = 0;
+
+    for (const collection of collections) {
+        const snap = await collection.get();
+        const docs = [];
+        snap.forEach(doc => docs.push({ id: doc.id, data: doc.data() }));
+        if (docs.length > 0) {
+            fs.writeFileSync(
+                path.join(snapshotDir, `${collection.id}.json`),
+                JSON.stringify(docs, null, 2)
+            );
+            totalDocs += docs.length;
+        }
+    }
 
     return new Promise((resolve, reject) => {
         const output = fs.createWriteStream(filepath);
-        const archive = new ZipArchive();
+        const archive = archiver('zip', { zlib: { level: 9 } });
 
         output.on('close', () => {
-            try { if (fs.existsSync(snapshotPath)) fs.unlinkSync(snapshotPath); } catch {}
+            try { fs.rmSync(snapshotDir, { recursive: true, force: true }); } catch {}
             const size = fs.statSync(filepath).size;
-            resolve({ filename, path: filepath, size, sizeLabel: formatSize(size), timestamp });
+            resolve({ filename, path: filepath, size, sizeLabel: formatSize(size), timestamp, collections: collections.length, documents: totalDocs });
         });
 
         archive.on('error', (err) => {
-            try { if (fs.existsSync(snapshotPath)) fs.unlinkSync(snapshotPath); } catch {}
+            try { fs.rmSync(snapshotDir, { recursive: true, force: true }); } catch {}
             try { if (fs.existsSync(filepath)) fs.unlinkSync(filepath); } catch {}
             reject(err);
         });
 
         archive.pipe(output);
 
-        archive.file(snapshotPath, { name: 'database.sqlite' });
+        const snapshotFiles = fs.readdirSync(snapshotDir);
+        for (const f of snapshotFiles) {
+            archive.file(path.join(snapshotDir, f), { name: `firestore/${f}` });
+        }
 
         if (fs.existsSync(UPLOADS_DIR)) {
             const uploadFiles = fs.readdirSync(UPLOADS_DIR);
@@ -119,17 +135,23 @@ async function deleteBackup(filename) {
 }
 
 async function restoreBackup(filename) {
+    const admin = require('firebase-admin');
+    const firestore = admin.firestore();
     const fpath = path.join(BACKUP_DIR, filename);
     if (!fs.existsSync(fpath)) throw new Error('Backup file not found');
 
     await createBackup();
 
+    const restoreDir = path.join(ROOT, `_restore_${getTimestamp()}`);
+    if (!fs.existsSync(restoreDir)) fs.mkdirSync(restoreDir, { recursive: true });
+
     const directory = await unzipper.Open.file(fpath);
 
     for (const file of directory.files) {
         const content = await file.buffer();
-        if (file.path === 'database.sqlite') {
-            fs.writeFileSync(DB_PATH, content);
+        if (file.path.startsWith('firestore/') && file.path.endsWith('.json')) {
+            const colName = path.basename(file.path, '.json');
+            fs.writeFileSync(path.join(restoreDir, path.basename(file.path)), content);
         } else if (file.path.startsWith('uploads/')) {
             const target = path.join(UPLOADS_DIR, file.path.slice(8));
             if (file.type === 'Directory') {
@@ -144,9 +166,29 @@ async function restoreBackup(filename) {
         }
     }
 
-    const { getDb } = require('./database');
-    const db = getDb();
-    db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    const restoreFiles = fs.readdirSync(restoreDir).filter(f => f.endsWith('.json'));
+    for (const rf of restoreFiles) {
+        const colName = path.basename(rf, '.json');
+        const docs = JSON.parse(fs.readFileSync(path.join(restoreDir, rf), 'utf8'));
+        const colRef = firestore.collection(colName);
+        let batch = firestore.batch();
+        let count = 0;
+        for (const doc of docs) {
+            const docRef = colRef.doc(doc.id);
+            batch.set(docRef, doc.data);
+            count++;
+            if (count % 500 === 0) {
+                await batch.commit();
+                batch = firestore.batch();
+            }
+        }
+        if (count % 500 !== 0) {
+            await batch.commit();
+        }
+        console.log(`Restored ${count} docs to collection '${colName}'`);
+    }
+
+    try { fs.rmSync(restoreDir, { recursive: true, force: true }); } catch {}
 
     return { restored: filename };
 }
@@ -158,7 +200,7 @@ if (require.main === module) {
             switch (cmd) {
                 case 'create': {
                     const result = await createBackup();
-                    console.log(`Backup created: ${result.filename} (${result.sizeLabel})`);
+                    console.log(`Backup created: ${result.filename} (${result.sizeLabel}) — ${result.collections} collections, ${result.documents} documents`);
                     break;
                 }
                 case 'list': {

@@ -414,7 +414,7 @@
                 
                 const tempPassword = generatePassword();
                 
-                const userCredential = await auth.createUserWithEmailAndPassword(email, tempPassword);
+                const userCredential = await auth.adminCreateUser(email, tempPassword, selectedRole, document.getElementById('firstName').value.trim() + ' ' + document.getElementById('lastName').value.trim());
                 const user = userCredential.user;
                 
                 let photoUrl = null;
@@ -455,7 +455,6 @@
                 
                 if (photoUrl) {
                     userData.photoUrl = photoUrl;
-                    await user.updateProfile({ photoURL: photoUrl });
                 }
                 
                 await db.collection('users').doc(user.uid).set(userData);

@@ -4,10 +4,20 @@ services:
     runtime: node
     region: oregon
     buildCommand: npm install
-    startCommand: node server.js
+    startCommand: node backend/server.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: 20
       - key: PORT
         value: 10000
+      # Required: Set your Firebase service account (base64-encoded JSON)
+      # Generate: Go to Firebase Console > Project Settings > Service Accounts
+      #           Generate new private key, then encode:
+      #           Windows: certutil -encode -f service-account.json tmp.b64 && type tmp.b64
+      #           Mac/Linux: base64 service-account.json | pbcopy
+      # - key: FIREBASE_SERVICE_ACCOUNT
+      #   value: <base64-encoded-json-here>
+      # Optional: set a fixed JWT secret to persist sessions across deployments
+      # - key: JWT_SECRET
+      #   value: your-secure-random-hex-string-here

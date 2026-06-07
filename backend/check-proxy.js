@@ -1,5 +1,5 @@
 const fs = require('fs');
-const c = fs.readFileSync('server.js', 'utf8');
+const c = fs.readFileSync('./server.js', 'utf8');
 const startMarker = 'XHR_PROXY_TAG';
 const start = c.indexOf(startMarker);
 const lineEnd = c.indexOf('\n', start);
@@ -11,8 +11,6 @@ const scriptClose = line.lastIndexOf('<');
 const codeRaw = line.substring(scriptOpen + 1, scriptClose);
 console.log('Extracted code length:', codeRaw.length);
 
-// Unescape the string
-// The JS string escapes \' to ' and \\ to \
 let decoded = '';
 for (let i = 0; i < codeRaw.length; i++) {
     if (codeRaw[i] === '\\' && i + 1 < codeRaw.length) {
@@ -42,7 +40,6 @@ try {
     }
 }
 
-// Check for problematic < characters
 for (let i = 0; i < decoded.length; i++) {
     if (decoded[i] === '<') {
         console.log('Found < at position', i, 'context:', decoded.substring(Math.max(0, i - 20), Math.min(decoded.length, i + 20)));

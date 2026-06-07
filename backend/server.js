@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-const { seedAdmin, generatePassword } = require('./database');
+const { seedAdmin } = require('./database');
 const { authMiddleware, requireRole } = require('./middleware');
 const authRoutes = require('./api-auth');
 const firestoreRoutes = require('./api-firestore');
@@ -11,7 +11,7 @@ const storageRoutes = require('./api-storage');
 const backup = require('./backup');
 
 const PORT = parseInt(process.env.PORT, 10) || 3002;
-const ROOT = __dirname;
+const ROOT = path.join(__dirname, '..');
 
 const app = express();
 
@@ -21,8 +21,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// ========== Auth Routes ==========
-
 app.post('/api/auth/signin', authRoutes.signin);
 app.post('/api/auth/signup', authRoutes.signup);
 app.get('/api/auth/me', authMiddleware, authRoutes.me);
@@ -31,8 +29,6 @@ app.post('/api/auth/reset-password', authRoutes.resetPassword);
 app.post('/api/auth/change-password', authMiddleware, authRoutes.changePassword);
 app.post('/api/auth/delete-account', authMiddleware, authRoutes.deleteAccount);
 
-// ========== Firestore Routes ==========
-
 app.get('/api/fs/:collection/:id', authMiddleware, firestoreRoutes.getDoc);
 app.post('/api/fs/:collection', authMiddleware, firestoreRoutes.addDoc);
 app.put('/api/fs/:collection/:id', authMiddleware, firestoreRoutes.setDoc);
@@ -40,18 +36,12 @@ app.patch('/api/fs/:collection/:id', authMiddleware, firestoreRoutes.updateDoc);
 app.delete('/api/fs/:collection/:id', authMiddleware, firestoreRoutes.deleteDoc);
 app.post('/api/fs/:collection/query', authMiddleware, firestoreRoutes.query);
 
-// ========== Storage Routes ==========
-
 app.post('/api/storage/upload', authMiddleware, storageRoutes.upload.single('file'), storageRoutes.uploadFile);
 app.use('/api/storage', storageRoutes.serveFile);
-
-// ========== Health Check ==========
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
 });
-
-// ========== Backup Routes ==========
 
 app.post('/api/backup/create', authMiddleware, requireRole('admin'), async (req, res) => {
     try {
@@ -103,8 +93,6 @@ app.post('/api/backup/restore', authMiddleware, requireRole('admin'), async (req
     }
 });
 
-// ========== Static Files ==========
-
 const MIME_TYPES = {
     '.html': 'text/html',
     '.js': 'application/javascript',
@@ -131,8 +119,6 @@ app.use(express.static(ROOT, {
     }
 }));
 
-// ========== SPA Fallback ==========
-
 app.use((req, res) => {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'Not found' });
@@ -148,32 +134,31 @@ app.use((req, res) => {
     res.status(404).send('Not found');
 });
 
-// ========== Start Server ==========
+(async () => {
+    try {
+        const admin = await seedAdmin();
+        if (admin) {
+            const credsPath = path.join(ROOT, 'admin-credentials.txt');
+            const creds = `Admin account created successfully!\nEmail:    ${admin.email}\nPassword: ${admin.password}\nURL:      http://localhost:${PORT}/src/auth/login.html\n\nIMPORTANT: Save this password. It will not be shown again.\n`;
+            fs.writeFileSync(credsPath, creds);
+            console.log('='.repeat(50));
+            console.log(' ADMIN ACCOUNT CREATED');
+            console.log('='.repeat(50));
+            console.log(` Email:    ${admin.email}`);
+            console.log(` Password: ${admin.password}`);
+            console.log('='.repeat(50));
+            console.log(` Credentials saved to: admin-credentials.txt`);
+            console.log('='.repeat(50));
+        } else {
+            console.log('Admin account already exists — skipping seed.');
+        }
 
-const admin = seedAdmin();
-if (admin) {
-    const credsPath = path.join(ROOT, 'admin-credentials.txt');
-    const creds = `Admin account created successfully!
-Email:    ${admin.email}
-Password: ${admin.password}
-URL:      http://localhost:${PORT}/src/auth/login.html
-
-IMPORTANT: Save this password. It will not be shown again.
-`;
-    fs.writeFileSync(credsPath, creds);
-    console.log('='.repeat(50));
-    console.log(' ADMIN ACCOUNT CREATED');
-    console.log('='.repeat(50));
-    console.log(` Email:    ${admin.email}`);
-    console.log(` Password: ${admin.password}`);
-    console.log('='.repeat(50));
-    console.log(` Credentials saved to: admin-credentials.txt`);
-    console.log('='.repeat(50));
-} else {
-    console.log('Admin account already exists — skipping seed.');
-}
-
-app.listen(PORT, () => {
-    console.log(`DHRMS server running at http://localhost:${PORT}`);
-    console.log(`SQLite backend — no Firebase dependency`);
-});
+        app.listen(PORT, () => {
+            console.log(`DHRMS server running at http://localhost:${PORT}`);
+            console.log('Firestore backend — no SQLite dependency');
+        });
+    } catch (err) {
+        console.error('Failed to start server:', err);
+        process.exit(1);
+    }
+})();

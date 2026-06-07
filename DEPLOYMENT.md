@@ -48,7 +48,7 @@
 cd "C:\Users\HP\Desktop\ALAGBEDE IBRAHIM MODEBAYO FN PROJECT"
 python -m http.server 3000
 ```
-Open: http://localhost:3000
+Open: http://localhost:3002
 
 ### Option B: Node.js
 ```bash

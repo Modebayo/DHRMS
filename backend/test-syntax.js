@@ -1,5 +1,5 @@
 const fs = require('fs');
-const tag = fs.readFileSync('server.js', 'utf8');
+const tag = fs.readFileSync('./server.js', 'utf8');
 const start = tag.indexOf("XHR_PROXY_TAG");
 const content = tag.substring(start);
 const s = content.indexOf("'");

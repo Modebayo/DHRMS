@@ -57,9 +57,9 @@ const firebaseConfig = {
 **Option A - Using Python:**
 ```
 cd "C:\Users\HP\Desktop\ALAGBEDE IBRAHIM MODEBAYO FN PROJECT"
-python -m http.server 3000
+python -m http.server 3002
 ```
-Then open: http://localhost:3000
+Then open: http://localhost:3002
 
 **Option B - Using Node.js:**
 ```

@@ -160,7 +160,7 @@
         function poll() {
             self.get().then(function (doc) {
                 callback(doc);
-            }).catch(function () {});
+            }).catch(function (err) { console.error('[DocRef onSnapshot] Poll error:', err); });
         }
         poll();
         var interval = setInterval(poll, 5000);
@@ -248,7 +248,7 @@
         function poll() {
             self.get().then(function (snap) {
                 callback(snap);
-            }).catch(function () {});
+            }).catch(function (err) { console.error('[CollRef onSnapshot] Poll error:', err); });
         }
         poll();
         var interval = setInterval(poll, 5000);
@@ -274,14 +274,41 @@
         },
 
         createUserWithEmailAndPassword: function (email, password) {
+            var previousToken = getJwt();
             return api('/api/auth/signup', {
                 method: 'POST',
                 body: { email: email, password: password }
             }).then(function (data) {
-                if (data.idToken) setJwt(data.idToken);
+                if (previousToken) {
+                    setJwt(previousToken);
+                } else if (data.idToken) {
+                    setJwt(data.idToken);
+                }
                 checkAuthState();
+                var userObj = { uid: data.localId, email: data.email };
+                userObj.sendEmailVerification = function () { return Promise.resolve(); };
+                userObj.updateProfile = function () { return Promise.resolve(); };
                 return {
-                    user: { uid: data.localId, email: data.email },
+                    user: userObj,
+                    additionalUserInfo: null
+                };
+            });
+        },
+
+        adminCreateUser: function (email, password, role, displayName) {
+            var previousToken = getJwt();
+            if (!previousToken) return Promise.reject(new Error('Not authenticated'));
+            return api('/api/auth/signup', {
+                method: 'POST',
+                body: { email: email, password: password, role: role || 'student', displayName: displayName || '' }
+            }).then(function (data) {
+                setJwt(previousToken);
+                checkAuthState();
+                var userObj = { uid: data.localId, email: data.email };
+                userObj.sendEmailVerification = function () { return Promise.resolve(); };
+                userObj.updateProfile = function () { return Promise.resolve(); };
+                return {
+                    user: userObj,
                     additionalUserInfo: null
                 };
             });
