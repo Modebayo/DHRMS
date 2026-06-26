@@ -132,8 +132,46 @@
     flex-shrink: 0;
 }
 .sidebar-back:hover { background: var(--bg-secondary); color: var(--text-primary); }
-@media (max-width: 768px) {
-    .sidebar-back { width: 36px; height: 36px; }
+/* responsive: sidebar-back width in mobile-responsive.css */
+
+.availability-toggle {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    user-select: none;
+}
+.availability-toggle:hover {
+    opacity: 0.85;
+}
+
+.availability-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.online-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.online-dot.online { background: var(--success-500); }
+.online-dot.offline { background: var(--gray-300); }
+.online-dot.notracked { background: var(--text-muted); opacity: 0.4; }
+
+.available-staff-card .staff-item:last-child {
+    border-bottom: none !important;
 }
 
 .sidebar-nav {
@@ -247,12 +285,7 @@
     transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Mobile: hide main-content margin when sidebar is hidden on mobile */
-@media (max-width: 768px) {
-    .main-content {
-        margin-left: 0;
-    }
-}
+/* Mobile: main-content margin hidden - handled in mobile-responsive.css */
 
 .header {
     background: var(--bg-primary);
@@ -1092,30 +1125,4 @@ tr:hover {
     background: var(--bg-primary);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .grid-2 {
-        grid-template-columns: 1fr;
-    }
-    
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .header {
-        padding: 12px 16px;
-    }
-    
-    .content {
-        padding: 16px;
-    }
-    
-    .chat-widget {
-        width: calc(100% - 32px);
-        height: calc(100vh - 100px);
-    }
-}
+/* Responsive rules consolidated in mobile-responsive.css */

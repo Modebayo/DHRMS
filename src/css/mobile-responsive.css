@@ -244,6 +244,8 @@
 
     /* ─── INVENTORY ─── */
     .inventory-stats .stat-card { padding: 12px; }
+    .availability-toggle { font-size: 11px; padding: 4px 10px; }
+    #availableStaffCard .staff-item { padding: 8px 0; }
 }
 
 /* ─── DESKTOP (769px+) ─── */

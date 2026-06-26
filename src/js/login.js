@@ -71,6 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             }).catch(() => {});
 
+            initPresence(user, userData);
+
             showToast('Login successful!', 'success');
             logActivity(user.uid, 'login', `Logged in as ${userData.role}`).catch(() => {});
 

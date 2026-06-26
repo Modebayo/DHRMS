@@ -120,7 +120,7 @@ function renderUsersTable(users) {
     if (!tbody) return;
     
     if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><p>No users found</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><p>No users found</p></td></tr>';
         return;
     }
     
@@ -128,6 +128,10 @@ function renderUsersTable(users) {
         const statusClass = user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'inactive' ? 'secondary' : 'warning';
         const userId = user.studentId || user.staffId || 'N/A';
         const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
+        const isStudent = user.role === 'student';
+        const online = user.isOnline;
+        const onlineColor = isStudent ? 'var(--text-muted)' : online ? 'var(--success-500)' : 'var(--gray-300)';
+        const onlineLabel = isStudent ? 'Not tracked' : online ? 'Online' : 'Offline';
         
         return `
             <tr>
@@ -146,6 +150,12 @@ function renderUsersTable(users) {
                 <td><span class="badge badge-primary">${escapeHtml(user.role)}</span></td>
                 <td>${escapeHtml(userId)}</td>
                 <td><span class="badge badge-${statusClass}">${user.status === 'pending_approval' ? 'Pending' : user.status}</span></td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${onlineColor};display:inline-block"></span>
+                        <span style="font-size:12px">${onlineLabel}</span>
+                    </div>
+                </td>
                 <td>${formatTimestamp(user.createdAt)}</td>
                 <td>
                     <div style="display:flex;gap:4px;">
@@ -319,12 +329,18 @@ window.viewUser = async function(id) {
     const user = doc.data();
     const statusClass = user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'inactive' ? 'secondary' : 'warning';
     const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
+    const isStudent = user.role === 'student';
+    const onlineColor = isStudent ? 'var(--text-muted)' : user.isOnline ? 'var(--success-500)' : 'var(--gray-300)';
+    const onlineLabel = isStudent ? 'Not tracked' : user.isOnline ? 'Online' : 'Offline';
     
     const profileHTML = `
         <div style="text-align:center;margin-bottom:24px;">
             <div style="width:80px;height:80px;border-radius:50%;background:var(--primary-500);color:white;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin:0 auto 12px;">${initials}</div>
             <h3 style="font-size:20px;margin-bottom:4px;">${escapeHtml(user.firstName)} ${escapeHtml(user.lastName)}</h3>
-            <span class="badge badge-${statusClass}">${user.status}</span>
+            <div style="display:flex;gap:6px;justify-content:center">
+                <span class="badge badge-${statusClass}">${user.status}</span>
+                <span class="badge" style="background:${isStudent ? 'var(--gray-200)' : user.isOnline ? 'var(--success-100)' : 'var(--gray-200)'};color:${isStudent ? 'var(--text-muted)' : user.isOnline ? 'var(--success-700)' : 'var(--text-muted)'}">${onlineLabel}</span>
+            </div>
         </div>
         <div style="display:grid;gap:12px;">
             <div style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);">

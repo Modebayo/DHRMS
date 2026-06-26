@@ -140,6 +140,7 @@ async function handleInactivityTimeout() {
     if (!user) return;
     try {
         const uid = user.uid;
+        stopPresence();
         await logAuditEvent(uid, 'SESSION_TIMEOUT', '', '', 'Session timed out after 30 minutes of inactivity');
         await auth.signOut();
         showToast('Session timed out due to inactivity. Please log in again.', 'warning');

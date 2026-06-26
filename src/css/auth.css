@@ -286,120 +286,7 @@
     margin-bottom: 16px;
 }
 
-@media (max-width: 480px) {
-    .auth-container {
-        padding: 12px;
-    }
-    
-    .auth-card {
-        padding: 20px 16px;
-        margin: 8px;
-        border-radius: 12px;
-    }
-    
-    .auth-card-large {
-        padding: 16px;
-    }
-    
-    .logo-icon {
-        width: 48px;
-        height: 48px;
-        margin-bottom: 16px;
-    }
-    
-    .logo-icon i {
-        width: 24px;
-        height: 24px;
-    }
-    
-    .auth-header h1 {
-        font-size: 18px;
-    }
-    
-    .subtitle {
-        font-size: 12px;
-    }
-    
-    .form-options {
-        flex-direction: column;
-        gap: 8px;
-        align-items: flex-start;
-    }
-    
-    .forgot-link {
-        font-size: 12px;
-        align-self: flex-end;
-    }
-    
-    .checkbox {
-        font-size: 12px;
-    }
-    
-    .checkbox input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-    }
-    
-    .btn {
-        padding: 12px 16px;
-        font-size: 14px;
-    }
-    
-    .btn-social {
-        padding: 10px 16px;
-        font-size: 13px;
-    }
-    
-    .auth-footer {
-        font-size: 12px;
-        margin-top: 16px;
-    }
-    
-    .info {
-        padding: 10px;
-        font-size: 12px;
-    }
-    
-    .alert {
-        padding: 10px 12px;
-        font-size: 12px;
-    }
-    
-    .admin-badge {
-        font-size: 10px;
-        padding: 3px 10px;
-    }
-    
-    .password-input input {
-        font-size: 16px;
-    }
-    
-    .error-message {
-        font-size: 11px;
-    }
-    
-    .auth-divider {
-        margin: 16px 0;
-        font-size: 11px;
-    }
-    
-    .signup-tabs {
-        flex-direction: column;
-    }
-    
-    .tab-btn {
-        padding: 10px;
-        font-size: 13px;
-    }
-    
-    .role-specific-fields {
-        padding: 14px;
-    }
-    
-    .email-verification-banner {
-        padding: 14px;
-    }
-}
+/* Responsive rules consolidated in mobile-responsive.css */
 
 .info {
     background: #f0f9ff;
@@ -480,25 +367,6 @@
     cursor: pointer;
 }
 
-.alert {
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    display: block;
-}
-
-.alert-error {
-    background: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-}
-
-.alert-success {
-    background: #d1fae5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-}
-
 .alert-warning {
     background: #fef3c7;
     color: #92400e;
@@ -509,21 +377,6 @@
     background: #e0f2fe;
     color: #0369a1;
     border: 1px solid #7dd3fc;
-}
-
-.info {
-    background: #e0f2fe;
-    border: 1px solid #0ea5e9;
-    color: #0369a1;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
-}
-
-.info strong {
-    display: block;
-    margin-bottom: 4px;
 }
 
 .admin-badge {

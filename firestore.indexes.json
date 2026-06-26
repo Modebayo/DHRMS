@@ -410,5 +410,15 @@
       ]
     }
   ],
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "role", "order": "ASCENDING" },
+        { "fieldPath": "isOnline", "order": "ASCENDING" },
+        { "fieldPath": "isOnDuty", "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }
