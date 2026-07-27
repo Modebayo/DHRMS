@@ -41,6 +41,28 @@ async function getUserByEmail(email) {
     return { uid: doc.id, ...doc.data() };
 }
 
+async function getUserByStudentId(studentId) {
+    const snap = await getFirestore().collection('users').where('studentId', '==', studentId).limit(1).get();
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    return { uid: doc.id, ...doc.data() };
+}
+
+async function getUserByStaffId(staffId) {
+    const snap = await getFirestore().collection('users').where('staffId', '==', staffId).limit(1).get();
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    return { uid: doc.id, ...doc.data() };
+}
+
+async function lookupUserById(userId) {
+    const studentUser = await getUserByStudentId(userId);
+    if (studentUser) return studentUser;
+    const staffUser = await getUserByStaffId(userId);
+    if (staffUser) return staffUser;
+    return null;
+}
+
 async function getUserById(uid) {
     const doc = await getFirestore().collection('_auth_').doc(uid).get();
     if (!doc.exists) return null;
@@ -155,19 +177,56 @@ async function queryDocuments(collection, filters = [], orderBy = [], limit = nu
     }
     if (limit) query = query.limit(limit);
     if (offset) query = query.offset(offset);
-    const snap = await query.get();
-    const docs = [];
-    snap.forEach(doc => {
-        const data = doc.data();
-        docs.push({
-            id: doc.id,
-            exists: true,
-            data,
-            createdAt: data.createdAt || null,
-            updatedAt: data.updatedAt || null
+    try {
+        const snap = await query.get();
+        const docs = [];
+        snap.forEach(doc => {
+            const data = doc.data();
+            docs.push({
+                id: doc.id,
+                exists: true,
+                data,
+                createdAt: data.createdAt || null,
+                updatedAt: data.updatedAt || null
+            });
         });
-    });
-    return docs;
+        return docs;
+    } catch (err) {
+        if (err.code === 3 || (err.message && err.message.includes('index'))) {
+            console.warn(`[queryDocuments] Index missing for ${collection} query. Falling back to unsorted query.`);
+            let fallbackQuery = getFirestore().collection(collection);
+            for (const f of filters) {
+                const op = ops[f.op];
+                if (op) fallbackQuery = fallbackQuery.where(f.field, op, f.value);
+            }
+            if (limit) fallbackQuery = fallbackQuery.limit(limit);
+            const snap = await fallbackQuery.get();
+            const docs = [];
+            snap.forEach(doc => {
+                const data = doc.data();
+                docs.push({
+                    id: doc.id,
+                    exists: true,
+                    data,
+                    createdAt: data.createdAt || null,
+                    updatedAt: data.updatedAt || null
+                });
+            });
+            docs.sort((a, b) => {
+                for (const ob of orderBy) {
+                    const field = ob.field;
+                    const dir = (ob.dir || 'asc').toUpperCase() === 'DESC' ? -1 : 1;
+                    const aVal = a.data[field] || '';
+                    const bVal = b.data[field] || '';
+                    if (aVal < bVal) return -1 * dir;
+                    if (aVal > bVal) return 1 * dir;
+                }
+                return 0;
+            });
+            return docs;
+        }
+        throw err;
+    }
 }
 
 async function seedAdmin() {
@@ -227,6 +286,9 @@ module.exports = {
     seedAdmin,
     getUserByEmail,
     getUserById,
+    getUserByStudentId,
+    getUserByStaffId,
+    lookupUserById,
     createAuthUser,
     updateAuthUser,
     deleteAuthUser,

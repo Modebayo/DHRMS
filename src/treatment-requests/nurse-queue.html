@@ -104,9 +104,9 @@
                 </div>
 
                 <div class="tabs">
-                    <div class="tab active" onclick="switchTab('triage', this)"><i data-lucide="stethoscope" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> Triage</div>
-                    <div class="tab" onclick="switchTab('dispense', this)"><i data-lucide="package-check" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> Dispense Treatment</div>
-                    <div class="tab" onclick="switchTab('all', this)"><i data-lucide="list" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> All Cases</div>
+                    <div class="tab active" data-tab="triage" onclick="switchTab('triage', this)"><i data-lucide="stethoscope" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> Triage</div>
+                    <div class="tab" data-tab="dispense" onclick="switchTab('dispense', this)"><i data-lucide="package-check" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> Dispense Treatment</div>
+                    <div class="tab" data-tab="all" onclick="switchTab('all', this)"><i data-lucide="list" style="width:16px;height:16px;display:inline;vertical-align:middle;margin-right:6px;"></i> All Cases</div>
                 </div>
 
                 <div id="queueList" class="card">
@@ -142,6 +142,15 @@
             document.getElementById('userName').textContent = `${userData.firstName} ${userData.lastName}`;
             document.getElementById('userAvatar').textContent = getInitials(userData.firstName, userData.lastName);
             initTheme();
+
+            const urlTab = new URLSearchParams(window.location.search).get('tab');
+            if (urlTab && ['triage', 'dispense', 'all'].includes(urlTab)) {
+                currentTab = urlTab;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                const targetTab = document.querySelector(`.tab[data-tab="${urlTab}"]`);
+                if (targetTab) targetTab.classList.add('active');
+            }
+
             loadRequests();
         })();
 

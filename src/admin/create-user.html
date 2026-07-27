@@ -156,7 +156,7 @@
                                 <input type="tel" id="phone" placeholder="+234..." required>
                             </div>
                             <div class="form-group">
-                                <label class="required-field">ID Number</label>
+                                <label class="required-field">ID Number (used for login)</label>
                                 <input type="text" id="userIdNumber" placeholder="e.g., KU/2026/001 or STF/001" required>
                             </div>
                             <div id="studentFields" class="form-group" style="display:none">
@@ -430,7 +430,6 @@
                     gender: document.getElementById('gender').value,
                     nationality: document.getElementById('nationality').value.trim(),
                     phone: phone,
-                    userId: document.getElementById('userIdNumber').value.trim(),
                     email: email,
                     role: selectedRole,
                     status: selectedRole === 'student' ? 'active' : 'pending_approval',
@@ -446,10 +445,14 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 
+                const idNumber = document.getElementById('userIdNumber').value.trim();
+                
                 if (selectedRole === 'student') {
+                    userData.studentId = idNumber;
                     userData.level = document.getElementById('level').value;
                     userData.department = document.getElementById('department')?.value || '';
                 } else {
+                    userData.staffId = idNumber;
                     userData.department = document.getElementById('department').value.trim();
                 }
                 

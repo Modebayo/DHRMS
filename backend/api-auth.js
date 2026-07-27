@@ -1,38 +1,64 @@
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { signToken } = require('./middleware');
-const { getUserByEmail, getUserById, createAuthUser, getDocument, setDocument } = require('./database');
+const { getUserByEmail, getUserById, lookupUserById, createAuthUser, getDocument, setDocument } = require('./database');
 
 const BCRYPT_ROUNDS = 12;
 
 async function signin(req, res) {
     try {
-        const { email, password } = req.body || {};
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password required', code: 'auth/missing-credentials' });
+        const { email, userId, password } = req.body || {};
+        if (!password) {
+            return res.status(400).json({ error: 'Password required', code: 'auth/missing-credentials' });
         }
-        const user = await getUserByEmail(email.trim().toLowerCase());
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid email or password', code: 'auth/user-not-found' });
+        if (!email && !userId) {
+            return res.status(400).json({ error: 'Email or ID required', code: 'auth/missing-credentials' });
         }
-        const valid = bcrypt.compareSync(password, user.password_hash);
+
+        let user = null;
+        let authRecord = null;
+
+        if (email && !userId) {
+            authRecord = await getUserByEmail(email.trim().toLowerCase());
+            if (!authRecord) {
+                return res.status(401).json({ error: 'Invalid email or password', code: 'auth/user-not-found' });
+            }
+        } else {
+            const profileDoc = await lookupUserById(userId.trim());
+            if (!profileDoc) {
+                return res.status(401).json({ error: 'No account found with this ID', code: 'auth/user-not-found' });
+            }
+            if (profileDoc.role === 'admin' || profileDoc.role === 'administrator') {
+                return res.status(403).json({ error: 'Admin accounts must use email login', code: 'auth/admin-requires-email' });
+            }
+            if (!profileDoc.email) {
+                return res.status(400).json({ error: 'Account has no email on file. Contact admin.', code: 'auth/no-email' });
+            }
+            authRecord = await getUserByEmail(profileDoc.email);
+            if (!authRecord) {
+                return res.status(401).json({ error: 'Invalid ID or password', code: 'auth/user-not-found' });
+            }
+        }
+
+        const valid = bcrypt.compareSync(password, authRecord.password_hash);
         if (!valid) {
-            return res.status(401).json({ error: 'Invalid email or password', code: 'auth/wrong-password' });
+            return res.status(401).json({ error: 'Invalid credentials', code: 'auth/wrong-password' });
         }
-        const token = signToken(user);
-        let userDoc = await getDocument('users', user.uid);
+
+        const token = signToken(authRecord);
+        let userDoc = await getDocument('users', authRecord.uid);
         let userData = null;
         if (userDoc) {
             try { userData = JSON.parse(userDoc.data); } catch {}
         }
         if (!userData) {
-            userData = { email: user.email, role: user.role };
+            userData = { email: authRecord.email, role: authRecord.role };
         }
         userData.lastLogin = new Date().toISOString();
-        await setDocument('users', user.uid, userData, true);
+        await setDocument('users', authRecord.uid, userData, true);
         return res.json({
-            localId: user.uid,
-            email: user.email,
+            localId: authRecord.uid,
+            email: authRecord.email,
             idToken: token,
             refreshToken: token,
             registered: true,

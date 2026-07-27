@@ -27,14 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const email = document.getElementById('email').value.trim();
+        const userIdInput = document.getElementById('userId').value.trim();
         const password = document.getElementById('password').value;
 
         document.getElementById('emailError').textContent = '';
         document.getElementById('passwordError').textContent = '';
         document.getElementById('loginAlert').style.display = 'none';
 
-        if (!email || !password) {
+        if (!userIdInput || !password) {
             showAlert('loginAlert', 'Please fill in all fields', 'error');
             return;
         }
@@ -45,7 +45,24 @@ document.addEventListener('DOMContentLoaded', () => {
         loginBtn.disabled = true;
 
         try {
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            const userData = await lookupUserById(userIdInput);
+
+            if (!userData) {
+                showAlert('loginAlert', 'No account found with this ID. Contact admin to get your ID assigned.', 'error');
+                return;
+            }
+
+            if (userData.role === 'admin' || userData.role === 'administrator') {
+                showAlert('loginAlert', 'Admin accounts must use the Admin Login portal.', 'error');
+                return;
+            }
+
+            if (!userData.email) {
+                showAlert('loginAlert', 'Account has no email on file. Contact admin.', 'error');
+                return;
+            }
+
+            const userCredential = await auth.signInWithEmailAndPassword(userData.email, password);
             const user = userCredential.user;
 
             const userDoc = await db.collection('users').doc(user.uid).get();
@@ -54,13 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 await auth.signOut(); return;
             }
 
-            const userData = userDoc.data();
+            const freshData = userDoc.data();
 
-            if (userData.status === 'suspended') {
+            if (freshData.status === 'suspended') {
                 showAlert('loginAlert', 'Account suspended.', 'error');
                 await auth.signOut(); return;
             }
-            if (userData.status === 'pending_approval') {
+            if (freshData.status === 'pending_approval') {
                 showAlert('loginAlert', 'Account pending approval.', 'warning');
                 await auth.signOut(); return;
             }
@@ -71,21 +88,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             }).catch(() => {});
 
-            initPresence(user, userData);
+            initPresence(user, freshData);
 
             showToast('Login successful!', 'success');
-            logActivity(user.uid, 'login', `Logged in as ${userData.role}`).catch(() => {});
+            logActivity(user.uid, 'login', `Logged in as ${freshData.role}`).catch(() => {});
 
-            setTimeout(() => redirectUser(userData.role), 800);
+            setTimeout(() => redirectUser(freshData.role), 800);
 
         } catch (error) {
             console.error('Login error:', error);
-            let message = 'Invalid email or password';
-            if (error.code === 'auth/user-not-found') message = 'No account found with this email';
+            let message = 'Invalid ID or password';
+            if (error.code === 'auth/user-not-found') message = 'No account found with this ID';
             else if (error.code === 'auth/wrong-password') message = 'Incorrect password';
             else if (error.code === 'auth/too-many-requests') message = 'Too many attempts. Try again later.';
             else if (error.code === 'auth/network-request-failed') message = 'Network error. Check your connection.';
-            else if (error.code === 'auth/invalid-email') message = 'Invalid email address format.';
+            else if (error.code === 'auth/invalid-email') message = 'Invalid account configuration. Contact admin.';
             showAlert('loginAlert', message, 'error');
         } finally {
             const btn = document.getElementById('loginBtn');
@@ -99,6 +116,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+async function lookupUserById(userId) {
+    const id = userId.trim();
+    const studentSnap = await db.collection('users').where('studentId', '==', id).limit(1).get();
+    if (!studentSnap.empty) {
+        const doc = studentSnap.docs[0];
+        return { uid: doc.id, ...doc.data() };
+    }
+    const staffSnap = await db.collection('users').where('staffId', '==', id).limit(1).get();
+    if (!staffSnap.empty) {
+        const doc = staffSnap.docs[0];
+        return { uid: doc.id, ...doc.data() };
+    }
+    return null;
+}
 
 function redirectUser(role) {
     const map = {

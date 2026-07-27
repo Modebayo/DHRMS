@@ -94,16 +94,17 @@ service cloud.firestore {
     }
 
     // --- prescriptions ---
-    // Administrator: R | Doctor: RW | Nurse: R | Pharmacist: RW | Others: No Access
+    // Administrator: R | Doctor: RW | Nurse: RW | Pharmacist: RW | Patient: R (own only)
     match /prescriptions/{prescriptionId} {
       allow read: if isAuth() && (
         isAdmin() || isDoctor() || isNurse() || isPharmacist()
+        || (isPatient() && request.auth.uid == resource.data.patientId)
       );
       allow create: if isAuth() && (
         isDoctor()
       );
       allow update: if isAuth() && (
-        isDoctor() || isPharmacist()
+        isDoctor() || isNurse() || isPharmacist()
       );
       allow delete: if isAdmin();
     }
@@ -172,7 +173,7 @@ service cloud.firestore {
     // --- users (Firebase Auth mirror) ---
     match /users/{userId} {
       allow read: if isAuth() && (
-        isOwner(userId) || isAdmin() || isDoctor() || isNurse()
+        isOwner(userId) || isAdmin() || isDoctor() || isNurse() || isPatient()
       );
       allow create: if isOwner(userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
@@ -181,7 +182,9 @@ service cloud.firestore {
 
     // --- health_records (legacy, keep for compatibility) ---
     match /health_records/{recordId} {
-      allow read: if isAuth() && (isAdmin() || isClinical());
+      allow read: if isAuth() && (isAdmin() || isClinical()
+        || (isPatient() && request.auth.uid == resource.data.patientId)
+      );
       allow create: if isAuth() && (isAdmin() || isClinical());
       allow update: if isAuth() && (isAdmin() || isClinical());
       allow delete: if isAdmin();
@@ -189,7 +192,9 @@ service cloud.firestore {
 
     // --- vitals ---
     match /vitals/{vitalId} {
-      allow read: if isAuth() && (isAdmin() || isClinical());
+      allow read: if isAuth() && (isAdmin() || isClinical()
+        || (isPatient() && request.auth.uid == resource.data.patientId)
+      );
       allow create: if isAuth() && (isAdmin() || isClinical());
       allow update: if isAuth() && (isAdmin() || isClinical());
       allow delete: if isAdmin();
@@ -220,7 +225,10 @@ service cloud.firestore {
 
     // --- treatment_requests ---
     match /treatment_requests/{requestId} {
-      allow read: if isAuth() && (isAdmin() || isOwner(requestId) || isClinical());
+      allow read: if isAuth() && (
+        isAdmin() || isClinical()
+        || (isPatient() && request.auth.uid == resource.data.patientId)
+      );
       allow create: if isAuth();
       allow update: if isAuth() && (isAdmin() || isClinical());
       allow delete: if isAdmin();
@@ -228,9 +236,9 @@ service cloud.firestore {
 
     // --- notifications ---
     match /notifications/{notificationId} {
-      allow read: if isAuth() && (isOwner(request.resource.data.userId));
+      allow read: if isAuth() && (isOwner(resource.data.userId));
       allow create: if isAuth();
-      allow update: if isAuth() && (isOwner(request.resource.data.userId));
+      allow update: if isAuth() && (isOwner(resource.data.userId));
       allow delete: if isAdmin();
     }
 
@@ -238,6 +246,20 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if isAuth();
       allow write: if isAuth() && isAdmin();
+    }
+
+    // --- conversations ---
+    match /conversations/{convId} {
+      allow read: if isAuth() && (isAdmin() || isClinical() || isPatient());
+      allow create: if isAuth();
+      allow update: if isAuth();
+      allow delete: if isAdmin();
+
+      match /messages/{msgId} {
+        allow read: if isAuth();
+        allow create: if isAuth();
+        allow update, delete: if isAdmin();
+      }
     }
 
     // Fallback: deny everything else

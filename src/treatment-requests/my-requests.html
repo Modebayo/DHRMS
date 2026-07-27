@@ -133,7 +133,7 @@
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
         const STATUS_COLORS = { submitted: 'warning', with_doctor: 'primary', treatment_ready: 'info', completed: 'success', cancelled: 'danger' };
-        const STATUS_LABELS = { submitted: 'Submitted', with_doctor: 'With Doctor', treatment_ready: 'Ready for Pickup', completed: 'Completed', cancelled: 'Cancelled' };
+        const STATUS_LABELS = { submitted: 'Submitted', with_doctor: 'With Doctor', treatment_ready: 'Ready for Dispense', completed: 'Completed', cancelled: 'Cancelled' };
 
         let currentUser = null;
         let userData = null;
@@ -208,7 +208,7 @@
             const stages = [
                 { key: 'submitted', label: 'Submitted' },
                 { key: 'with_doctor', label: 'With Doctor' },
-                { key: 'treatment_ready', label: 'Treatment Ready' },
+                { key: 'treatment_ready', label: 'Ready for Dispense' },
                 { key: 'completed', label: 'Completed' }
             ];
             const statusOrder = { submitted: 0, with_doctor: 1, treatment_ready: 2, completed: 3, cancelled: -1 };

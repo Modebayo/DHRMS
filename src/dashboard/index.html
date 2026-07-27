@@ -191,7 +191,7 @@
                     { icon: 'user-plus', label: 'Patient Registration', href: '../records/patient-registration.html' },
                     { icon: 'list-todo', label: 'Tasks', href: '../records/tasks.html' },
                     { icon: 'clipboard-list', label: 'Triage Queue', href: '../treatment-requests/nurse-queue.html' },
-                    { icon: 'syringe', label: 'Dispense Queue', href: '../treatment-requests/nurse-queue.html' },
+                    { icon: 'syringe', label: 'Dispense Queue', href: '../treatment-requests/nurse-queue.html?tab=dispense' },
                 ]},
                 { section: 'Pharmacy', items: [
                     { icon: 'pill', label: 'Pharmacy', href: '../pharmacy/index.html' },
@@ -373,15 +373,15 @@
                             <div class="stat-value" id="statAppointments">0</div>
                             <div class="stat-label">Upcoming Appointments</div>
                         </div>
-                        <div class="stat-card" onclick="location.href='../records/my-prescriptions.html'">
-                            <div class="stat-header"><div class="stat-icon orange"><i data-lucide="pill"></i></div></div>
-                            <div class="stat-value" id="statPrescriptions">0</div>
-                            <div class="stat-label">Active Prescriptions</div>
+                        <div class="stat-card" onclick="location.href='../treatment-requests/my-requests.html'">
+                            <div class="stat-header"><div class="stat-icon orange"><i data-lucide="send"></i></div></div>
+                            <div class="stat-value" id="statActiveRequests">0</div>
+                            <div class="stat-label">Active Requests</div>
                         </div>
-                        <div class="stat-card" onclick="location.href='../records/my-visits.html'">
-                            <div class="stat-header"><div class="stat-icon purple"><i data-lucide="git-branch"></i></div></div>
-                            <div class="stat-value" id="statVisits">0</div>
-                            <div class="stat-label">Visit History</div>
+                        <div class="stat-card" onclick="location.href='../records/my-prescriptions.html'">
+                            <div class="stat-header"><div class="stat-icon purple"><i data-lucide="pill"></i></div></div>
+                            <div class="stat-value" id="statPrescriptions">0</div>
+                            <div class="stat-label">Prescriptions</div>
                         </div>
                     </div>
                     <div class="grid-2">
@@ -404,12 +404,12 @@
                         <div class="card">
                             <div class="card-header"><h3 class="card-title">Quick Actions</h3></div>
                             <div class="quick-actions">
-                                <a href="../appointments/create.html" class="quick-action-btn"><i data-lucide="calendar-plus"></i><span class="quick-action-label">Book Appointment</span></a>
-                                <a href="../records/my-records.html" class="quick-action-btn"><i data-lucide="file-text"></i><span class="quick-action-label">View Records</span></a>
-                                <a href="../records/my-prescriptions.html" class="quick-action-btn"><i data-lucide="pill"></i><span class="quick-action-label">Prescriptions</span></a>
-                                <a href="../records/my-visits.html" class="quick-action-btn"><i data-lucide="git-branch"></i><span class="quick-action-label">My Visits</span></a>
-                                <a href="../records/vitals.html" class="quick-action-btn"><i data-lucide="activity"></i><span class="quick-action-label">My Vitals</span></a>
                                 <a href="../treatment-requests/create.html" class="quick-action-btn"><i data-lucide="send"></i><span class="quick-action-label">Request Treatment</span></a>
+                                <a href="../treatment-requests/my-requests.html" class="quick-action-btn"><i data-lucide="file-text"></i><span class="quick-action-label">My Requests</span></a>
+                                <a href="../appointments/create.html" class="quick-action-btn"><i data-lucide="calendar-plus"></i><span class="quick-action-label">Book Appointment</span></a>
+                                <a href="../records/my-prescriptions.html" class="quick-action-btn"><i data-lucide="pill"></i><span class="quick-action-label">Prescriptions</span></a>
+                                <a href="../records/my-records.html" class="quick-action-btn"><i data-lucide="folder"></i><span class="quick-action-label">View Records</span></a>
+                                <a href="../records/vitals.html" class="quick-action-btn"><i data-lucide="activity"></i><span class="quick-action-label">My Vitals</span></a>
                             </div>
                         </div>
                     </div>
@@ -432,7 +432,7 @@
             } else if (role === 'doctor') {
                 content.innerHTML = `
                     <div class="stats-grid">
-                        <div class="stat-card" onclick="location.href='../records/patient-list.html'">
+                        <div    class="stat-card" onclick="location.href='../records/patient-list.html'">
                             <div class="stat-header"><div class="stat-icon blue"><i data-lucide="users"></i></div></div>
                             <div class="stat-value" id="statPatients">0</div>
                             <div class="stat-label">My Patients</div>
@@ -491,51 +491,52 @@
             } else if (role === 'nurse') {
                 content.innerHTML = `
                     <div class="stats-grid">
+                        <div class="stat-card" onclick="location.href='../treatment-requests/nurse-queue.html'">
+                            <div class="stat-header"><div class="stat-icon orange"><i data-lucide="clipboard-list"></i></div></div>
+                            <div class="stat-value" id="statTriage">0</div>
+                            <div class="stat-label">Pending Triage</div>
+                        </div>
+                        <div class="stat-card" onclick="location.href='../treatment-requests/nurse-queue.html?tab=dispense'">
+                            <div class="stat-header"><div class="stat-icon blue"><i data-lucide="package-check"></i></div></div>
+                            <div class="stat-value" id="statDispense">0</div>
+                            <div class="stat-label">Ready to Dispense</div>
+                        </div>
                         <div class="stat-card" onclick="location.href='../records/vitals.html'">
-                            <div class="stat-header"><div class="stat-icon blue"><i data-lucide="activity"></i></div></div>
+                            <div class="stat-header"><div class="stat-icon green"><i data-lucide="activity"></i></div></div>
                             <div class="stat-value" id="statVitals">0</div>
                             <div class="stat-label">Vitals Today</div>
                         </div>
                         <div class="stat-card" onclick="location.href='../records/tasks.html'">
-                            <div class="stat-header"><div class="stat-icon green"><i data-lucide="check-circle"></i></div></div>
+                            <div class="stat-header"><div class="stat-icon red"><i data-lucide="list-todo"></i></div></div>
                             <div class="stat-value" id="statTasks">0</div>
                             <div class="stat-label">Pending Tasks</div>
-                        </div>
-                        <div class="stat-card" onclick="location.href='../appointments/index.html'">
-                            <div class="stat-header"><div class="stat-icon orange"><i data-lucide="calendar-days"></i></div></div>
-                            <div class="stat-value" id="statAppointments">0</div>
-                            <div class="stat-label">Today's Appointments</div>
-                        </div>
-                        <div class="stat-card" onclick="location.href='../records/lab-results.html'">
-                            <div class="stat-header"><div class="stat-icon red"><i data-lucide="flask-conical"></i></div></div>
-                            <div class="stat-value" id="statLab">0</div>
-                            <div class="stat-label">Pending Lab Results</div>
                         </div>
                     </div>
                     <div class="grid-2">
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">Today's Appointments</h3>
-                                <a href="../appointments/index.html" class="btn btn-sm btn-outline">View All</a>
+                                <h3 class="card-title">Treatment Queue</h3>
+                                <a href="../treatment-requests/nurse-queue.html" class="btn btn-sm btn-outline">View All</a>
                             </div>
                             <div class="table-container">
                                 <table>
-                                    <thead><tr><th>Patient</th><th>Time</th><th>Type</th><th>Status</th></tr></thead>
-                                    <tbody id="appointmentsTable"></tbody>
+                                    <thead><tr><th>Patient</th><th>Complaint</th><th>Severity</th><th>Status</th></tr></thead>
+                                    <tbody id="treatmentQueueTable"></tbody>
                                 </table>
                             </div>
-                            <div id="appointmentsEmpty" style="display:none;padding:20px;text-align:center;color:var(--text-muted);">
-                                <p>No appointments today</p>
+                            <div id="treatmentQueueEmpty" style="display:none;padding:20px;text-align:center;color:var(--text-muted);">
+                                <p>No pending treatment requests</p>
                             </div>
                         </div>
                         <div class="card">
                             <div class="card-header"><h3 class="card-title">Quick Actions</h3></div>
                             <div class="quick-actions">
                                 <a href="../records/vitals.html" class="quick-action-btn"><i data-lucide="activity"></i><span class="quick-action-label">Record Vitals</span></a>
-                                <a href="../records/lab-results.html" class="quick-action-btn"><i data-lucide="flask-conical"></i><span class="quick-action-label">Lab Results</span></a>
+                                <a href="../treatment-requests/nurse-queue.html" class="quick-action-btn"><i data-lucide="clipboard-list"></i><span class="quick-action-label">Triage Queue</span></a>
+                                <a href="../treatment-requests/nurse-queue.html?tab=dispense" class="quick-action-btn"><i data-lucide="package-check"></i><span class="quick-action-label">Dispense</span></a>
                                 <a href="../records/tasks.html" class="quick-action-btn"><i data-lucide="list-todo"></i><span class="quick-action-label">My Tasks</span></a>
                                 <a href="../pharmacy/inventory.html" class="quick-action-btn"><i data-lucide="package"></i><span class="quick-action-label">Inventory</span></a>
-                                <a href="../treatment-requests/nurse-queue.html" class="quick-action-btn"><i data-lucide="clipboard-list"></i><span class="quick-action-label">Triage Queue</span></a>
+                                <a href="../records/lab-results.html" class="quick-action-btn"><i data-lucide="flask-conical"></i><span class="quick-action-label">Lab Results</span></a>
                             </div>
                         </div>
                     </div>
@@ -799,10 +800,21 @@
                             document.getElementById('statAppointments').textContent = upcoming.length;
                             loadPatientAppointments(snap);
                         }),
-                    db.collection('prescriptions').where('patientId', '==', currentUser.uid).where('status', '==', 'pending')
-                        .onSnapshot(snap => { document.getElementById('statPrescriptions').textContent = snap.size; }),
-                    db.collection('visits').where('patientId', '==', currentUser.uid)
-                        .onSnapshot(snap => { document.getElementById('statVisits').textContent = snap.size; })
+                    db.collection('treatment_requests').where('patientId', '==', currentUser.uid)
+                        .onSnapshot(snap => {
+                            let activeCount = 0;
+                            snap.forEach(doc => {
+                                const s = doc.data().status;
+                                if (s !== 'completed' && s !== 'cancelled') activeCount++;
+                            });
+                            const el = document.getElementById('statActiveRequests');
+                            if (el) el.textContent = activeCount;
+                        }),
+                    db.collection('prescriptions').where('patientId', '==', currentUser.uid)
+                        .onSnapshot(snap => { 
+                            const el = document.getElementById('statPrescriptions');
+                            if (el) el.textContent = snap.size; 
+                        })
                 );
                 subscribeActivity(currentUser.uid);
                 subscribeActiveVisit();
@@ -824,18 +836,38 @@
                 subscribeActivity(currentUser.uid);
                 
             } else if (currentRole === 'nurse') {
+                const nurseTriagUnsub = db.collection('treatment_requests')
+                    .where('nurseId', '==', currentUser.uid)
+                    .onSnapshot(snap => {
+                        let triageCount = 0, dispenseCount = 0;
+                        const queueDocs = [];
+                        snap.forEach(doc => {
+                            const d = doc.data();
+                            if (d.status === 'submitted') triageCount++;
+                            if (d.status === 'treatment_ready') dispenseCount++;
+                            if (d.status === 'submitted' || d.status === 'treatment_ready') {
+                                queueDocs.push({ id: doc.id, ...d });
+                            }
+                        });
+                        document.getElementById('statTriage').textContent = triageCount;
+                        document.getElementById('statDispense').textContent = dispenseCount;
+                        loadNurseTreatmentQueue(queueDocs);
+                    }, err => {
+                        console.error('Treatment requests subscription error:', err);
+                    });
+                dashUnsubs.push(nurseTriagUnsub);
+
                 dashUnsubs.push(
                     db.collection('vitals').where('recordedBy', '==', currentUser.uid).where('date', '>=', today)
-                        .onSnapshot(snap => { document.getElementById('statVitals').textContent = snap.size; }),
-                    db.collection('tasks').where('assignedTo', '==', currentUser.uid).where('status', '==', 'pending')
-                        .onSnapshot(snap => { document.getElementById('statTasks').textContent = snap.size; }),
-                    db.collection('appointments').where('date', '==', today)
-                        .onSnapshot(snap => {
-                            document.getElementById('statAppointments').textContent = snap.size;
-                            loadNurseAppointments(snap);
+                        .onSnapshot(snap => { 
+                            const el = document.getElementById('statVitals');
+                            if (el) el.textContent = snap.size; 
                         }),
-                    db.collection('lab_results').where('status', '==', 'pending')
-                        .onSnapshot(snap => { document.getElementById('statLab').textContent = snap.size; })
+                    db.collection('tasks').where('assignedTo', '==', currentUser.uid).where('status', '==', 'pending')
+                        .onSnapshot(snap => { 
+                            const el = document.getElementById('statTasks');
+                            if (el) el.textContent = snap.size; 
+                        })
                 );
                 subscribeActivity(currentUser.uid);
                 
@@ -949,6 +981,7 @@
         function loadNurseAppointments(snapshot) {
             const tbody = document.getElementById('appointmentsTable');
             const emptyDiv = document.getElementById('appointmentsEmpty');
+            if (!tbody) return;
             if (snapshot.docs.length === 0) { 
                 tbody.innerHTML = ''; 
                 if (emptyDiv) emptyDiv.style.display = 'block';
@@ -959,6 +992,34 @@
                 const a = doc.data();
                 const cls = a.status === 'confirmed' ? 'success' : a.status === 'pending' ? 'warning' : 'danger';
                 return `<tr><td>${a.patientName || 'Unknown'}</td><td>${a.time || 'N/A'}</td><td>${a.type || 'Consultation'}</td><td><span class="badge badge-${cls}">${a.status}</span></td></tr>`;
+            }).join('');
+        }
+
+        function loadNurseTreatmentQueue(docs) {
+            const tbody = document.getElementById('treatmentQueueTable');
+            const emptyDiv = document.getElementById('treatmentQueueEmpty');
+            if (!tbody) return;
+            const sorted = docs.sort((a, b) => {
+                const aT = a.createdAt?.toDate?.() || new Date(0);
+                const bT = b.createdAt?.toDate?.() || new Date(0);
+                return bT - aT;
+            });
+            if (sorted.length === 0) {
+                tbody.innerHTML = '';
+                if (emptyDiv) emptyDiv.style.display = 'block';
+                return;
+            }
+            if (emptyDiv) emptyDiv.style.display = 'none';
+            tbody.innerHTML = sorted.slice(0, 5).map(r => {
+                const statusClass = r.status === 'submitted' ? 'warning' : 'info';
+                const statusLabel = r.status === 'submitted' ? 'Triage' : 'Dispense';
+                const severityClass = r.severity === 'severe' ? 'danger' : r.severity === 'moderate' ? 'warning' : 'success';
+                return `<tr onclick="location.href='../treatment-requests/nurse-queue.html?tab=${r.status === 'submitted' ? 'triage' : 'dispense'}'" style="cursor:pointer">
+                    <td>${r.patientName || 'Unknown'}</td>
+                    <td>${(r.complaint || '').substring(0, 40)}${(r.complaint || '').length > 40 ? '...' : ''}</td>
+                    <td><span class="badge badge-${severityClass}">${r.severity || 'N/A'}</span></td>
+                    <td><span class="badge badge-${statusClass}">${statusLabel}</span></td>
+                </tr>`;
             }).join('');
         }
         
@@ -1129,43 +1190,63 @@
         
         async function loadOnDutyStaff() {
             try {
-                const staff = await getOnlineStaff(['doctor', 'nurse']);
-                const doctors = staff.filter(s => s.role === 'doctor');
-                const nurses = staff.filter(s => s.role === 'nurse');
-
+                const allStaff = await getAllStaffStatus(['doctor', 'nurse']);
                 const indicator = document.getElementById('onDutyIndicator');
                 const countEl = document.getElementById('onDutyCount');
                 const listEl = document.getElementById('onDutyList');
+
+                const availableCount = allStaff.filter(s => s.availability === 'available').length;
                 if (indicator && countEl) {
-                    countEl.textContent = staff.length;
+                    countEl.textContent = availableCount;
                     indicator.style.display = 'flex';
                 }
                 if (listEl) {
-                    if (staff.length === 0) {
-                        listEl.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:13px">No staff currently on duty</div>';
+                    if (allStaff.length === 0) {
+                        listEl.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:13px">No staff found</div>';
                     } else {
-                        listEl.innerHTML = `
-                            <div style="margin-bottom:8px;font-size:12px;color:var(--text-muted)">${doctors.length} doctor${doctors.length !== 1 ? 's' : ''} &bull; ${nurses.length} nurse${nurses.length !== 1 ? 's' : ''}</div>
-                            ${staff.map(s => `
-                                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)">
-                                    <div style="width:28px;height:28px;border-radius:50%;background:${s.role === 'doctor' ? 'var(--primary-500)' : 'var(--success-500)'};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${(s.firstName?.[0] || '').toUpperCase()}</div>
-                                    <div style="flex:1">
-                                        <div style="display:flex;align-items:center;gap:6px">
-                                            <span style="width:6px;height:6px;border-radius:50%;background:var(--success-500);display:inline-block"></span>
-                                            <div style="font-size:13px;font-weight:500">Dr. ${s.firstName} ${s.lastName}</div>
-                                        </div>
-                                        <div style="font-size:11px;color:var(--text-muted)">${s.specialization || s.role}</div>
-                                    </div>
-                                    <span class="badge badge-success" style="font-size:10px">On Duty</span>
-                                </div>
-                            `).join('')}
-                        `;
+                        const available = allStaff.filter(s => s.availability === 'available');
+                        const busy = allStaff.filter(s => s.availability === 'busy');
+                        const away = allStaff.filter(s => s.availability === 'away');
+
+                        let html = '';
+                        if (available.length > 0) {
+                            html += `<div style="font-size:11px;font-weight:600;color:var(--success-600);text-transform:uppercase;letter-spacing:0.5px;padding:4px 0">Available (${available.length})</div>`;
+                            html += available.map(s => renderPopoverStaffItem(s)).join('');
+                        }
+                        if (busy.length > 0) {
+                            html += `<div style="font-size:11px;font-weight:600;color:var(--warning-600, #b45309);text-transform:uppercase;letter-spacing:0.5px;padding:4px 0;margin-top:4px">Busy (${busy.length})</div>`;
+                            html += busy.map(s => renderPopoverStaffItem(s)).join('');
+                        }
+                        if (away.length > 0) {
+                            html += `<div style="font-size:11px;font-weight:600;color:var(--orange-600, #c2410c);text-transform:uppercase;letter-spacing:0.5px;padding:4px 0;margin-top:4px">Recently Active (${away.length})</div>`;
+                            html += away.map(s => renderPopoverStaffItem(s)).join('');
+                        }
+                        listEl.innerHTML = html;
                     }
                     if (typeof lucide !== 'undefined') lucide.createIcons();
                 }
             } catch (e) {
                 console.error('Error loading on-duty staff:', e);
             }
+        }
+
+        function renderPopoverStaffItem(s) {
+            const roleColor = s.role === 'doctor' ? 'var(--primary-500)' : 'var(--success-500)';
+            const rolePrefix = s.role === 'doctor' ? 'Dr. ' : '';
+            const badgeClass = s.availability === 'available' ? 'badge-success' : s.availability === 'busy' ? 'badge-warning' : 'badge-info';
+            return `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)">
+                    <div style="position:relative;flex-shrink:0">
+                        <div style="width:28px;height:28px;border-radius:50%;background:${roleColor};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${(s.firstName?.[0] || '').toUpperCase()}</div>
+                        <span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:${s.dotColor};border:2px solid var(--bg-primary);display:block"></span>
+                    </div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:500">${rolePrefix}${s.firstName} ${s.lastName}</div>
+                        <div style="font-size:11px;color:var(--text-muted)">${s.specialization || s.role}</div>
+                    </div>
+                    <span class="badge ${badgeClass}" style="font-size:10px">${s.availabilityLabel}</span>
+                </div>
+            `;
         }
 
         function toggleOnDutyPopover() {
@@ -1223,29 +1304,58 @@
             const container = document.getElementById('availableStaffList');
             if (!container) return;
             try {
-                const staff = await getOnlineStaff(['doctor', 'nurse']);
-                if (staff.length === 0) {
-                    container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:20px;color:var(--text-muted);gap:8px"><i data-lucide="users" style="width:32px;height:32px;color:var(--gray-300)"></i><p style="font-size:13px;margin:0">No medical staff currently available</p><p style="font-size:11px;margin:0">Please check back later or book an appointment</p></div>';
+                const allStaff = await getAllStaffStatus(['doctor', 'nurse']);
+                if (allStaff.length === 0) {
+                    container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:20px;color:var(--text-muted);gap:8px"><i data-lucide="users" style="width:32px;height:32px;color:var(--gray-300)"></i><p style="font-size:13px;margin:0">No medical staff found</p><p style="font-size:11px;margin:0">Please check back later or book an appointment</p></div>';
                 } else {
-                    container.innerHTML = staff.map(s => `
-                        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light)">
-                            <div style="width:36px;height:36px;border-radius:50%;background:${s.role === 'doctor' ? 'var(--primary-500)' : 'var(--success-500)'};color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0">${(s.firstName?.[0] || '').toUpperCase()}</div>
-                            <div style="flex:1">
-                                <div style="display:flex;align-items:center;gap:6px">
-                                    <span style="width:8px;height:8px;border-radius:50%;background:var(--success-500);display:inline-block"></span>
-                                    <span style="font-size:14px;font-weight:500">${s.role === 'doctor' ? 'Dr. ' : ''}${s.firstName} ${s.lastName}</span>
-                                </div>
-                                <div style="font-size:12px;color:var(--text-muted);margin-left:14px">${s.specialization || s.role}</div>
-                            </div>
-                            <span class="badge badge-success" style="font-size:10px;flex-shrink:0">Available</span>
-                        </div>
-                    `).join('');
+                    const available = allStaff.filter(s => s.availability === 'available');
+                    const busy = allStaff.filter(s => s.availability === 'busy');
+                    const away = allStaff.filter(s => s.availability === 'away');
+                    const offline = allStaff.filter(s => s.availability === 'offline');
+
+                    let html = '';
+                    if (available.length > 0) {
+                        html += `<div style="font-size:11px;font-weight:600;color:var(--success-600);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px">Available Now (${available.length})</div>`;
+                        html += available.map(s => renderStaffItem(s, true)).join('');
+                    }
+                    if (busy.length > 0) {
+                        html += `<div style="font-size:11px;font-weight:600;color:var(--warning-600, #b45309);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;margin-top:4px">Busy (${busy.length})</div>`;
+                        html += busy.map(s => renderStaffItem(s, false)).join('');
+                    }
+                    if (away.length > 0) {
+                        html += `<div style="font-size:11px;font-weight:600;color:var(--orange-600, #c2410c);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;margin-top:4px">Recently Active (${away.length})</div>`;
+                        html += away.map(s => renderStaffItem(s, false)).join('');
+                    }
+                    if (offline.length > 0) {
+                        html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;margin-top:4px">Offline (${offline.length})</div>`;
+                        html += offline.map(s => renderStaffItem(s, false)).join('');
+                    }
+                    container.innerHTML = html;
                 }
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             } catch (e) {
                 console.error('Error loading available staff:', e);
                 container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">Could not load staff availability</div>';
             }
+        }
+
+        function renderStaffItem(s, showBadge) {
+            const roleColor = s.role === 'doctor' ? 'var(--primary-500)' : s.role === 'nurse' ? 'var(--success-500)' : 'var(--gray-500)';
+            const rolePrefix = s.role === 'doctor' ? 'Dr. ' : '';
+            const badgeClass = s.availability === 'available' ? 'badge-success' : s.availability === 'busy' ? 'badge-warning' : s.availability === 'away' ? 'badge-info' : 'badge-secondary';
+            return `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)">
+                    <div style="position:relative;flex-shrink:0">
+                        <div style="width:36px;height:36px;border-radius:50%;background:${roleColor};color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">${(s.firstName?.[0] || '').toUpperCase()}</div>
+                        <span style="position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:${s.dotColor};border:2px solid var(--bg-primary);display:block"></span>
+                    </div>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rolePrefix}${s.firstName} ${s.lastName}</div>
+                        <div style="font-size:11px;color:var(--text-muted)">${s.specialization || s.role.charAt(0).toUpperCase() + s.role.slice(1).replace('_', ' ')}</div>
+                    </div>
+                    <span class="badge ${badgeClass}" style="font-size:10px;flex-shrink:0;white-space:nowrap">${s.availabilityLabel}</span>
+                </div>
+            `;
         }
     </script>
 </body>

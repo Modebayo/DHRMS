@@ -59,75 +59,89 @@ function subscribeTasks() {
 
     if (tasksUnsub) tasksUnsub();
 
-    tasksUnsub = db.collection('tasks')
-        .where('assignedTo', '==', currentUser ? currentUser.uid : 'none')
-        .orderBy('createdAt', 'desc')
-        .onSnapshot(async (snapshot) => {
-        try {
-        let pending = 0, inProgress = 0, completed = 0;
-        
-        if (snapshot.empty) {
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="list-todo" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Tasks</h3><p>Add your first task</p></td></tr>';
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        } else {
-            const usersCache = {};
-            const userIds = new Set();
-            snapshot.docs.forEach(d => {
-                const data = d.data();
-                if (data.patientId) userIds.add(data.patientId);
-                if (data.assignedBy) userIds.add(data.assignedBy);
-            });
+    const baseQuery = db.collection('tasks')
+        .where('assignedTo', '==', currentUser ? currentUser.uid : 'none');
+
+    const trySubscribe = (query) => {
+        tasksUnsub = query.onSnapshot(async (snapshot) => {
+            try {
+            let pending = 0, inProgress = 0, completed = 0;
             
-            for (const id of userIds) {
-                const uDoc = await db.collection('users').doc(id).get();
-                usersCache[id] = uDoc.exists ? uDoc.data() : null;
+            if (snapshot.empty) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="list-todo" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Tasks</h3><p>Add your first task</p></td></tr>';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            } else {
+                const usersCache = {};
+                const userIds = new Set();
+                snapshot.docs.forEach(d => {
+                    const data = d.data();
+                    if (data.patientId) userIds.add(data.patientId);
+                    if (data.assignedBy) userIds.add(data.assignedBy);
+                });
+                
+                for (const id of userIds) {
+                    const uDoc = await db.collection('users').doc(id).get();
+                    usersCache[id] = uDoc.exists ? uDoc.data() : null;
+                }
+                
+                const sorted = snapshot.docs.sort((a, b) => {
+                    const aTime = a.data().createdAt?.toDate?.() || new Date(0);
+                    const bTime = b.data().createdAt?.toDate?.() || new Date(0);
+                    return bTime - aTime;
+                });
+
+                tbody.innerHTML = sorted.map(doc => {
+                    const task = doc.data();
+                    const patient = usersCache[task.patientId];
+                    const assignedBy = usersCache[task.assignedBy];
+                    
+                    if (task.status === 'pending') pending++;
+                    else if (task.status === 'in-progress') inProgress++;
+                    else if (task.status === 'completed') completed++;
+                    
+                    const priorityClass = task.priority === 'urgent' ? 'danger' : task.priority === 'high' ? 'warning' : task.priority === 'medium' ? 'info' : 'success';
+                    const statusClass = task.status === 'completed' ? 'success' : task.status === 'in-progress' ? 'primary' : 'warning';
+                    
+                    let actions = '';
+                    if (task.status === 'pending') {
+                        actions = `<button class="btn btn-sm btn-primary" onclick="updateTaskStatus('${doc.id}', 'in-progress')">Start</button>`;
+                    } else if (task.status === 'in-progress') {
+                        actions = `<button class="btn btn-sm btn-success" onclick="updateTaskStatus('${doc.id}', 'completed')">Complete</button>`;
+                    }
+                    actions += ` <button class="btn btn-sm btn-danger" onclick="deleteTask('${doc.id}')">Delete</button>`;
+                    
+                    return `
+                        <tr>
+                            <td>${escapeHtml(task.description)}</td>
+                            <td><span class="badge badge-${priorityClass}">${escapeHtml(task.priority)}</span></td>
+                            <td>${patient ? `${escapeHtml(patient.firstName)} ${escapeHtml(patient.lastName)}` : '-'}</td>
+                            <td>${assignedBy ? `${escapeHtml(assignedBy.firstName)} ${escapeHtml(assignedBy.lastName)}` : '-'}</td>
+                            <td>${task.dueDate ? formatDate(task.dueDate) : '-'}</td>
+                            <td><span class="badge badge-${statusClass}">${escapeHtml(task.status)}</span></td>
+                            <td>${actions}</td>
+                        </tr>
+                    `;
+                }).join('');
             }
             
-            tbody.innerHTML = snapshot.docs.map(doc => {
-                const task = doc.data();
-                const patient = usersCache[task.patientId];
-                const assignedBy = usersCache[task.assignedBy];
-                
-                if (task.status === 'pending') pending++;
-                else if (task.status === 'in-progress') inProgress++;
-                else if (task.status === 'completed') completed++;
-                
-                const priorityClass = task.priority === 'urgent' ? 'danger' : task.priority === 'high' ? 'warning' : task.priority === 'medium' ? 'info' : 'success';
-                const statusClass = task.status === 'completed' ? 'success' : task.status === 'in-progress' ? 'primary' : 'warning';
-                
-                let actions = '';
-                if (task.status === 'pending') {
-                    actions = `<button class="btn btn-sm btn-primary" onclick="updateTaskStatus('${doc.id}', 'in-progress')">Start</button>`;
-                } else if (task.status === 'in-progress') {
-                    actions = `<button class="btn btn-sm btn-success" onclick="updateTaskStatus('${doc.id}', 'completed')">Complete</button>`;
-                }
-                actions += ` <button class="btn btn-sm btn-danger" onclick="deleteTask('${doc.id}')">Delete</button>`;
-                
-                return `
-                    <tr>
-                        <td>${escapeHtml(task.description)}</td>
-                        <td><span class="badge badge-${priorityClass}">${escapeHtml(task.priority)}</span></td>
-                        <td>${patient ? `${escapeHtml(patient.firstName)} ${escapeHtml(patient.lastName)}` : '-'}</td>
-                        <td>${assignedBy ? `${escapeHtml(assignedBy.firstName)} ${escapeHtml(assignedBy.lastName)}` : '-'}</td>
-                        <td>${task.dueDate ? formatDate(task.dueDate) : '-'}</td>
-                        <td><span class="badge badge-${statusClass}">${escapeHtml(task.status)}</span></td>
-                        <td>${actions}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-        
-        document.getElementById('pendingTasks').textContent = pending;
-        document.getElementById('inProgressTasks').textContent = inProgress;
-        document.getElementById('completedTasks').textContent = completed;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        } catch (error) {
-            console.error('Error loading tasks:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><h3>Error Loading Tasks</h3><p>Please try again</p></td></tr>';
-        }
-    }, error => {
-        console.error('Tasks subscription error:', error);
-    });
+            document.getElementById('pendingTasks').textContent = pending;
+            document.getElementById('inProgressTasks').textContent = inProgress;
+            document.getElementById('completedTasks').textContent = completed;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><h3>Error Loading Tasks</h3><p>Please try again</p></td></tr>';
+            }
+        }, error => {
+            console.error('Tasks subscription error:', error);
+            if (error.code === 'failed-precondition' || error.code === 'unimplemented') {
+                console.warn('Composite index missing, falling back to unsorted query');
+                trySubscribe(baseQuery);
+            }
+        });
+    };
+
+    trySubscribe(baseQuery.orderBy('createdAt', 'desc'));
 }
 
 function openTaskModal() {
@@ -188,8 +202,6 @@ async function deleteTask(id) {
     try {
         await db.collection('tasks').doc(id).delete();
         showToast('Task deleted', 'success');
-        // Real-time subscription handles UI update
-        loadTasks();
     } catch (error) {
         console.error('Error deleting task:', error);
         showToast('Error deleting task', 'error');

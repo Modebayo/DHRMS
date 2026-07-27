@@ -408,8 +408,7 @@
         { "fieldPath": "type", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
-    }
-  ],
+    },
     {
       "collectionGroup": "users",
       "queryScope": "COLLECTION",
@@ -417,6 +416,22 @@
         { "fieldPath": "role", "order": "ASCENDING" },
         { "fieldPath": "isOnline", "order": "ASCENDING" },
         { "fieldPath": "isOnDuty", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "prescriptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "treatment_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
       ]
     }
   ],

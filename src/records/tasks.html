@@ -41,6 +41,106 @@
         </aside>
         
         <main class="main-content">
+            <header class="content-header">
+                <div>
+                    <h1>Tasks</h1>
+                    <p class="text-muted">Manage your tasks and assignments</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openTaskModal()"><i data-lucide="plus"></i> New Task</button>
+                </div>
+            </header>
+
+            <div class="stats-grid" style="margin-bottom:20px">
+                <div class="stat-card">
+                    <div class="stat-header"><div class="stat-icon orange"><i data-lucide="clock"></i></div></div>
+                    <div class="stat-value" id="pendingTasks">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><div class="stat-icon blue"><i data-lucide="loader"></i></div></div>
+                    <div class="stat-value" id="inProgressTasks">0</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><div class="stat-icon green"><i data-lucide="check-circle"></i></div></div>
+                    <div class="stat-value" id="completedTasks">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">All Tasks</h3>
+                    <select id="filterTaskStatus" class="form-select" style="width:auto;padding:6px 12px;font-size:13px">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Priority</th>
+                                <th>Patient</th>
+                                <th>Assigned By</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasksTable">
+                            <tr><td colspan="7" class="empty-state">
+                                <i data-lucide="list-todo" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i>
+                                <h3>Loading tasks...</h3>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal" id="taskModal">
+                <div class="modal-content" style="max-width:500px">
+                    <div class="modal-header">
+                        <h3>New Task</h3>
+                        <button class="modal-close" onclick="closeTaskModal()">&times;</button>
+                    </div>
+                    <form id="taskForm" onsubmit="event.preventDefault(); saveTask();">
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="taskDescription" rows="3" placeholder="Task description" required></textarea>
+                        </div>
+                        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                            <div class="form-group">
+                                <label>Priority</label>
+                                <select id="taskPriority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Due Date</label>
+                                <input type="date" id="taskDueDate">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Assign to Patient (optional)</label>
+                            <select id="taskPatient">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+                            <button type="button" class="btn btn-outline" onclick="closeTaskModal()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </main>
     </div>
     

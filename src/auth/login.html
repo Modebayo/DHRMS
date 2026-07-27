@@ -38,8 +38,8 @@
                 <div id="loginAlert" class="alert" style="display:none;"></div>
 
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
+                    <label for="userId">ID Number</label>
+                    <input type="text" id="userId" placeholder="Enter your Student or Staff ID" required autocomplete="username">
                 </div>
 
                 <div class="form-group">
@@ -76,15 +76,30 @@
         if (typeof lucide !== 'undefined') lucide.createIcons();
         initTheme();
 
+        async function lookupUserById(userId) {
+            const id = userId.trim();
+            const studentSnap = await db.collection('users').where('studentId', '==', id).limit(1).get();
+            if (!studentSnap.empty) {
+                const doc = studentSnap.docs[0];
+                return { uid: doc.id, ...doc.data() };
+            }
+            const staffSnap = await db.collection('users').where('staffId', '==', id).limit(1).get();
+            if (!staffSnap.empty) {
+                const doc = staffSnap.docs[0];
+                return { uid: doc.id, ...doc.data() };
+            }
+            return null;
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const email = document.getElementById('email').value.trim();
+            const userIdInput = document.getElementById('userId').value.trim();
             const password = document.getElementById('password').value;
             
             document.getElementById('loginAlert').style.display = 'none';
             
-            if (!email || !password) {
+            if (!userIdInput || !password) {
                 showAlert('loginAlert', 'Please fill in all fields', 'error');
                 return;
             }
@@ -95,25 +110,34 @@
             loginBtn.querySelector('.spinner').style.display = 'inline-block';
             
             try {
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                const user = userCredential.user;
+                const userData = await lookupUserById(userIdInput);
                 
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                
-                if (!userDoc.exists) {
-                    showAlert('loginAlert', 'Account not found. Contact admin.', 'error');
-                    await auth.signOut();
+                if (!userData) {
+                    showAlert('loginAlert', 'No account found with this ID. Contact admin to get your ID assigned.', 'error');
+                    return;
+                }
+
+                if (userData.role === 'admin' || userData.role === 'administrator') {
+                    showAlert('loginAlert', 'Admin accounts must use the Admin Login portal.', 'error');
                     return;
                 }
                 
-                const userData = userDoc.data();
+                if (!userData.email) {
+                    showAlert('loginAlert', 'Account has no email on file. Contact admin.', 'error');
+                    return;
+                }
                 
                 if (userData.status === 'suspended') {
                     showAlert('loginAlert', 'Your account has been suspended. Contact admin.', 'error');
-                    await auth.signOut();
                     return;
                 }
+
+                const userCredential = await auth.signInWithEmailAndPassword(userData.email, password);
+                const user = userCredential.user;
                 
+                const freshDoc = await db.collection('users').doc(user.uid).get();
+                const freshData = freshDoc.exists ? freshDoc.data() : userData;
+
                 const keysReady = await initUserKeys(user, password);
                 if (!keysReady) {
                     console.warn('Encryption keys not initialized');
@@ -123,10 +147,10 @@
                     lastLogin: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
-                initPresence(user, userData);
+                initPresence(user, freshData);
                 
                 showToast('Login successful!', 'success');
-                await logActivity(user.uid, 'login', `Logged in as ${userData.role}`);
+                await logActivity(user.uid, 'login', `Logged in as ${freshData.role}`);
                 
                 setTimeout(() => {
                     window.location.href = '../dashboard/index.html';
@@ -135,15 +159,15 @@
             } catch (error) {
                 console.error('Login error:', error);
                 
-                let message = 'Invalid email or password';
+                let message = 'Invalid ID or password';
                 if (error.code === 'auth/user-not-found') {
-                    message = 'No account found with this email';
+                    message = 'No account found with this ID';
                 } else if (error.code === 'auth/wrong-password') {
                     message = 'Incorrect password';
                 } else if (error.code === 'auth/too-many-requests') {
                     message = 'Too many attempts. Try again later.';
                 } else if (error.code === 'auth/invalid-email') {
-                    message = 'Invalid email format';
+                    message = 'Invalid account configuration. Contact admin.';
                 } else if (error.code === 'auth/network-request-failed') {
                     message = 'Network error. Check your connection.';
                 }

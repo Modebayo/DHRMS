@@ -92,15 +92,21 @@ async function viewPatientRecords(patientId) {
         
         const recordsSnapshot = await db.collection('health_records')
             .where('patientId', '==', patientId)
-            .orderBy('visitDate', 'desc')
             .get();
         
+        const sortedRecords = recordsSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => {
+                const dateA = a.visitDate ? new Date(a.visitDate) : new Date(0);
+                const dateB = b.visitDate ? new Date(b.visitDate) : new Date(0);
+                return dateB - dateA;
+            });
+        
         let recordsHtml = '';
-        if (recordsSnapshot.empty) {
+        if (sortedRecords.length === 0) {
             recordsHtml = '<p style="text-align:center;color:var(--text-muted)">No health records found</p>';
         } else {
-            recordsHtml = recordsSnapshot.docs.map(doc => {
-                const record = doc.data();
+            recordsHtml = sortedRecords.map(record => {
                 const statusClass = record.status === 'active' ? 'success' : record.status === 'discharged' ? 'info' : 'warning';
                 return `
                     <div style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);margin-bottom:12px">
@@ -151,15 +157,21 @@ async function viewPatientVitals(patientId) {
         
         const vitalsSnapshot = await db.collection('vitals')
             .where('patientId', '==', patientId)
-            .orderBy('recordedAt', 'desc')
             .get();
         
+        const sortedVitals = vitalsSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => {
+                const dateA = a.recordedAt ? (a.recordedAt.toDate ? a.recordedAt.toDate() : new Date(a.recordedAt)) : new Date(0);
+                const dateB = b.recordedAt ? (b.recordedAt.toDate ? b.recordedAt.toDate() : new Date(b.recordedAt)) : new Date(0);
+                return dateB - dateA;
+            });
+        
         let vitalsHtml = '';
-        if (vitalsSnapshot.empty) {
+        if (sortedVitals.length === 0) {
             vitalsHtml = '<p style="text-align:center;color:var(--text-muted)">No vitals recorded</p>';
         } else {
-            vitalsHtml = vitalsSnapshot.docs.slice(0, 5).map(doc => {
-                const v = doc.data();
+            vitalsHtml = sortedVitals.slice(0, 5).map(v => {
                 return `
                     <div style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md);margin-bottom:12px">
                         <div style="display:flex;justify-content:space-between;margin-bottom:8px">

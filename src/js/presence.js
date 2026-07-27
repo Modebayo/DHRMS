@@ -168,9 +168,81 @@ async function getOnlineStaff(roles = ['doctor', 'nurse']) {
             .get();
         return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (e) {
-        console.error('Error fetching online staff:', e);
+        console.warn('Composite index may be missing, falling back to filtered query');
+        try {
+            const snapshot = await db.collection('users')
+                .where('role', 'in', roles)
+                .get();
+            return snapshot.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(s => s.isOnline && s.isOnDuty);
+        } catch (e2) {
+            console.error('Error fetching online staff:', e2);
+            return [];
+        }
+    }
+}
+
+async function getAllStaffStatus(roles = ['doctor', 'nurse', 'pharmacist', 'lab_technician']) {
+    try {
+        const snapshot = await db.collection('users')
+            .where('role', 'in', roles)
+            .get();
+        const now = Date.now();
+        const THIRTY_MIN = 30 * 60 * 1000;
+        return snapshot.docs.map(d => {
+            const data = d.data();
+            const lastSeenDate = data.lastSeen?.toDate ? data.lastSeen.toDate() : (data.lastSeen ? new Date(data.lastSeen) : null);
+            const timeSinceLastSeen = lastSeenDate ? now - lastSeenDate.getTime() : Infinity;
+
+            let availability = 'offline';
+            let availabilityLabel = 'Offline';
+            let dotColor = 'var(--gray-300)';
+
+            if (data.isOnline && data.isOnDuty) {
+                availability = 'available';
+                availabilityLabel = 'Available';
+                dotColor = 'var(--success-500)';
+            } else if (data.isOnline && !data.isOnDuty) {
+                availability = 'busy';
+                availabilityLabel = 'Busy';
+                dotColor = 'var(--warning-500, #f59e0b)';
+            } else if (!data.isOnline && timeSinceLastSeen < THIRTY_MIN) {
+                availability = 'away';
+                availabilityLabel = lastSeenDate ? formatTimeAgo(lastSeenDate) : 'Away';
+                dotColor = 'var(--orange-500, #f97316)';
+            } else {
+                availability = 'offline';
+                availabilityLabel = 'Offline';
+                dotColor = 'var(--gray-300)';
+            }
+
+            return {
+                id: d.id,
+                ...data,
+                availability,
+                availabilityLabel,
+                dotColor,
+                lastSeenDate
+            };
+        }).sort((a, b) => {
+            const order = { available: 0, busy: 1, away: 2, offline: 3 };
+            return (order[a.availability] ?? 3) - (order[b.availability] ?? 3);
+        });
+    } catch (e) {
+        console.error('Error fetching all staff status:', e);
         return [];
     }
+}
+
+function formatTimeAgo(date) {
+    const diff = Date.now() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
 }
 
 async function getOnlineStatusLabel(uid) {
