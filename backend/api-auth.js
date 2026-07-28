@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { signToken } = require('./middleware');
-const { getUserByEmail, getUserById, lookupUserById, createAuthUser, getDocument, setDocument } = require('./database');
+const { getUserByEmail, getUserById, lookupUserById, createAuthUser, createFirebaseUser, setFirebaseClaims, getDocument, setDocument } = require('./database');
 
 const BCRYPT_ROUNDS = 12;
 
@@ -211,4 +211,66 @@ async function deleteAccount(req, res) {
     }
 }
 
-module.exports = { signin, signup, me, refreshToken, resetPassword, changePassword, deleteAccount };
+async function adminCreateUser(req, res) {
+    try {
+        const { email, password, role, displayName, profileData } = req.body || {};
+        if (!email || !password || !role) {
+            return res.status(400).json({ error: 'email, password, and role required' });
+        }
+
+        const existing = await getUserByEmail(email.trim().toLowerCase());
+        if (existing) {
+            return res.status(409).json({ error: 'Email already registered', code: 'auth/email-already-exists' });
+        }
+
+        const fbUser = await createFirebaseUser(email, password, displayName || '');
+        const uid = fbUser.uid;
+
+        await setFirebaseClaims(uid, { role });
+
+        await createAuthUser(uid, email, password, role);
+
+        const userData = {
+            email: email.trim().toLowerCase(),
+            role,
+            displayName: displayName || '',
+            status: (role === 'student' || role === 'admin' || role === 'administrator') ? 'active' : 'pending_approval',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            ...profileData
+        };
+        await setDocument('users', uid, userData);
+
+        return res.json({ uid, email: email.trim().toLowerCase(), role });
+    } catch (err) {
+        console.error('[adminCreateUser] ERROR:', err);
+        return res.status(500).json({ error: err.message });
+    }
+}
+
+async function lookupById(req, res) {
+    try {
+        const { userId } = req.query || {};
+        if (!userId || !userId.trim()) {
+            return res.status(400).json({ error: 'userId query parameter required' });
+        }
+        const profileDoc = await lookupUserById(userId.trim());
+        if (!profileDoc) {
+            return res.status(404).json({ error: 'No account found with this ID' });
+        }
+        return res.json({
+            uid: profileDoc.uid,
+            email: profileDoc.email || null,
+            role: profileDoc.role || null,
+            displayName: profileDoc.displayName || null,
+            status: profileDoc.status || null,
+            studentId: profileDoc.studentId || null,
+            staffId: profileDoc.staffId || null
+        });
+    } catch (err) {
+        console.error('[lookupById] ERROR:', err);
+        return res.status(500).json({ error: err.message });
+    }
+}
+
+module.exports = { signin, signup, me, refreshToken, resetPassword, changePassword, deleteAccount, lookupById, adminCreateUser };

@@ -81,6 +81,20 @@ async function createAuthUser(uid, email, password, role) {
     return { uid, email, role };
 }
 
+async function createFirebaseUser(email, password, displayName) {
+    const record = await admin.auth().createUser({
+        email: email.toLowerCase(),
+        password,
+        displayName: displayName || '',
+        emailVerified: false
+    });
+    return { uid: record.uid, email: record.email };
+}
+
+async function setFirebaseClaims(uid, claims) {
+    await admin.auth().setCustomUserClaims(uid, claims);
+}
+
 async function updateAuthUser(uid, updates) {
     const data = {};
     if (updates.email) data.email = updates.email.toLowerCase();
@@ -282,6 +296,29 @@ function generatePassword(length = 16) {
     return pw;
 }
 
+async function syncAllClaims() {
+    try {
+        const usersSnap = await getFirestore().collection('users').get();
+        let count = 0;
+        for (const doc of usersSnap.docs) {
+            const data = doc.data();
+            if (data.role) {
+                try {
+                    await admin.auth().setCustomUserClaims(doc.id, { role: data.role });
+                    count++;
+                } catch (e) {
+                    if (e.code !== 'auth/user-not-found') {
+                        console.warn(`[syncClaims] Failed for ${doc.id}:`, e.message);
+                    }
+                }
+            }
+        }
+        console.log(`[syncClaims] Synced claims for ${count} users`);
+    } catch (err) {
+        console.error('[syncClaims] ERROR:', err.message);
+    }
+}
+
 module.exports = {
     seedAdmin,
     getUserByEmail,
@@ -290,6 +327,8 @@ module.exports = {
     getUserByStaffId,
     lookupUserById,
     createAuthUser,
+    createFirebaseUser,
+    setFirebaseClaims,
     updateAuthUser,
     deleteAuthUser,
     getDocument,
@@ -299,5 +338,6 @@ module.exports = {
     deleteDocument,
     queryDocuments,
     getNextSequence,
-    generatePassword
+    generatePassword,
+    syncAllClaims
 };

@@ -2,8 +2,9 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const admin = require('firebase-admin');
 
-const { getUserById } = require('./database');
+const { getUserById, getDocument } = require('./database');
 
 let JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -82,11 +83,35 @@ function optionalAuth(req, res, next) {
     next();
 }
 
+async function firebaseAuthMiddleware(req, res, next) {
+    try {
+        const header = req.headers.authorization;
+        if (!header || !header.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        const token = header.slice(7);
+        const decoded = await admin.auth().verifyIdToken(token);
+        const userDoc = await getDocument('users', decoded.uid);
+        if (!userDoc) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+        let userData = null;
+        try { userData = JSON.parse(userDoc.data); } catch {}
+        req.user = { uid: decoded.uid, email: decoded.email, role: userData ? userData.role : null };
+        req.userData = { uid: decoded.uid, email: decoded.email, role: userData ? userData.role : null };
+        next();
+    } catch (err) {
+        console.error('[firebaseAuthMiddleware] ERROR:', err.message);
+        return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+}
+
 module.exports = {
     JWT_SECRET,
     signToken,
     verifyToken,
     authMiddleware,
+    firebaseAuthMiddleware,
     requireRole,
     optionalAuth
 };

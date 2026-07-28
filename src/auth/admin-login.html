@@ -101,6 +101,8 @@
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
                 
+                await user.getIdToken(true);
+                
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 
                 if (!userDoc.exists) {
@@ -111,7 +113,7 @@
                 
                 const userData = userDoc.data();
                 
-                if (userData.role !== 'admin') {
+                if (userData.role !== 'admin' && userData.role !== 'administrator') {
                     showAlert('loginAlert', 'Access denied. This portal is for administrators only.', 'error');
                     await auth.signOut();
                     return;

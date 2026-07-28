@@ -3,8 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-const { seedAdmin } = require('./database');
-const { authMiddleware, requireRole } = require('./middleware');
+const { seedAdmin, syncAllClaims } = require('./database');
+const { authMiddleware, firebaseAuthMiddleware, requireRole } = require('./middleware');
 const authRoutes = require('./api-auth');
 const firestoreRoutes = require('./api-firestore');
 const storageRoutes = require('./api-storage');
@@ -23,6 +23,8 @@ app.use(express.json());
 
 app.post('/api/auth/signin', authRoutes.signin);
 app.post('/api/auth/signup', authRoutes.signup);
+app.get('/api/auth/lookup', authRoutes.lookupById);
+app.post('/api/auth/admin-create', firebaseAuthMiddleware, requireRole('admin', 'administrator'), authRoutes.adminCreateUser);
 app.get('/api/auth/me', authMiddleware, authRoutes.me);
 app.post('/api/auth/refresh', authRoutes.refreshToken);
 app.post('/api/auth/reset-password', authRoutes.resetPassword);
@@ -152,6 +154,8 @@ app.use((req, res) => {
         } else {
             console.log('Admin account already exists — skipping seed.');
         }
+
+        await syncAllClaims();
 
         app.listen(PORT, () => {
             console.log(`DHRMS server running at http://localhost:${PORT}`);

@@ -65,6 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const userCredential = await auth.signInWithEmailAndPassword(userData.email, password);
             const user = userCredential.user;
 
+            await user.getIdToken(true);
+
             const userDoc = await db.collection('users').doc(user.uid).get();
             if (!userDoc.exists) {
                 showAlert('loginAlert', 'Account not found. Contact admin.', 'error');
@@ -119,17 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function lookupUserById(userId) {
     const id = userId.trim();
-    const studentSnap = await db.collection('users').where('studentId', '==', id).limit(1).get();
-    if (!studentSnap.empty) {
-        const doc = studentSnap.docs[0];
-        return { uid: doc.id, ...doc.data() };
-    }
-    const staffSnap = await db.collection('users').where('staffId', '==', id).limit(1).get();
-    if (!staffSnap.empty) {
-        const doc = staffSnap.docs[0];
-        return { uid: doc.id, ...doc.data() };
-    }
-    return null;
+    const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+    const resp = await fetch(`${apiBase}/api/auth/lookup?userId=${encodeURIComponent(id)}`);
+    if (!resp.ok) return null;
+    return await resp.json();
 }
 
 function redirectUser(role) {

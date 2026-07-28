@@ -414,26 +414,16 @@
                 
                 const tempPassword = generatePassword();
                 
-                const userCredential = await auth.adminCreateUser(email, tempPassword, selectedRole, document.getElementById('firstName').value.trim() + ' ' + document.getElementById('lastName').value.trim());
-                const user = userCredential.user;
+                const idToken = await auth.currentUser.getIdToken();
                 
-                let photoUrl = null;
-                const photoInput = document.getElementById('userPhoto');
-                if (photoInput.files[0]) {
-                    photoUrl = await uploadPhoto(photoInput.files[0]);
-                }
-                
-                const userData = {
+                const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+                const profileData = {
                     firstName: document.getElementById('firstName').value.trim(),
                     lastName: document.getElementById('lastName').value.trim(),
                     dob: document.getElementById('dob').value,
                     gender: document.getElementById('gender').value,
                     nationality: document.getElementById('nationality').value.trim(),
                     phone: phone,
-                    email: email,
-                    role: selectedRole,
-                    status: selectedRole === 'student' ? 'active' : 'pending_approval',
-                    bioCompleted: true,
                     bloodType: document.getElementById('bloodType').value,
                     allergies: document.getElementById('allergies').value.trim(),
                     chronicConditions: document.getElementById('conditions').value.trim(),
@@ -441,27 +431,51 @@
                     emergencyRelation: document.getElementById('emergencyRelation').value,
                     emergencyPhone: emergencyPhone,
                     address: document.getElementById('address').value.trim(),
-                    createdBy: currentUser.uid,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    bioCompleted: true
                 };
                 
                 const idNumber = document.getElementById('userIdNumber').value.trim();
-                
                 if (selectedRole === 'student') {
-                    userData.studentId = idNumber;
-                    userData.level = document.getElementById('level').value;
-                    userData.department = document.getElementById('department')?.value || '';
+                    profileData.studentId = idNumber;
+                    profileData.level = document.getElementById('level').value;
+                    profileData.department = document.getElementById('department')?.value || '';
                 } else {
-                    userData.staffId = idNumber;
-                    userData.department = document.getElementById('department').value.trim();
+                    profileData.staffId = idNumber;
+                    profileData.department = document.getElementById('department').value.trim();
                 }
                 
-                if (photoUrl) {
-                    userData.photoUrl = photoUrl;
+                let photoUrl = null;
+                const photoInput = document.getElementById('userPhoto');
+                if (photoInput.files[0]) {
+                    photoUrl = await uploadPhoto(photoInput.files[0]);
+                    if (photoUrl) profileData.photoUrl = photoUrl;
+                }
+
+                const resp = await fetch(`${apiBase}/api/auth/admin-create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password: tempPassword,
+                        role: selectedRole,
+                        displayName: profileData.firstName + ' ' + profileData.lastName,
+                        profileData
+                    })
+                });
+                
+                const result = await resp.json();
+                
+                if (!resp.ok) {
+                    let message = result.error || 'Error creating user';
+                    if (result.code === 'auth/email-already-exists') message = 'Email already exists in the system';
+                    showAlert('createAlert', message, 'error');
+                    return;
                 }
                 
-                await db.collection('users').doc(user.uid).set(userData);
-                await logActivity(currentUser.uid, 'user-create', `Created ${selectedRole} account: ${userData.firstName} ${userData.lastName}`);
+                await logActivity(currentUser.uid, 'user-create', `Created ${selectedRole} account: ${profileData.firstName} ${profileData.lastName}`);
                 
                 showAlert('createAlert', `User created successfully! Temporary password: ${tempPassword}`, 'success');
                 
@@ -471,11 +485,7 @@
                 
             } catch (error) {
                 console.error('Create user error:', error);
-                let message = 'Error creating user';
-                if (error.code === 'auth/email-already-in-use' || error.code === 'auth/email-already-exists') {
-                    message = 'Email already exists in the system';
-                }
-                showAlert('createAlert', message, 'error');
+                showAlert('createAlert', 'Error creating user: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.querySelector('.btn-text').style.display = 'inline';
