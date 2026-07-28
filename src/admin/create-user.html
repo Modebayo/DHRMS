@@ -414,7 +414,7 @@
                 
                 const tempPassword = generatePassword();
                 
-                const idToken = await auth.currentUser.getIdToken();
+                const idToken = sessionStorage.getItem('ku_dhrms_jwt') || '';
                 
                 const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
                 const profileData = {

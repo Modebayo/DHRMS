@@ -4,7 +4,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://YOUR_RENDER_APP.onrender.com/api/:splat"
+  to = "https://ku-health-records-api.onrender.com/api/:splat"
   status = 200
   force = true
 

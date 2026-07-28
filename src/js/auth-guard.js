@@ -105,6 +105,30 @@ async function guardPage(allowedRoles = null) {
                     }
                 }
 
+                try {
+                    const existingJwt = sessionStorage.getItem('ku_dhrms_jwt');
+                    if (!existingJwt) {
+                        const fbToken = await user.getIdToken();
+                        const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+                        const exchResp = await fetch(`${apiBase}/api/auth/exchange`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${fbToken}`
+                            }
+                        });
+                        if (exchResp.ok) {
+                            const exchData = await exchResp.json();
+                            if (exchData.idToken) {
+                                sessionStorage.setItem('ku_dhrms_jwt', exchData.idToken);
+                                sessionStorage.setItem('ku_dhrms_user', JSON.stringify(exchData));
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not exchange Firebase token for JWT:', e);
+                }
+
                 resolve({ user, userData, isReadOnly: userData.status === 'inactive' });
             } catch (error) {
                 console.error('Auth guard error:', error);

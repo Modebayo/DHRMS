@@ -65,7 +65,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const userCredential = await auth.signInWithEmailAndPassword(userData.email, password);
             const user = userCredential.user;
 
-            await user.getIdToken(true);
+            try {
+                const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+                const signinResp = await fetch(`${apiBase}/api/auth/signin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: userData.email, password })
+                });
+                if (signinResp.ok) {
+                    const signinData = await signinResp.json();
+                    if (signinData.idToken) {
+                        sessionStorage.setItem('ku_dhrms_jwt', signinData.idToken);
+                        sessionStorage.setItem('ku_dhrms_user', JSON.stringify(signinData.user || {}));
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not obtain JWT token:', e);
+            }
 
             const userDoc = await db.collection('users').doc(user.uid).get();
             if (!userDoc.exists) {

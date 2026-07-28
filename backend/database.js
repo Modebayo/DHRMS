@@ -256,17 +256,50 @@ async function seedAdmin() {
             password_hash: newHash,
             updated_at: new Date().toISOString()
         });
+        try {
+            await admin.auth().getUser(existing.uid);
+        } catch (e) {
+            if (e.code === 'auth/user-not-found') {
+                await admin.auth().createUser({
+                    uid: existing.uid,
+                    email,
+                    password,
+                    displayName: 'System Admin'
+                });
+                console.log('Created Firebase Auth account for existing admin');
+            }
+        }
+        await admin.auth().setCustomUserClaims(existing.uid, { role: 'admin' });
         console.log('Admin password updated to: ' + password);
         return { uid: existing.uid, email, password };
     }
-    await getFirestore().collection('_auth_').doc(uid).set({
+    let fbUid = uid;
+    try {
+        const fbUser = await admin.auth().createUser({
+            uid,
+            email,
+            password,
+            displayName: 'System Admin'
+        });
+        fbUid = fbUser.uid;
+    } catch (e) {
+        console.warn('Firebase Auth user creation failed, trying by email:', e.message);
+        try {
+            const existingFb = await admin.auth().getUserByEmail(email);
+            fbUid = existingFb.uid;
+        } catch {
+            console.error('Could not create or find Firebase Auth admin user');
+        }
+    }
+    await admin.auth().setCustomUserClaims(fbUid, { role: 'admin' });
+    await getFirestore().collection('_auth_').doc(fbUid).set({
         email,
         password_hash: hash,
         role: 'admin',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
     });
-    await getFirestore().collection('users').doc(uid).set({
+    await getFirestore().collection('users').doc(fbUid).set({
         email,
         role: 'admin',
         displayName: 'System Admin',
@@ -274,7 +307,7 @@ async function seedAdmin() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     });
-    return { uid, email, password };
+    return { uid: fbUid, email, password };
 }
 
 async function getNextSequence(name) {
@@ -300,20 +333,23 @@ async function syncAllClaims() {
     try {
         const usersSnap = await getFirestore().collection('users').get();
         let count = 0;
+        let skipped = 0;
         for (const doc of usersSnap.docs) {
             const data = doc.data();
-            if (data.role) {
-                try {
-                    await admin.auth().setCustomUserClaims(doc.id, { role: data.role });
-                    count++;
-                } catch (e) {
-                    if (e.code !== 'auth/user-not-found') {
-                        console.warn(`[syncClaims] Failed for ${doc.id}:`, e.message);
-                    }
+            if (!data.role) continue;
+            try {
+                await admin.auth().setCustomUserClaims(doc.id, { role: data.role });
+                count++;
+            } catch (e) {
+                if (e.code === 'auth/user-not-found') {
+                    skipped++;
+                    console.warn(`[syncClaims] No Firebase Auth account for ${doc.id} (${data.email || 'no email'}) — user must be recreated`);
+                } else {
+                    console.warn(`[syncClaims] Failed for ${doc.id}:`, e.message);
                 }
             }
         }
-        console.log(`[syncClaims] Synced claims for ${count} users`);
+        console.log(`[syncClaims] Synced claims for ${count} users, ${skipped} skipped (no Firebase Auth account)`);
     } catch (err) {
         console.error('[syncClaims] ERROR:', err.message);
     }

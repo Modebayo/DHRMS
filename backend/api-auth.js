@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const admin = require('firebase-admin');
 const { signToken } = require('./middleware');
 const { getUserByEmail, getUserById, lookupUserById, createAuthUser, createFirebaseUser, setFirebaseClaims, getDocument, setDocument } = require('./database');
 
@@ -248,6 +249,26 @@ async function adminCreateUser(req, res) {
     }
 }
 
+async function exchangeToken(req, res) {
+    try {
+        const header = req.headers.authorization;
+        if (!header || !header.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Unauthorized', code: 'auth/missing-token' });
+        }
+        const firebaseToken = header.slice(7);
+        const decoded = await admin.auth().verifyIdToken(firebaseToken);
+        const user = await getUserById(decoded.uid);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found in auth system', code: 'auth/user-not-found' });
+        }
+        const token = signToken(user);
+        return res.json({ idToken: token, refreshToken: token, localId: user.uid, email: user.email });
+    } catch (err) {
+        console.error('[exchangeToken] ERROR:', err.message);
+        return res.status(401).json({ error: 'Invalid or expired token', code: 'auth/invalid-token' });
+    }
+}
+
 async function lookupById(req, res) {
     try {
         const { userId } = req.query || {};
@@ -273,4 +294,4 @@ async function lookupById(req, res) {
     }
 }
 
-module.exports = { signin, signup, me, refreshToken, resetPassword, changePassword, deleteAccount, lookupById, adminCreateUser };
+module.exports = { signin, signup, me, refreshToken, resetPassword, changePassword, deleteAccount, lookupById, adminCreateUser, exchangeToken };
