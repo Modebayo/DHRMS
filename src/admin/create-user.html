@@ -182,9 +182,10 @@
                                     <option value="FAPS">Faculty of Applied Sciences (FAPS)</option>
                                     <option value="FAMS">Faculty of Art and Management Science (FAMS)</option>
                                     <option value="FLAW">Faculty of Law (FLAW)</option>
+                                    <option value="JUPEB">JUPEB</option>
                                 </select>
                                 <label>Department</label>
-                                <select id="department">
+                                <select id="studentDepartment">
                                     <option value="">Select Faculty First</option>
                                 </select>
                                 <label>Level</label>
@@ -205,7 +206,7 @@
                             </div>
                             <div id="staffFields" class="form-group" style="display:none">
                                 <label>Department / Specialization</label>
-                                <input type="text" id="department" placeholder="Enter department or specialization">
+                                <input type="text" id="staffDepartment" placeholder="Enter department or specialization">
                             </div>
                         </div>
                         
@@ -299,12 +300,13 @@
             'FBMS': ['Nursing Science', 'Medical Laboratory Science', 'Public Health'],
             'FAPS': ['Software Engineering', 'Computer Science', 'Cyber Security', 'Biochemistry', 'Microbiology', 'Physics', 'Statistics'],
             'FAMS': ['Political Science', 'English Language', 'Mass Communication', 'International Relations', 'Government'],
-            'FLAW': ['Law']
+            'FLAW': ['Law'],
+            'JUPEB': ['Science', 'Arts', 'Social Sciences', 'Management']
         };
         
         function updateCreateDepts() {
             const faculty = document.getElementById('faculty').value;
-            const deptSelect = document.getElementById('department');
+            const deptSelect = document.getElementById('studentDepartment');
             deptSelect.innerHTML = '<option value="">Select Department</option>';
             if (faculty && DEPARTMENTS[faculty]) {
                 DEPARTMENTS[faculty].forEach(dept => {
@@ -484,10 +486,10 @@
                     profileData.studentId = idNumber;
                     profileData.faculty = document.getElementById('faculty').value;
                     profileData.level = document.getElementById('level').value;
-                    profileData.department = document.getElementById('department')?.value || '';
+                    profileData.department = document.getElementById('studentDepartment')?.value || '';
                 } else {
                     profileData.staffId = idNumber;
-                    profileData.department = document.getElementById('department').value.trim();
+                    profileData.department = document.getElementById('staffDepartment').value.trim();
                 }
                 
                 let photoUrl = null;

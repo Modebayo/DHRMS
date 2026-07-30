@@ -8,7 +8,8 @@ const DEPARTMENTS = {
     'FBMS': ['Nursing Science', 'Medical Laboratory Science', 'Public Health'],
     'FAPS': ['Software Engineering', 'Computer Science', 'Cyber Security', 'Biochemistry', 'Microbiology', 'Physics', 'Statistics'],
     'FAMS': ['Political Science', 'English Language', 'Mass Communication', 'International Relations', 'Government'],
-    'FLAW': ['Law']
+    'FLAW': ['Law'],
+    'JUPEB': ['Science', 'Arts', 'Social Sciences', 'Management']
 };
 
 function populateDepartmentSelect(selectId, faculty) {
