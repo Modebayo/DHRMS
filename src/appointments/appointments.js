@@ -357,9 +357,11 @@ function closeAppointmentModal() {
 // Update appointment badge in sidebar
 async function updateAppointmentBadge() {
     try {
-        const snapshot = await db.collection('appointments')
-            .where('status', '==', 'pending')
-            .get();
+        let query = db.collection('appointments').where('status', '==', 'pending');
+        if (userData?.role === 'student') {
+            query = query.where('patientId', '==', currentUser.uid);
+        }
+        const snapshot = await query.get();
         
         const badge = document.getElementById('appointmentBadge');
         if (badge) {

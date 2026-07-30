@@ -46,7 +46,7 @@
                     <a href="../messages/index.html" class="nav-item"><i data-lucide="message-square"></i>Messages</a>
                 </div>
                 <div class="nav-section">
-                    <a href="../records/visit-workflow.html" class="nav-item"><i data-lucide="git-branch"></i>Visit Workflow</a>
+                    <a href="../records/visit-workflow.html" class="nav-item"><i data-lucide="shuffle"></i>Visit Workflow</a>
                     <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
                     <a href="../settings/index.html" class="nav-item"><i data-lucide="settings-2"></i>Settings</a>
                     <a href="#" class="nav-item" onclick="logout(); return false;"><i data-lucide="log-out"></i>Logout</a>
@@ -115,7 +115,7 @@
                     </div>
                     <div id="requestsContainer">
                         <div class="empty-state" style="padding:40px;">
-                            <i data-lucide="inbox" style="width:48px;height:48px;color:var(--gray-300);"></i>
+                            <i data-lucide="archive" style="width:48px;height:48px;color:var(--gray-300);"></i>
                             <h3>No pending requests</h3>
                             <p>New patient requests will appear here</p>
                         </div>
@@ -227,7 +227,7 @@
             const container = document.getElementById('requestsContainer');
 
             if (docs.length === 0) {
-                container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><i data-lucide="inbox" style="width:48px;height:48px;margin-bottom:12px;"></i><h3>No requests</h3><p>No requests match this filter</p></div>';
+                container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><i data-lucide="archive" style="width:48px;height:48px;margin-bottom:12px;"></i><h3>No requests</h3><p>No requests match this filter</p></div>';
                 if (typeof lucide !== 'undefined') lucide.createIcons();
                 return;
             }

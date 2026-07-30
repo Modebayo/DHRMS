@@ -103,7 +103,7 @@ function getNotificationIcon(type) {
         'appointment': 'calendar-check',
         'prescription': 'pill',
         'vitals': 'activity',
-        'lab_result': 'flask-conical',
+        'lab_result': 'microscope',
         'system': 'info',
         'alert': 'alert-circle'
     };

@@ -141,7 +141,7 @@ async function initializeDashboard() {
             { icon: 'clipboard-list', label: 'Record Vitals', link: '../records/vitals.html' },
             { icon: 'calendar-days', label: 'View Appointments', link: '../appointments/index.html' },
             { icon: 'file-text', label: 'Patient Records', link: '../records/index.html' },
-            { icon: 'list-todo', label: 'My Tasks', link: '../records/tasks.html' }
+            { icon: 'check-square', label: 'My Tasks', link: '../records/tasks.html' }
         ]);
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
@@ -176,7 +176,7 @@ async function initializeDashboard() {
                 <div class="stat-label">Medical Staff</div>
             </div>
             <div class="stat-card">
-                <div class="stat-header"><div class="stat-icon red"><i data-lucide="hourglass"></i></div></div>
+                <div class="stat-header"><div class="stat-icon red"><i data-lucide="timer"></i></div></div>
                 <div class="stat-value">${pendingUsers}</div>
                 <div class="stat-label">Pending Approvals</div>
             </div>

@@ -44,7 +44,7 @@
                     <a href="../messages/index.html" class="nav-item"><i data-lucide="message-square"></i>Messages</a>
                 </div>
                 <div class="nav-section">
-                    <a href="../records/visit-workflow.html" class="nav-item"><i data-lucide="git-branch"></i>Visit Workflow</a>
+                    <a href="../records/visit-workflow.html" class="nav-item"><i data-lucide="shuffle"></i>Visit Workflow</a>
                     <a href="../records/patient-list.html" class="nav-item"><i data-lucide="users"></i>My Patients</a>
                     <a href="../records/prescriptions.html" class="nav-item"><i data-lucide="pill"></i>Prescriptions</a>
                     <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
@@ -99,7 +99,7 @@
                     </div>
                     <div id="requestsContainer">
                         <div class="empty-state" style="padding:40px;">
-                            <i data-lucide="inbox" style="width:48px;height:48px;color:var(--gray-300);"></i>
+                            <i data-lucide="archive" style="width:48px;height:48px;color:var(--gray-300);"></i>
                             <h3>No patients awaiting review</h3>
                             <p>Triaged patients will appear here</p>
                         </div>
@@ -161,7 +161,7 @@
                     document.getElementById('pendingCount').textContent = sorted.length + ' pending';
 
                     if (sorted.length === 0) {
-                        container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><i data-lucide="inbox" style="width:48px;height:48px;margin-bottom:12px;"></i><h3>No patients awaiting review</h3><p>Triaged patients will appear here</p></div>';
+                        container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><i data-lucide="archive" style="width:48px;height:48px;margin-bottom:12px;"></i><h3>No patients awaiting review</h3><p>Triaged patients will appear here</p></div>';
                         if (typeof lucide !== 'undefined') lucide.createIcons();
                         return;
                     }

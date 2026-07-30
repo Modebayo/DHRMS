@@ -208,7 +208,7 @@
             student: [
                 { section: 'Main', items: [
                     { icon: 'layout-dashboard', label: 'Dashboard', href: '../dashboard/index.html' },
-                    { icon: 'git-branch', label: 'My Visits', href: 'my-visits.html', active: true },
+                    { icon: 'shuffle', label: 'My Visits', href: 'my-visits.html', active: true },
                     { icon: 'file-text', label: 'My Records', href: 'my-records.html' },
                     { icon: 'calendar-days', label: 'Appointments', href: '../appointments/index.html' },
                     { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
@@ -231,10 +231,10 @@
                     { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
                 ]},
                 { section: 'Medical', items: [
-                    { icon: 'git-branch', label: 'Visit Workflow', href: 'visit-workflow.html' },
+                    { icon: 'shuffle', label: 'Visit Workflow', href: 'visit-workflow.html' },
                     { icon: 'users', label: 'My Patients', href: 'patient-list.html' },
                     { icon: 'pill', label: 'Prescriptions', href: 'prescriptions.html' },
-                    { icon: 'flask-conical', label: 'Lab Results', href: 'lab-results.html' },
+                    { icon: 'microscope', label: 'Lab Results', href: 'lab-results.html' },
                     { icon: 'activity', label: 'Vitals', href: 'vitals.html' },
                 ]},
                 { section: 'Pharmacy', items: [
@@ -255,10 +255,10 @@
                     { icon: 'message-square', label: 'Messages', href: '../messages/index.html' },
                 ]},
                 { section: 'Medical', items: [
-                    { icon: 'git-branch', label: 'Visit Workflow', href: 'visit-workflow.html' },
+                    { icon: 'shuffle', label: 'Visit Workflow', href: 'visit-workflow.html' },
                     { icon: 'activity', label: 'Record Vitals', href: 'vitals.html' },
-                    { icon: 'flask-conical', label: 'Lab Results', href: 'lab-results.html' },
-                    { icon: 'list-todo', label: 'Tasks', href: 'tasks.html' },
+                    { icon: 'microscope', label: 'Lab Results', href: 'lab-results.html' },
+                    { icon: 'check-square', label: 'Tasks', href: 'tasks.html' },
                 ]},
                 { section: 'Pharmacy', items: [
                     { icon: 'pill', label: 'Pharmacy', href: '../pharmacy/index.html' },
@@ -280,7 +280,7 @@
                 { section: 'Medical', items: [
                     { icon: 'users', label: 'Patient List', href: 'patient-list.html' },
                     { icon: 'pill', label: 'Prescriptions', href: 'prescriptions.html' },
-                    { icon: 'flask-conical', label: 'Lab Results', href: 'lab-results.html' },
+                    { icon: 'microscope', label: 'Lab Results', href: 'lab-results.html' },
                     { icon: 'activity', label: 'Vitals', href: 'vitals.html' },
                 ]},
                 { section: 'Pharmacy', items: [
@@ -464,7 +464,7 @@
                 </div>
                 
                 <div style="margin-bottom:20px">
-                    <h4 style="margin:0 0 8px 0"><i data-lucide="git-branch" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Visit Progress</h4>
+                    <h4 style="margin:0 0 8px 0"><i data-lucide="shuffle" style="width:16px;height:16px;display:inline;margin-right:8px"></i>Visit Progress</h4>
                     <div class="visit-timeline">
                         ${WORKFLOW_STAGES.map((stage, index) => {
                             let status = 'pending';

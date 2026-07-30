@@ -72,7 +72,7 @@
                 <i data-lucide="mail" style="width:40px;height:40px"></i>
             </div>
             <h1>Verify Your Email</h1>
-            <p>We've sent a verification email to your address. Please check your inbox and click the verification link to activate your account.</p>
+            <p>We've sent a verification email to your address. Please check your archive and click the verification link to activate your account.</p>
             
             <button class="btn btn-primary btn-full" onclick="checkVerification()">I've Verified My Email</button>
             <button class="btn btn-outline btn-full" onclick="resendVerification()">Resend Verification Email</button>
@@ -114,7 +114,7 @@
                         window.location.href = '../dashboard/index.html';
                     }, 1500);
                 } else {
-                    showToast('Email not verified yet. Please check your inbox.', 'warning');
+                    showToast('Email not verified yet. Please check your archive.', 'warning');
                 }
             } catch (error) {
                 console.error('Error checking verification:', error);

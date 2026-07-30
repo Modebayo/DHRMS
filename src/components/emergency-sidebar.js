@@ -46,7 +46,7 @@ function createEmergencySidebar() {
                     </div>
                 </div>
                 <div class="emergency-contact">
-                    <i data-lucide="shield-alert"></i>
+                    <i data-lucide="shield-off"></i>
                     <div>
                         <strong>Campus Security</strong>
                         <span>Extension: 911</span>

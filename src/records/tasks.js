@@ -68,7 +68,7 @@ function subscribeTasks() {
             let pending = 0, inProgress = 0, completed = 0;
             
             if (snapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="list-todo" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Tasks</h3><p>Add your first task</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="check-square" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Tasks</h3><p>Add your first task</p></td></tr>';
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             } else {
                 const usersCache = {};

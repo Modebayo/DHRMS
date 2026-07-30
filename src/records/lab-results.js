@@ -52,7 +52,7 @@ function subscribeLabResults() {
 
     labUnsub = db.collection('lab_results').orderBy('createdAt', 'desc').onSnapshot(async (snapshot) => {
         if (snapshot.empty) {
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="flask-conical" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Lab Results</h3><p>Lab results will appear here</p></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i data-lucide="microscope" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Lab Results</h3><p>Lab results will appear here</p></td></tr>';
             if (typeof lucide !== 'undefined') lucide.createIcons();
             return;
         }
@@ -154,7 +154,7 @@ async function viewLabResult(id) {
                 <div><strong>Status:</strong> <span class="badge badge-${statusClass}">${lab.status}</span></div>
                 <div><strong>Notes:</strong> ${lab.notes || 'None'}</div>
                 <div><strong>Date:</strong> ${formatDate(lab.createdAt)}</div>
-                <div style="padding:12px;background:var(--orange-50);border-radius:8px;font-size:13px;color:var(--orange-700)"><i data-lucide="shield-alert" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"></i> Patient health data is encrypted in transit and at rest</div>
+                <div style="padding:12px;background:var(--orange-50);border-radius:8px;font-size:13px;color:var(--orange-700)"><i data-lucide="shield-off" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"></i> Patient health data is encrypted in transit and at rest</div>
             </div>
         `;
         document.getElementById('viewLabModal').classList.add('active');

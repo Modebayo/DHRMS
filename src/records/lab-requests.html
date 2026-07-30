@@ -32,7 +32,7 @@
                 <div class="nav-section">
                     <a href="../dashboard/index.html" class="nav-item"><i data-lucide="layout-dashboard"></i>Dashboard</a>
                     <a href="patient-list.html" class="nav-item"><i data-lucide="users"></i>Patients</a>
-                    <a href="lab-requests.html" class="nav-item active"><i data-lucide="flask-conical"></i>Lab Requests</a>
+                    <a href="lab-requests.html" class="nav-item active"><i data-lucide="microscope"></i>Lab Requests</a>
                     <a href="lab-results.html" class="nav-item"><i data-lucide="test-tube"></i>Lab Results</a>
                     <a href="../appointments/index.html" class="nav-item"><i data-lucide="calendar-days"></i>Appointments</a>
                 </div>
@@ -360,7 +360,7 @@
         function renderTable(requests) {
             const tbody = document.getElementById('requestsTable');
             if (requests.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i data-lucide="flask-conical" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Lab Requests</h3><p>Create the first lab request</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i data-lucide="microscope" style="width:48px;height:48px;color:var(--gray-300);margin-bottom:16px"></i><h3>No Lab Requests</h3><p>Create the first lab request</p></td></tr>';
                 if (typeof lucide !== 'undefined') lucide.createIcons();
                 return;
             }
