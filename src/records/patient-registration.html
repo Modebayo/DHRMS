@@ -150,6 +150,24 @@
                                 <input type="text" id="universityId" placeholder="e.g., KDU/FAPS/22/001">
                             </div>
                         </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Faculty</label>
+                                <select id="faculty" onchange="updatePatientDepts()">
+                                    <option value="">Select Faculty</option>
+                                    <option value="FBMS">Faculty of Basic Medical Sciences (FBMS)</option>
+                                    <option value="FAPS">Faculty of Applied Sciences (FAPS)</option>
+                                    <option value="FAMS">Faculty of Art and Management Science (FAMS)</option>
+                                    <option value="FLAW">Faculty of Law (FLAW)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Department</label>
+                                <select id="department">
+                                    <option value="">Select Faculty First</option>
+                                </select>
+                            </div>
+                        </div>
 
                         <h4 style="margin:24px 0 16px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:0.05em;">Contact Information</h4>
                         <div class="form-row">
@@ -221,6 +239,24 @@
     <script>
         let currentUser = null;
         let userData = null;
+
+        const PATIENT_DEPARTMENTS = {
+            'FBMS': ['Nursing Science', 'Medical Laboratory Science', 'Public Health'],
+            'FAPS': ['Software Engineering', 'Computer Science', 'Cyber Security', 'Biochemistry', 'Microbiology', 'Physics', 'Statistics'],
+            'FAMS': ['Political Science', 'English Language', 'Mass Communication', 'International Relations', 'Government'],
+            'FLAW': ['Law']
+        };
+
+        function updatePatientDepts() {
+            const faculty = document.getElementById('faculty').value;
+            const deptSelect = document.getElementById('department');
+            deptSelect.innerHTML = '<option value="">Select Department</option>';
+            if (faculty && PATIENT_DEPARTMENTS[faculty]) {
+                PATIENT_DEPARTMENTS[faculty].forEach(dept => {
+                    deptSelect.innerHTML += '<option value="' + dept + '">' + dept + '</option>';
+                });
+            }
+        }
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
@@ -333,6 +369,8 @@
             const emergencyAddress = document.getElementById('emergencyAddress').value.trim();
             const existingConditions = document.getElementById('existingConditions').value.trim();
             const allergies = document.getElementById('allergies').value.trim();
+            const faculty = document.getElementById('faculty').value;
+            const department = document.getElementById('department').value;
 
             if (!surname || !firstname || !dob || !gender || !phone) {
                 showAlert('statusAlert', 'Please fill all required fields (Surname, First Name, DOB, Gender, Phone)', 'error');
@@ -356,6 +394,8 @@
                 clinicNumber,
                 universityId: universityId || '',
                 gender,
+                faculty: faculty || '',
+                department: department || '',
                 createdBy: currentUser.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()

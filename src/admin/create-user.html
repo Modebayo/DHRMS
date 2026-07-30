@@ -92,6 +92,21 @@
                                 <h4>Nurse</h4>
                                 <p>Nursing Staff</p>
                             </div>
+                            <div class="role-option" data-role="pharmacist" onclick="selectUserRole('pharmacist', this)">
+                                <i data-lucide="pill"></i>
+                                <h4>Pharmacist</h4>
+                                <p>Pharmacy Staff</p>
+                            </div>
+                            <div class="role-option" data-role="lab_technician" onclick="selectUserRole('lab_technician', this)">
+                                <i data-lucide="microscope"></i>
+                                <h4>Lab Tech</h4>
+                                <p>Lab Technician</p>
+                            </div>
+                            <div class="role-option" data-role="records_officer" onclick="selectUserRole('records_officer', this)">
+                                <i data-lucide="folder-open"></i>
+                                <h4>Records</h4>
+                                <p>Records Officer</p>
+                            </div>
                             <div class="role-option" data-role="admin" onclick="selectUserRole('admin', this)">
                                 <i data-lucide="shield"></i>
                                 <h4>Admin</h4>
@@ -160,8 +175,20 @@
                                 <input type="text" id="userIdNumber" placeholder="e.g., KU/2026/001 or STF/001" required>
                             </div>
                             <div id="studentFields" class="form-group" style="display:none">
+                                <label>Faculty</label>
+                                <select id="faculty" onchange="updateCreateDepts()" style="padding:10px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);width:100%;margin-bottom:12px;">
+                                    <option value="">Select Faculty</option>
+                                    <option value="FBMS">Faculty of Basic Medical Sciences (FBMS)</option>
+                                    <option value="FAPS">Faculty of Applied Sciences (FAPS)</option>
+                                    <option value="FAMS">Faculty of Art and Management Science (FAMS)</option>
+                                    <option value="FLAW">Faculty of Law (FLAW)</option>
+                                </select>
+                                <label>Department</label>
+                                <select id="department">
+                                    <option value="">Select Faculty First</option>
+                                </select>
                                 <label>Level</label>
-                                <select id="level">
+                                <select id="level" style="padding:10px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);width:100%;">
                                     <option value="">Select Level</option>
                                     <optgroup label="UTME">
                                         <option value="100">100 Level</option>
@@ -177,8 +204,8 @@
                                 </select>
                             </div>
                             <div id="staffFields" class="form-group" style="display:none">
-                                <label>Department</label>
-                                <input type="text" id="department" placeholder="Enter department">
+                                <label>Department / Specialization</label>
+                                <input type="text" id="department" placeholder="Enter department or specialization">
                             </div>
                         </div>
                         
@@ -268,6 +295,24 @@
     <script src="../js/key-manager.js"></script>
     <script src="../js/auth.js"></script>
     <script>
+        const DEPARTMENTS = {
+            'FBMS': ['Nursing Science', 'Medical Laboratory Science', 'Public Health'],
+            'FAPS': ['Software Engineering', 'Computer Science', 'Cyber Security', 'Biochemistry', 'Microbiology', 'Physics', 'Statistics'],
+            'FAMS': ['Political Science', 'English Language', 'Mass Communication', 'International Relations', 'Government'],
+            'FLAW': ['Law']
+        };
+        
+        function updateCreateDepts() {
+            const faculty = document.getElementById('faculty').value;
+            const deptSelect = document.getElementById('department');
+            deptSelect.innerHTML = '<option value="">Select Department</option>';
+            if (faculty && DEPARTMENTS[faculty]) {
+                DEPARTMENTS[faculty].forEach(dept => {
+                    deptSelect.innerHTML += '<option value="' + dept + '">' + dept + '</option>';
+                });
+            }
+        }
+
         if (typeof lucide !== 'undefined') lucide.createIcons();
         
         let currentUser = null;
@@ -362,7 +407,7 @@
             selectedRole = role;
             
             document.getElementById('studentFields').style.display = role === 'student' ? 'block' : 'none';
-            document.getElementById('staffFields').style.display = (role === 'doctor' || role === 'nurse') ? 'block' : 'none';
+            document.getElementById('staffFields').style.display = (role === 'doctor' || role === 'nurse' || role === 'pharmacist' || role === 'lab_technician' || role === 'records_officer') ? 'block' : 'none';
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         
@@ -437,6 +482,7 @@
                 const idNumber = document.getElementById('userIdNumber').value.trim();
                 if (selectedRole === 'student') {
                     profileData.studentId = idNumber;
+                    profileData.faculty = document.getElementById('faculty').value;
                     profileData.level = document.getElementById('level').value;
                     profileData.department = document.getElementById('department')?.value || '';
                 } else {

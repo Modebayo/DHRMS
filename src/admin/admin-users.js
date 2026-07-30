@@ -4,6 +4,34 @@ let allUsersData = [];
 let selectedUsers = [];
 let usersUnsub = null;
 
+const DEPARTMENTS = {
+    'FBMS': ['Nursing Science', 'Medical Laboratory Science', 'Public Health'],
+    'FAPS': ['Software Engineering', 'Computer Science', 'Cyber Security', 'Biochemistry', 'Microbiology', 'Physics', 'Statistics'],
+    'FAMS': ['Political Science', 'English Language', 'Mass Communication', 'International Relations', 'Government'],
+    'FLAW': ['Law']
+};
+
+function populateDepartmentSelect(selectId, faculty) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    select.innerHTML = '<option value="">Select Department</option>';
+    if (faculty && DEPARTMENTS[faculty]) {
+        DEPARTMENTS[faculty].forEach(dept => {
+            select.innerHTML += '<option value="' + dept + '">' + dept + '</option>';
+        });
+    }
+}
+
+window.updateCreateDepartments = function() {
+    const faculty = document.getElementById('createFaculty').value;
+    populateDepartmentSelect('createDepartment', faculty);
+};
+
+window.updateEditDepartments = function() {
+    const faculty = document.getElementById('editFaculty').value;
+    populateDepartmentSelect('editDepartment', faculty);
+};
+
 function populateUserProfile() {
     const nameEl = document.getElementById('userName');
     const roleEl = document.getElementById('userRole');
@@ -80,12 +108,15 @@ function subscribeUsers() {
     usersUnsub = db.collection('users').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         allUsersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        let students = 0, doctors = 0, nurses = 0, admins = 0, pending = 0, suspended = 0, active = 0, inactive = 0;
+        let students = 0, doctors = 0, nurses = 0, pharmacists = 0, labTechs = 0, recordsOfficers = 0, admins = 0, pending = 0, suspended = 0, active = 0, inactive = 0;
         
         allUsersData.forEach(user => {
             if (user.role === 'student') students++;
             else if (user.role === 'doctor') doctors++;
             else if (user.role === 'nurse') nurses++;
+            else if (user.role === 'pharmacist') pharmacists++;
+            else if (user.role === 'lab_technician') labTechs++;
+            else if (user.role === 'records_officer') recordsOfficers++;
             else if (user.role === 'admin') admins++;
             
             if (user.status === 'pending_approval') pending++;
@@ -96,7 +127,7 @@ function subscribeUsers() {
         
         document.getElementById('totalUsers').textContent = snapshot.size;
         document.getElementById('totalStudents').textContent = students;
-        document.getElementById('totalStaff').textContent = (doctors + nurses + admins);
+        document.getElementById('totalStaff').textContent = (doctors + nurses + pharmacists + labTechs + recordsOfficers + admins);
         document.getElementById('pendingApproval').textContent = pending;
         document.getElementById('activeUsers').textContent = active;
         document.getElementById('suspendedUsers').textContent = suspended;
@@ -190,7 +221,7 @@ window.closeCreateModal = function() {
 window.toggleRoleFields = function() {
     const role = document.getElementById('createRole').value;
     document.getElementById('createStudentFields').style.display = role === 'student' ? 'block' : 'none';
-    document.getElementById('createStaffFields').style.display = (role === 'doctor' || role === 'nurse' || role === 'admin') ? 'block' : 'none';
+    document.getElementById('createStaffFields').style.display = (role === 'doctor' || role === 'nurse' || role === 'pharmacist' || role === 'lab_technician' || role === 'records_officer' || role === 'admin') ? 'block' : 'none';
 };
 
 window.createUser = async function() {
@@ -238,6 +269,7 @@ window.createUser = async function() {
         
         if (role === 'student') {
             userData.studentId = document.getElementById('createStudentId').value || '';
+            userData.faculty = document.getElementById('createFaculty').value || '';
             userData.department = document.getElementById('createDepartment').value || '';
             userData.level = document.getElementById('createLevel').value || '';
         } else {
@@ -273,8 +305,11 @@ window.openEditUser = async function(id) {
         document.getElementById('editStatus').value = user.status || 'pending_approval';
         document.getElementById('editStudentId').value = user.studentId || '';
         document.getElementById('editStaffId').value = user.staffId || '';
+        document.getElementById('editFaculty').value = user.faculty || '';
         document.getElementById('editDepartment').value = user.department || '';
         document.getElementById('editSpecialization').value = user.specialization || '';
+        updateEditDepartments();
+        if (user.faculty) document.getElementById('editDepartment').value = user.department || '';
         toggleEditRoleFields();
     }
     document.getElementById('userModal').classList.add('active');
@@ -287,7 +322,7 @@ window.closeUserModal = function() {
 window.toggleEditRoleFields = function() {
     const role = document.getElementById('editRole').value;
     document.getElementById('editStudentFields').style.display = role === 'student' ? 'block' : 'none';
-    document.getElementById('editStaffFields').style.display = (role === 'doctor' || role === 'nurse' || role === 'admin') ? 'block' : 'none';
+    document.getElementById('editStaffFields').style.display = (role === 'doctor' || role === 'nurse' || role === 'pharmacist' || role === 'lab_technician' || role === 'records_officer' || role === 'admin') ? 'block' : 'none';
 };
 
 window.updateUser = async function() {
@@ -307,6 +342,7 @@ window.updateUser = async function() {
         
         if (role === 'student') {
             updates.studentId = document.getElementById('editStudentId').value || '';
+            updates.faculty = document.getElementById('editFaculty').value || '';
             updates.department = document.getElementById('editDepartment').value || '';
         } else {
             updates.staffId = document.getElementById('editStaffId').value || '';

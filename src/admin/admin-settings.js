@@ -96,7 +96,8 @@ async function createBackup() {
     if (status) status.textContent = 'Creating backup...';
     try {
         const token = getAuthToken();
-        const res = await fetch('/api/backup/create', {
+        const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+        const res = await fetch(apiBase + '/api/backup/create', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
         });
@@ -120,7 +121,8 @@ async function loadBackupList() {
     if (!container) return;
     try {
         const token = getAuthToken();
-        const res = await fetch('/api/backup/list', {
+        const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+        const res = await fetch(apiBase + '/api/backup/list', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         if (!res.ok) throw new Error('Failed to load backups');
@@ -144,8 +146,9 @@ async function loadBackupList() {
 
 function downloadBackup(filename) {
     const token = getAuthToken();
+    const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
     const a = document.createElement('a');
-    a.href = '/api/backup/download/' + encodeURIComponent(filename);
+    a.href = apiBase + '/api/backup/download/' + encodeURIComponent(filename);
     a.download = filename;
     a.style.display = 'none';
     const handler = function (e) {
@@ -176,7 +179,8 @@ function confirmDeleteBackup(filename) {
 async function deleteBackup(filename) {
     try {
         const token = getAuthToken();
-        const res = await fetch('/api/backup/' + encodeURIComponent(filename), {
+        const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+        const res = await fetch(apiBase + '/api/backup/' + encodeURIComponent(filename), {
             method: 'DELETE',
             headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -210,7 +214,8 @@ async function restoreBackup(filename) {
     if (confirmBtn) confirmBtn.disabled = true;
     try {
         const token = getAuthToken();
-        const res = await fetch('/api/backup/restore', {
+        const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+        const res = await fetch(apiBase + '/api/backup/restore', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
             body: JSON.stringify({ filename })

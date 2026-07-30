@@ -28,7 +28,7 @@ const PAGE_ROLE_MAP = {
     'appointments/index': ['student', 'doctor', 'nurse', ...ADMIN_ROLES, 'records_officer'],
     'appointments/create': ['student', 'doctor', 'nurse', ...ADMIN_ROLES, 'records_officer'],
     'pharmacy/index': ['doctor', 'nurse', ...ADMIN_ROLES, 'pharmacist'],
-    'pharmacy/inventory': ['doctor', ...ADMIN_ROLES, 'pharmacist'],
+    'pharmacy/inventory': ['doctor', 'nurse', ...ADMIN_ROLES, 'pharmacist'],
     'settings/index': ['student', 'doctor', 'nurse', ...ADMIN_ROLES, 'pharmacist', 'lab_technician', 'records_officer'],
     'settings/profile-form': ['student', 'doctor', 'nurse', ...ADMIN_ROLES, 'pharmacist', 'lab_technician', 'records_officer'],
     'messages/index': ['student', 'doctor', 'nurse', ...ADMIN_ROLES, 'pharmacist', 'lab_technician', 'records_officer'],

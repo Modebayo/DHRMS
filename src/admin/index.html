@@ -253,8 +253,31 @@
             await Promise.all([
                 loadStats(),
                 loadAllUsers(),
-                loadRecentActivity()
+                loadRecentActivity(),
+                loadLastBackup()
             ]);
+        }
+
+        async function loadLastBackup() {
+            try {
+                const apiBase = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.apiBase) || '';
+                const token = sessionStorage.getItem('ku_dhrms_jwt') || '';
+                const res = await fetch(apiBase + '/api/backup/list', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const list = await res.json();
+                    const el = document.getElementById('lastBackup');
+                    if (list.length > 0) {
+                        const latest = list[list.length - 1];
+                        const d = new Date(latest.createdAt);
+                        el.textContent = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        el.className = 'badge badge-success';
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load backup info:', e);
+            }
         }
         
         async function loadStats() {

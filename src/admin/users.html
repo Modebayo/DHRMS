@@ -84,6 +84,9 @@
                             <option value="student">Student</option>
                             <option value="doctor">Doctor</option>
                             <option value="nurse">Nurse</option>
+                            <option value="pharmacist">Pharmacist</option>
+                            <option value="lab_technician">Lab Technician</option>
+                            <option value="records_officer">Records Officer</option>
                             <option value="admin">Admin</option>
                         </select>
                         <select id="filterStatus" style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);font-size:14px;background:var(--bg-primary);min-width:140px;">
@@ -144,6 +147,9 @@
                                 <option value="student">Student</option>
                                 <option value="doctor">Doctor</option>
                                 <option value="nurse">Nurse</option>
+                                <option value="pharmacist">Pharmacist</option>
+                                <option value="lab_technician">Lab Technician</option>
+                                <option value="records_officer">Records Officer</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
@@ -159,18 +165,20 @@
                     <div id="editStudentFields">
                         <div class="form-row">
                             <div class="form-group"><label>Student ID</label><input type="text" id="editStudentId"></div>
-                            <div class="form-group"><label>Department</label>
-                                <select id="editDepartment">
-                                    <option value="">Select Department</option>
-                                    <option value="Medicine and Surgery">Medicine and Surgery</option>
-                                    <option value="Nursing Science">Nursing Science</option>
-                                    <option value="Computer Science">Computer Science</option>
-                                    <option value="Microbiology">Microbiology</option>
-                                    <option value="Pharmacy">Pharmacy</option>
-                                    <option value="Electrical Engineering">Electrical Engineering</option>
-                                    <option value="Economics">Economics</option>
+                            <div class="form-group"><label>Faculty</label>
+                                <select id="editFaculty" onchange="updateEditDepartments()">
+                                    <option value="">Select Faculty</option>
+                                    <option value="FBMS">Faculty of Basic Medical Sciences (FBMS)</option>
+                                    <option value="FAPS">Faculty of Applied Sciences (FAPS)</option>
+                                    <option value="FAMS">Faculty of Art and Management Science (FAMS)</option>
+                                    <option value="FLAW">Faculty of Law (FLAW)</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="form-group"><label>Department</label>
+                            <select id="editDepartment">
+                                <option value="">Select Faculty First</option>
+                            </select>
                         </div>
                     </div>
                     <div id="editStaffFields" style="display:none;">
@@ -212,24 +220,29 @@
                             <option value="student">Student</option>
                             <option value="doctor">Doctor</option>
                             <option value="nurse">Nurse</option>
+                            <option value="pharmacist">Pharmacist</option>
+                            <option value="lab_technician">Lab Technician</option>
+                            <option value="records_officer">Records Officer</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
                     <div id="createStudentFields">
                         <div class="form-row">
                             <div class="form-group"><label>Student ID</label><input type="text" id="createStudentId" placeholder="e.g., KU/2024/001"></div>
-                            <div class="form-group"><label>Department</label>
-                                <select id="createDepartment">
-                                    <option value="">Select Department</option>
-                                    <option value="Medicine and Surgery">Medicine and Surgery</option>
-                                    <option value="Nursing Science">Nursing Science</option>
-                                    <option value="Computer Science">Computer Science</option>
-                                    <option value="Microbiology">Microbiology</option>
-                                    <option value="Pharmacy">Pharmacy</option>
-                                    <option value="Electrical Engineering">Electrical Engineering</option>
-                                    <option value="Economics">Economics</option>
+                            <div class="form-group"><label>Faculty</label>
+                                <select id="createFaculty" onchange="updateCreateDepartments()">
+                                    <option value="">Select Faculty</option>
+                                    <option value="FBMS">Faculty of Basic Medical Sciences (FBMS)</option>
+                                    <option value="FAPS">Faculty of Applied Sciences (FAPS)</option>
+                                    <option value="FAMS">Faculty of Art and Management Science (FAMS)</option>
+                                    <option value="FLAW">Faculty of Law (FLAW)</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="form-group"><label>Department</label>
+                            <select id="createDepartment">
+                                <option value="">Select Faculty First</option>
+                            </select>
                         </div>
                         <div class="form-group"><label>Level</label>
                             <select id="createLevel" style="padding:10px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);width:100%;">
