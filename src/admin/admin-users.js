@@ -20,6 +20,8 @@ function populateDepartmentSelect(selectId, faculty) {
         DEPARTMENTS[faculty].forEach(dept => {
             select.innerHTML += '<option value="' + dept + '">' + dept + '</option>';
         });
+    } else {
+        console.warn('No courses found for faculty:', faculty);
     }
 }
 
@@ -232,6 +234,7 @@ window.createUser = async function() {
     const password = document.getElementById('createPassword').value;
     const confirmPassword = document.getElementById('createConfirmPassword').value;
     const role = document.getElementById('createRole').value;
+    const staffId = document.getElementById('createStaffId').value.trim();
     
     document.getElementById('createAlert').style.display = 'none';
     
@@ -250,6 +253,12 @@ window.createUser = async function() {
         return;
     }
     
+    const isStaff = role !== 'student' && role !== 'admin' && role !== 'administrator';
+    if (isStaff && !staffId) {
+        showAlert('createAlert', 'Staff ID is required for staff accounts', 'error');
+        return;
+    }
+    
     const btn = document.getElementById('createUserBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Creating...';
@@ -263,7 +272,7 @@ window.createUser = async function() {
             lastName,
             email,
             role,
-            status: role === 'student' ? 'active' : 'pending_approval',
+            status: 'active',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             emailVerified: false
         };
@@ -274,7 +283,7 @@ window.createUser = async function() {
             userData.department = document.getElementById('createDepartment').value || '';
             userData.level = document.getElementById('createLevel').value || '';
         } else {
-            userData.staffId = document.getElementById('createStaffId').value || '';
+            userData.staffId = staffId;
             userData.specialization = document.getElementById('createSpecialization').value || '';
         }
         

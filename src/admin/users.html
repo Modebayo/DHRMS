@@ -8,10 +8,10 @@
     <link rel="dns-prefetch" href="https://unpkg.com">
     <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>User Management - Admin Panel</title>
-    <link rel="stylesheet" href="../css/main.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
-    <link rel="stylesheet" href="../css/mobile-responsive.css">
-    <script src="../js/theme.js"></script>
+    <link rel="stylesheet" href="../css/main.css?v=20260731">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20260731">
+    <link rel="stylesheet" href="../css/mobile-responsive.css?v=20260731">
+    <script src="../js/theme.js?v=20260731"></script>
 </head>
 <body>
     <div class="dashboard">
@@ -260,13 +260,13 @@
                     </div>
                     <div id="createStaffFields" style="display:none;">
                         <div class="form-row">
-                            <div class="form-group"><label>Staff ID</label><input type="text" id="createStaffId" placeholder="e.g., STF/001"></div>
+                            <div class="form-group"><label>Staff ID *</label><input type="text" id="createStaffId" placeholder="e.g., STF/001" required></div>
                             <div class="form-group"><label>Specialization</label><input type="text" id="createSpecialization" placeholder="e.g., General Practice"></div>
                         </div>
                     </div>
                 </form>
                 <div id="createAlert" class="alert" style="display:none;"></div>
-                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">* Required fields. Student accounts are active immediately; staff accounts require approval.</p>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">* Required fields. All accounts are active immediately.</p>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeCreateModal()">Cancel</button>
@@ -292,13 +292,13 @@
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
     <script src="https://unpkg.com/lucide@0.344.0"></script>
 
-    <script src="../js/firebase-compat.js"></script>
-    <script src="../js/firebase-config.js"></script>
-    <script src="../js/auth-guard.js"></script>
-    <script src="../js/key-manager.js"></script>
-    <script src="../js/auth.js"></script>
-    <script src="../js/presence.js"></script>
-    <script src="admin-users.js"></script>
+    <script src="../js/firebase-compat.js?v=20260731"></script>
+    <script src="../js/firebase-config.js?v=20260731"></script>
+    <script src="../js/auth-guard.js?v=20260731"></script>
+    <script src="../js/key-manager.js?v=20260731"></script>
+    <script src="../js/auth.js?v=20260731"></script>
+    <script src="../js/presence.js?v=20260731"></script>
+    <script src="admin-users.js?v=20260731"></script>
     <script>
         initTheme();
         (async function() {

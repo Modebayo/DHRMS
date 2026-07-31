@@ -235,7 +235,7 @@ async function adminCreateUser(req, res) {
             email: email.trim().toLowerCase(),
             role,
             displayName: displayName || '',
-            status: (role === 'student' || role === 'admin' || role === 'administrator') ? 'active' : 'pending_approval',
+            status: 'active',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             ...profileData
