@@ -307,6 +307,7 @@
         function updateCreateDepts() {
             const faculty = document.getElementById('faculty').value;
             const deptSelect = document.getElementById('studentDepartment');
+            if (!deptSelect) return;
             deptSelect.innerHTML = '<option value="">Select Department</option>';
             if (faculty && DEPARTMENTS[faculty]) {
                 DEPARTMENTS[faculty].forEach(dept => {
@@ -314,6 +315,11 @@
                 });
             }
         }
+
+        (function() {
+            const facultySelect = document.getElementById('faculty');
+            if (facultySelect) facultySelect.addEventListener('change', updateCreateDepts);
+        })();
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
         

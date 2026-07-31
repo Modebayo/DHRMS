@@ -421,13 +421,6 @@
                             <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">Loading available staff...</div>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Recent Activity</h3>
-                            <span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span>
-                        </div>
-                        <ul class="activity-list" id="activityList"></ul>
-                    </div>
                 `;
             } else if (role === 'doctor') {
                 content.innerHTML = `
@@ -479,13 +472,6 @@
                                 <a href="../treatment-requests/doctor-queue.html" class="quick-action-btn"><i data-lucide="clipboard-list"></i><span class="quick-action-label">Treatment Queue</span></a>
                             </div>
                         </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Recent Activity</h3>
-                            <span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span>
-                        </div>
-                        <ul class="activity-list" id="activityList"></ul>
                     </div>
                 `;
             } else if (role === 'nurse') {
@@ -540,13 +526,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Recent Activity</h3>
-                            <span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span>
-                        </div>
-                        <ul class="activity-list" id="activityList"></ul>
-                    </div>
                 `;
             } else if (role === 'pharmacist') {
                 content.innerHTML = `
@@ -591,13 +570,6 @@
                                 <a href="../records/prescriptions.html" class="quick-action-btn"><i data-lucide="file-text"></i><span class="quick-action-label">Prescriptions</span></a>
                             </div>
                         </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Recent Activity</h3>
-                            <span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span>
-                        </div>
-                        <ul class="activity-list" id="activityList"></ul>
                     </div>
                 `;
             } else if (role === 'lab_technician') {
@@ -644,13 +616,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Recent Activity</h3>
-                            <span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span>
-                        </div>
-                        <ul class="activity-list" id="activityList"></ul>
-                    </div>
                 `;
             } else if (role === 'records_officer') {
                 content.innerHTML = `
@@ -677,10 +642,6 @@
                         </div>
                     </div>
                     <div class="grid-2">
-                        <div class="card">
-                            <div class="card-header"><h3 class="card-title">Recent Activity</h3><span style="font-size:12px;color:var(--text-muted);" id="activityCount"></span></div>
-                            <ul class="activity-list" id="activityList"></ul>
-                        </div>
                         <div class="card">
                             <div class="card-header"><h3 class="card-title">Quick Actions</h3></div>
                             <div class="quick-actions">
@@ -736,7 +697,6 @@
                         <a href="../records/prescriptions.html" class="quick-action-btn"><i data-lucide="pill"></i><span class="quick-action-label">Prescriptions</span></a>
                         <a href="../settings/index.html" class="quick-action-btn"><i data-lucide="settings-2"></i><span class="quick-action-label">Settings</span></a>
                     </div></div>
-                    <div class="card"><div class="card-header"><h3 class="card-title">Recent Activity</h3></div><ul class="activity-list" id="activityList"></ul></div>
                 `;
             }
             if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -816,7 +776,6 @@
                             if (el) el.textContent = snap.size; 
                         })
                 );
-                subscribeActivity(currentUser.uid);
                 subscribeActiveVisit();
                 loadAvailableStaffForStudents();
                 
@@ -832,9 +791,8 @@
                     db.collection('prescriptions').where('createdBy', '==', currentUser.uid).where('status', '==', 'pending')
                         .onSnapshot(snap => { document.getElementById('statPrescriptions').textContent = snap.size; })
                 );
-                document.getElementById('statSpecialization').textContent = userData.specialization || 'General';
-                subscribeActivity(currentUser.uid);
-                
+                    document.getElementById('statSpecialization').textContent = userData.specialization || 'General';
+                    
             } else if (currentRole === 'nurse') {
                 const nurseTriagUnsub = db.collection('treatment_requests')
                     .where('nurseId', '==', currentUser.uid)
@@ -869,8 +827,6 @@
                             if (el) el.textContent = snap.size; 
                         })
                 );
-                subscribeActivity(currentUser.uid);
-                
             } else if (currentRole === 'pharmacist') {
                 dashUnsubs.push(
                     db.collection('prescriptions').where('status', '==', 'pending')
@@ -885,8 +841,6 @@
                     db.collection('users').where('role', '==', 'student')
                         .onSnapshot(snap => { document.getElementById('statPatients').textContent = snap.size; })
                 );
-                subscribeActivity(currentUser.uid);
-                
             } else if (currentRole === 'lab_technician') {
                 dashUnsubs.push(
                     db.collection('lab_requests').where('status', '==', 'pending')
@@ -901,8 +855,6 @@
                     db.collection('users').where('role', '==', 'student')
                         .onSnapshot(snap => { document.getElementById('statPatients').textContent = snap.size; })
                 );
-                subscribeActivity(currentUser.uid);
-                
             } else if (currentRole === 'records_officer') {
                 dashUnsubs.push(
                     db.collection('users').where('role', '==', 'student')
@@ -914,8 +866,6 @@
                     db.collection('prescriptions')
                         .onSnapshot(snap => { document.getElementById('statPrescriptions').textContent = snap.size; })
                 );
-                subscribeActivity(currentUser.uid);
-                
             } else if (currentRole === 'admin' || currentRole === 'administrator') {
                 dashUnsubs.push(
                     db.collection('users')
@@ -1068,21 +1018,6 @@
             }).join('');
         }
 
-        function subscribeActivity(userId) {
-            const list = document.getElementById('activityList');
-            if (!list) return;
-            const unsub = db.collection('activity_logs').where('userId', '==', userId).orderBy('timestamp', 'desc').limit(5)
-                .onSnapshot(snap => {
-                    if (snap.empty) { list.innerHTML = '<li class="activity-item"><div class="empty-state"><p>No recent activity</p></div></li>'; return; }
-                    list.innerHTML = snap.docs.map(doc => {
-                        const d = doc.data();
-                        return `<li class="activity-item"><div class="activity-avatar"><i data-lucide="${getActivityIcon(d.type)}"></i></div><div class="activity-content"><div class="activity-text">${d.description}</div><div class="activity-time">${formatTimestamp(d.timestamp)}</div></div></li>`;
-                    }).join('');
-                    if (typeof lucide !== 'undefined') lucide.createIcons();
-                }, () => {});
-            dashUnsubs.push(unsub);
-        }
-        
         function subscribeAdminActivity() {
             const list = document.getElementById('activityList');
             if (!list) return;
@@ -1305,32 +1240,11 @@
             if (!container) return;
             try {
                 const allStaff = await getAllStaffStatus(['doctor', 'nurse']);
-                if (allStaff.length === 0) {
-                    container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:20px;color:var(--text-muted);gap:8px"><i data-lucide="users" style="width:32px;height:32px;color:var(--gray-300)"></i><p style="font-size:13px;margin:0">No medical staff found</p><p style="font-size:11px;margin:0">Please check back later or book an appointment</p></div>';
+                const available = allStaff.filter(s => s.availability === 'available');
+                if (available.length === 0) {
+                    container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:20px;color:var(--text-muted);gap:8px"><i data-lucide="users" style="width:32px;height:32px;color:var(--gray-300)"></i><p style="font-size:13px;margin:0">No medical staff available right now</p><p style="font-size:11px;margin:0">Please check back later or book an appointment</p></div>';
                 } else {
-                    const available = allStaff.filter(s => s.availability === 'available');
-                    const busy = allStaff.filter(s => s.availability === 'busy');
-                    const away = allStaff.filter(s => s.availability === 'away');
-                    const offline = allStaff.filter(s => s.availability === 'offline');
-
-                    let html = '';
-                    if (available.length > 0) {
-                        html += `<div style="font-size:11px;font-weight:600;color:var(--success-600);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px">Available Now (${available.length})</div>`;
-                        html += available.map(s => renderStaffItem(s, true)).join('');
-                    }
-                    if (busy.length > 0) {
-                        html += `<div style="font-size:11px;font-weight:600;color:var(--warning-600, #b45309);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;margin-top:4px">Busy (${busy.length})</div>`;
-                        html += busy.map(s => renderStaffItem(s, false)).join('');
-                    }
-                    if (away.length > 0) {
-                        html += `<div style="font-size:11px;font-weight:600;color:var(--orange-600, #c2410c);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;margin-top:4px">Recently Active (${away.length})</div>`;
-                        html += away.map(s => renderStaffItem(s, false)).join('');
-                    }
-                    if (offline.length > 0) {
-                        html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;margin-top:4px">Offline (${offline.length})</div>`;
-                        html += offline.map(s => renderStaffItem(s, false)).join('');
-                    }
-                    container.innerHTML = html;
+                    container.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--success-600);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px">Available Now (' + available.length + ')</div>' + available.map(s => renderStaffItem(s, true)).join('');
                 }
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             } catch (e) {
