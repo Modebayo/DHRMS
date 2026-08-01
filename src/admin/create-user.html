@@ -8,11 +8,11 @@
     <link rel="dns-prefetch" href="https://unpkg.com">
     <link rel="dns-prefetch" href="https://www.gstatic.com">
     <title>Create User - Koladaisi University</title>
-    <link rel="stylesheet" href="../css/main.css?v=20260731">
-    <link rel="stylesheet" href="../css/dashboard.css?v=20260731">
-    <link rel="stylesheet" href="../css/components.css?v=20260731">
-    <link rel="stylesheet" href="../css/mobile-responsive.css?v=20260731">
-    <script src="../js/theme.js?v=20260731"></script>
+    <link rel="stylesheet" href="../css/main.css?v=20260801">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20260801">
+    <link rel="stylesheet" href="../css/components.css?v=20260801">
+    <link rel="stylesheet" href="../css/mobile-responsive.css?v=20260801">
+    <script src="../js/theme.js?v=20260801"></script>
     <style>
         .create-user-container { max-width: 1000px; margin: 0 auto; }
         .form-section { background: var(--bg-primary); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; border: 1px solid var(--border-color); }
@@ -290,11 +290,11 @@
 
     <script src="https://unpkg.com/lucide@0.344.0"></script>
 
-    <script src="../js/firebase-compat.js?v=20260731"></script>
-    <script src="../js/firebase-config.js?v=20260731"></script>
-    <script src="../js/auth-guard.js?v=20260731"></script>
-    <script src="../js/key-manager.js?v=20260731"></script>
-    <script src="../js/auth.js?v=20260731"></script>
+    <script src="../js/firebase-compat.js?v=20260801"></script>
+    <script src="../js/firebase-config.js?v=20260801"></script>
+    <script src="../js/auth-guard.js?v=20260801"></script>
+    <script src="../js/key-manager.js?v=20260801"></script>
+    <script src="../js/auth.js?v=20260801"></script>
     <script>
         const DEPARTMENTS = {
             'FBMS': ['Nursing Science', 'Medical Laboratory Science', 'Public Health'],
@@ -304,7 +304,20 @@
             'JUPEB': ['Science', 'Arts', 'Social Sciences', 'Management']
         };
         
-        function updateCreateDepts() {
+        function nextJupebId(usersList) {
+            let max = 0;
+            (usersList || []).forEach(u => {
+                const id = u && u.studentId ? String(u.studentId) : '';
+                const m = /^JUPEB\/(\d+)$/i.exec(id.trim());
+                if (m) {
+                    const n = parseInt(m[1], 10);
+                    if (n > max) max = n;
+                }
+            });
+            return 'JUPEB/' + String(max + 1).padStart(3, '0');
+        }
+        
+        async function updateCreateDepts() {
             const faculty = document.getElementById('faculty').value;
             const deptSelect = document.getElementById('studentDepartment');
             if (!deptSelect) return;
@@ -315,6 +328,19 @@
                 });
             } else {
                 console.warn('No courses found for faculty:', faculty);
+            }
+            if (faculty === 'JUPEB') {
+                const idField = document.getElementById('userIdNumber');
+                if (!idField) return;
+                const current = idField.value.trim();
+                if (current !== '' && !/^JUPEB\/\d+$/i.test(current)) return;
+                try {
+                    const snapshot = await db.collection('users').get();
+                    const list = (snapshot.docs || []).map(doc => doc.data());
+                    idField.value = nextJupebId(list);
+                } catch (err) {
+                    console.warn('Could not compute next JUPEB ID:', err);
+                }
             }
         }
 
@@ -489,10 +515,15 @@
                     bioCompleted: true
                 };
                 
-                const idNumber = document.getElementById('userIdNumber').value.trim();
+                const idNumber = document.getElementById('userIdNumber').value.trim().toUpperCase();
                 if (selectedRole === 'student') {
+                    const faculty = document.getElementById('faculty').value;
+                    if (faculty === 'JUPEB' && !/^JUPEB\/\d+$/.test(idNumber)) {
+                        showAlert('createAlert', 'JUPEB student ID must be in the format JUPEB/001', 'error');
+                        return;
+                    }
                     profileData.studentId = idNumber;
-                    profileData.faculty = document.getElementById('faculty').value;
+                    profileData.faculty = faculty;
                     profileData.level = document.getElementById('level').value;
                     profileData.department = document.getElementById('studentDepartment')?.value || '';
                 } else {

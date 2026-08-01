@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const admin = require('firebase-admin');
 const { signToken } = require('./middleware');
-const { getUserByEmail, getUserById, lookupUserById, createAuthUser, createFirebaseUser, setFirebaseClaims, getDocument, setDocument } = require('./database');
+const { getUserByEmail, getUserById, lookupUserById, createAuthUser, createFirebaseUser, setFirebaseClaims, getDocument, setDocument, getNextSequence } = require('./database');
 
 const BCRYPT_ROUNDS = 12;
 
@@ -230,6 +230,15 @@ async function adminCreateUser(req, res) {
         await setFirebaseClaims(uid, { role });
 
         await createAuthUser(uid, email, password, role);
+
+        if (profileData) {
+            if (profileData.studentId) profileData.studentId = String(profileData.studentId).trim().toUpperCase();
+            if (profileData.staffId) profileData.staffId = String(profileData.staffId).trim().toUpperCase();
+        }
+        if (role === 'student' && profileData && profileData.faculty === 'JUPEB' && !(profileData.studentId && profileData.studentId.trim())) {
+            const seq = await getNextSequence('jupeb_student');
+            profileData.studentId = 'JUPEB/' + String(seq).padStart(3, '0');
+        }
 
         const userData = {
             email: email.trim().toLowerCase(),

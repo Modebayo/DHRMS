@@ -56,9 +56,10 @@ async function getUserByStaffId(staffId) {
 }
 
 async function lookupUserById(userId) {
-    const studentUser = await getUserByStudentId(userId);
+    const id = String(userId || '').trim().toUpperCase();
+    const studentUser = await getUserByStudentId(id);
     if (studentUser) return studentUser;
-    const staffUser = await getUserByStaffId(userId);
+    const staffUser = await getUserByStaffId(id);
     if (staffUser) return staffUser;
     return null;
 }

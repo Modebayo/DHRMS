@@ -25,9 +25,32 @@ function populateDepartmentSelect(selectId, faculty) {
     }
 }
 
+function nextJupebId(usersList) {
+    let max = 0;
+    (usersList || []).forEach(u => {
+        const id = u && u.studentId ? String(u.studentId) : '';
+        const m = /^JUPEB\/(\d+)$/i.exec(id.trim());
+        if (m) {
+            const n = parseInt(m[1], 10);
+            if (n > max) max = n;
+        }
+    });
+    return 'JUPEB/' + String(max + 1).padStart(3, '0');
+}
+
+function isAutoJupebValue(value) {
+    return /^JUPEB\/\d+$/i.test((value || '').trim());
+}
+
 window.updateCreateDepartments = function() {
     const faculty = document.getElementById('createFaculty').value;
     populateDepartmentSelect('createDepartment', faculty);
+    if (faculty === 'JUPEB') {
+        const field = document.getElementById('createStudentId');
+        if (field && (field.value.trim() === '' || isAutoJupebValue(field.value))) {
+            field.value = nextJupebId(allUsersData);
+        }
+    }
 };
 
 window.updateEditDepartments = function() {
@@ -234,7 +257,8 @@ window.createUser = async function() {
     const password = document.getElementById('createPassword').value;
     const confirmPassword = document.getElementById('createConfirmPassword').value;
     const role = document.getElementById('createRole').value;
-    const staffId = document.getElementById('createStaffId').value.trim();
+    const staffId = document.getElementById('createStaffId').value.trim().toUpperCase();
+    const createFaculty = document.getElementById('createFaculty').value;
     
     document.getElementById('createAlert').style.display = 'none';
     
@@ -259,6 +283,19 @@ window.createUser = async function() {
         return;
     }
     
+    let studentId = '';
+    if (role === 'student') {
+        studentId = document.getElementById('createStudentId').value.trim().toUpperCase();
+        if (createFaculty === 'JUPEB' && !/^JUPEB\/\d+$/.test(studentId)) {
+            showAlert('createAlert', 'JUPEB student ID must be in the format JUPEB/001', 'error');
+            return;
+        }
+        if (createFaculty === 'JUPEB' && allUsersData.some(u => u.studentId && String(u.studentId).trim().toUpperCase() === studentId)) {
+            showAlert('createAlert', 'Student ID ' + studentId + ' is already in use', 'error');
+            return;
+        }
+    }
+    
     const btn = document.getElementById('createUserBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Creating...';
@@ -278,7 +315,7 @@ window.createUser = async function() {
         };
         
         if (role === 'student') {
-            userData.studentId = document.getElementById('createStudentId').value || '';
+            userData.studentId = studentId;
             userData.faculty = document.getElementById('createFaculty').value || '';
             userData.department = document.getElementById('createDepartment').value || '';
             userData.level = document.getElementById('createLevel').value || '';
