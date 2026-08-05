@@ -4,12 +4,9 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "https://ku-health-records-api.onrender.com/api/:splat"
   status = 200
   force = true
-
-[functions]
-  node_bundler = "esbuild"
 
 [[headers]]
   for = "/src/js/firebase-config.js"
