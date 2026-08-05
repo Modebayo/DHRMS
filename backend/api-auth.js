@@ -88,12 +88,24 @@ async function signup(req, res) {
         if (existing) {
             return res.status(409).json({ error: 'Email already registered', code: 'auth/email-already-exists' });
         }
-        const uid = uuidv4();
+        let uid = uuidv4();
         const userRole = role || 'student';
-        await createAuthUser(uid, email.trim().toLowerCase(), password, userRole);
+        const normalizedEmail = email.trim().toLowerCase();
+        try {
+            const fbUser = await createFirebaseUser(normalizedEmail, password, displayName || '');
+            uid = fbUser.uid;
+            try {
+                await setFirebaseClaims(uid, { role: userRole });
+            } catch (claimErr) {
+                console.warn('[signup] Could not set Firebase claims:', claimErr.message);
+            }
+        } catch (fbErr) {
+            console.warn('[signup] Firebase Auth user creation failed, continuing with local record:', fbErr.message);
+        }
+        await createAuthUser(uid, normalizedEmail, password, userRole);
         const userData = {
             uid,
-            email: email.trim().toLowerCase(),
+            email: normalizedEmail,
             role: userRole,
             displayName: displayName || '',
             status: 'active',

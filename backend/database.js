@@ -365,6 +365,61 @@ async function syncAllClaims() {
     }
 }
 
+async function syncMissingFirebaseAccounts() {
+    try {
+        const authSnap = await getFirestore().collection('_auth_').get();
+        let created = 0;
+        let claimed = 0;
+        let skipped = 0;
+        for (const doc of authSnap.docs) {
+            const data = doc.data();
+            if (!data.email) {
+                skipped++;
+                continue;
+            }
+            let fbUser = null;
+            try {
+                fbUser = await admin.auth().getUser(doc.id);
+            } catch {
+                try {
+                    fbUser = await admin.auth().getUserByEmail(data.email);
+                } catch {
+                    fbUser = null;
+                }
+            }
+            if (fbUser) {
+                try {
+                    await admin.auth().setCustomUserClaims(fbUser.uid, { role: data.role });
+                    claimed++;
+                } catch (e) {
+                    console.warn(`[syncFirebaseAccounts] Could not set claims for ${data.email}:`, e.message);
+                }
+                continue;
+            }
+            const tempPassword = generatePassword(20);
+            try {
+                await admin.auth().createUser({
+                    uid: doc.id,
+                    email: data.email,
+                    password: tempPassword,
+                    displayName: data.displayName || ''
+                });
+                try {
+                    await admin.auth().setCustomUserClaims(doc.id, { role: data.role });
+                } catch {}
+                created++;
+                console.log(`[syncFirebaseAccounts] Created Firebase Auth account for ${data.email} (${doc.id})`);
+            } catch (e) {
+                console.warn(`[syncFirebaseAccounts] Could not create Firebase Auth account for ${doc.id} (${data.email}):`, e.message);
+                skipped++;
+            }
+        }
+        console.log(`[syncFirebaseAccounts] Created ${created}, ensured claims for ${claimed}, ${skipped} skipped.`);
+    } catch (err) {
+        console.error('[syncFirebaseAccounts] ERROR:', err.message);
+    }
+}
+
 module.exports = {
     seedAdmin,
     getUserByEmail,
@@ -388,5 +443,6 @@ module.exports = {
     queryDocuments,
     getNextSequence,
     generatePassword,
-    syncAllClaims
+    syncAllClaims,
+    syncMissingFirebaseAccounts
 };

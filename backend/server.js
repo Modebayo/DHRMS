@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-const { seedAdmin, syncAllClaims } = require('./database');
+const { seedAdmin, syncAllClaims, syncMissingFirebaseAccounts } = require('./database');
 const { authMiddleware, firebaseAuthMiddleware, requireRole } = require('./middleware');
 const authRoutes = require('./api-auth');
 const firestoreRoutes = require('./api-firestore');
@@ -113,10 +113,12 @@ const MIME_TYPES = {
     '.woff2': 'font/woff2',
 };
 
+const NO_CACHE_FILES = ['firebase-config.js', 'firebase-compat.js'];
+
 app.use(express.static(ROOT, {
     setHeaders: (res, filePath) => {
         const ext = path.extname(filePath);
-        if (ext === '.html') {
+        if (ext === '.html' || NO_CACHE_FILES.includes(path.basename(filePath))) {
             res.setHeader('Cache-Control', 'no-store, must-revalidate');
         } else if (MIME_TYPES[ext]) {
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -159,6 +161,7 @@ app.use((req, res) => {
         }
 
         await syncAllClaims();
+        await syncMissingFirebaseAccounts();
 
         app.listen(PORT, () => {
             console.log(`DHRMS server running at http://localhost:${PORT}`);

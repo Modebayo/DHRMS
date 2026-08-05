@@ -295,16 +295,22 @@
             });
         },
 
-        adminCreateUser: function (email, password, role, displayName) {
+        adminCreateUser: function (email, password, role, displayName, profileData) {
             var previousToken = getJwt();
             if (!previousToken) return Promise.reject(new Error('Not authenticated'));
-            return api('/api/auth/signup', {
+            return api('/api/auth/admin-create', {
                 method: 'POST',
-                body: { email: email, password: password, role: role || 'student', displayName: displayName || '' }
+                body: {
+                    email: email,
+                    password: password,
+                    role: role || 'student',
+                    displayName: displayName || '',
+                    profileData: profileData || null
+                }
             }).then(function (data) {
                 setJwt(previousToken);
                 checkAuthState();
-                var userObj = { uid: data.localId, email: data.email };
+                var userObj = { uid: data.uid || data.localId, email: data.email };
                 userObj.sendEmailVerification = function () { return Promise.resolve(); };
                 userObj.updateProfile = function () { return Promise.resolve(); };
                 return {
