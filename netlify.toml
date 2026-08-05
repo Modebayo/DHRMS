@@ -4,9 +4,22 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://ku-health-records-api.onrender.com/api/:splat"
+  to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
+
+[functions]
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/src/js/firebase-config.js"
+  [headers.values]
+  Cache-Control = "no-store, must-revalidate"
+
+[[headers]]
+  for = "/src/js/firebase-compat.js"
+  [headers.values]
+  Cache-Control = "no-store, must-revalidate"
 
 [[headers]]
   for = "*.js"

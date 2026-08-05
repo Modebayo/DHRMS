@@ -1,29 +1,17 @@
-const path = require('path');
-const fs = require('fs');
-
-process.env.DB_PATH = process.env.DB_PATH || path.join('/tmp', 'database.sqlite');
 process.env.NETLIFY = 'true';
 
-const dir = path.dirname(process.env.DB_PATH);
-if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
 const serverless = require('serverless-http');
-const { seedAdmin } = require('../../database');
-
-try {
-    seedAdmin();
-} catch (e) {
-    console.error('seedAdmin error:', e.message);
-}
-
-const app = require('../../server');
+const app = require('../../backend/server');
 
 exports.handler = serverless(app, {
     requestPath: (event) => {
-        const prefix = '/.netlify/functions/api';
-        if (event.path && event.path.startsWith(prefix)) {
-            return event.path.slice(prefix.length) || '/';
+        const p = event.path || '';
+        const markers = ['/.netlify/functions/api', '/.netlify/functions'];
+        for (const marker of markers) {
+            if (p.startsWith(marker)) {
+                return p.slice(marker.length) || '/';
+            }
         }
-        return event.path || '/';
+        return p;
     }
 });

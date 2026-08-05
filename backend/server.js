@@ -141,34 +141,38 @@ app.use((req, res) => {
     res.status(404).send('Not found');
 });
 
-(async () => {
-    try {
-        const admin = await seedAdmin();
-        if (admin) {
-            const credsPath = path.join(ROOT, 'admin-credentials.txt');
-            const creds = `Admin account created successfully!\nEmail:    ${admin.email}\nPassword: ${admin.password}\nURL:      http://localhost:${PORT}/src/auth/login.html\n\nIMPORTANT: Save this password. It will not be shown again.\n`;
-            fs.writeFileSync(credsPath, creds);
-            console.log('='.repeat(50));
-            console.log(' ADMIN ACCOUNT CREATED');
-            console.log('='.repeat(50));
-            console.log(` Email:    ${admin.email}`);
-            console.log(` Password: ${admin.password}`);
-            console.log('='.repeat(50));
-            console.log(` Credentials saved to: admin-credentials.txt`);
-            console.log('='.repeat(50));
-        } else {
-            console.log('Admin account already exists — skipping seed.');
+if (process.env.NETLIFY !== 'true' && require.main === module) {
+    (async () => {
+        try {
+            const admin = await seedAdmin();
+            if (admin) {
+                const credsPath = path.join(ROOT, 'admin-credentials.txt');
+                const creds = `Admin account created successfully!\nEmail:    ${admin.email}\nPassword: ${admin.password}\nURL:      http://localhost:${PORT}/src/auth/login.html\n\nIMPORTANT: Save this password. It will not be shown again.\n`;
+                fs.writeFileSync(credsPath, creds);
+                console.log('='.repeat(50));
+                console.log(' ADMIN ACCOUNT CREATED');
+                console.log('='.repeat(50));
+                console.log(` Email:    ${admin.email}`);
+                console.log(` Password: ${admin.password}`);
+                console.log('='.repeat(50));
+                console.log(` Credentials saved to: admin-credentials.txt`);
+                console.log('='.repeat(50));
+            } else {
+                console.log('Admin account already exists — skipping seed.');
+            }
+
+            await syncAllClaims();
+            await syncMissingFirebaseAccounts();
+
+            app.listen(PORT, () => {
+                console.log(`DHRMS server running at http://localhost:${PORT}`);
+                console.log('Firestore backend — no SQLite dependency');
+            });
+        } catch (err) {
+            console.error('Failed to start server:', err);
+            process.exit(1);
         }
+    })();
+}
 
-        await syncAllClaims();
-        await syncMissingFirebaseAccounts();
-
-        app.listen(PORT, () => {
-            console.log(`DHRMS server running at http://localhost:${PORT}`);
-            console.log('Firestore backend — no SQLite dependency');
-        });
-    } catch (err) {
-        console.error('Failed to start server:', err);
-        process.exit(1);
-    }
-})();
+module.exports = app;
