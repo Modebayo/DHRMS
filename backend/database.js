@@ -109,6 +109,27 @@ async function deleteAuthUser(uid) {
     await getFirestore().collection('_auth_').doc(uid).delete();
 }
 
+async function setResetToken(uid, tokenHash, expiry) {
+    await getFirestore().collection('_auth_').doc(uid).update({
+        resetTokenHash: tokenHash,
+        resetTokenExpiry: expiry
+    });
+}
+
+async function getUserByResetToken(tokenHash) {
+    const snap = await getFirestore().collection('_auth_').where('resetTokenHash', '==', tokenHash).get();
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    return { uid: doc.id, ...doc.data() };
+}
+
+async function clearResetToken(uid) {
+    await getFirestore().collection('_auth_').doc(uid).update({
+        resetTokenHash: admin.firestore.FieldValue.delete(),
+        resetTokenExpiry: admin.firestore.FieldValue.delete()
+    });
+}
+
 async function getDocument(collection, docId) {
     const doc = await getFirestore().collection(collection).doc(docId).get();
     if (!doc.exists) return null;
@@ -251,28 +272,16 @@ async function seedAdmin() {
     const hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
     const existing = await getUserByEmail(email);
     if (existing) {
-        const newHash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
-        await getFirestore().collection('_auth_').doc(existing.uid).update({
-            email,
-            password_hash: newHash,
-            updated_at: new Date().toISOString()
-        });
-        try {
-            await admin.auth().getUser(existing.uid);
-        } catch (e) {
-            if (e.code === 'auth/user-not-found') {
-                await admin.auth().createUser({
-                    uid: existing.uid,
-                    email,
-                    password,
-                    displayName: 'System Admin'
-                });
-                console.log('Created Firebase Auth account for existing admin');
-            }
+        if (!existing.password_hash) {
+            await updateAuthUser(existing.uid, { password });
+            console.log('Admin account was missing a password hash — re-seeded it.');
         }
-        await admin.auth().setCustomUserClaims(existing.uid, { role: 'admin' });
-        console.log('Admin password updated to: ' + password);
-        return { uid: existing.uid, email, password };
+        try {
+            await admin.auth().setCustomUserClaims(existing.uid, { role: 'admin' });
+        } catch (e) {
+            console.warn('Could not set admin custom claims:', e.message);
+        }
+        return null;
     }
     let fbUid = uid;
     try {
@@ -368,6 +377,9 @@ module.exports = {
     setFirebaseClaims,
     updateAuthUser,
     deleteAuthUser,
+    setResetToken,
+    getUserByResetToken,
+    clearResetToken,
     getDocument,
     addDocument,
     setDocument,

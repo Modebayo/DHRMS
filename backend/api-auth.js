@@ -1,10 +1,17 @@
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const admin = require('firebase-admin');
 const { signToken } = require('./middleware');
-const { getUserByEmail, getUserById, lookupUserById, createAuthUser, createFirebaseUser, setFirebaseClaims, getDocument, setDocument, getNextSequence } = require('./database');
+const { getUserByEmail, getUserById, lookupUserById, createAuthUser, createFirebaseUser, setFirebaseClaims, getDocument, setDocument, updateAuthUser, setResetToken, getUserByResetToken, clearResetToken, getNextSequence } = require('./database');
+const { sendResetEmail } = require('./mailer');
 
 const BCRYPT_ROUNDS = 12;
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+function sha256(input) {
+    return crypto.createHash('sha256').update(input).digest('hex');
+}
 
 async function signin(req, res) {
     try {
@@ -158,14 +165,88 @@ function refreshToken(req, res) {
 
 async function resetPassword(req, res) {
     try {
-        const { email } = req.body || {};
+        const { email, url } = req.body || {};
         if (!email) {
             return res.status(400).json({ error: 'Email required', code: 'auth/missing-email' });
         }
-        await getUserByEmail(email.trim().toLowerCase());
-        return res.status(200).json({ message: 'If the email exists, a reset link would be sent' });
+
+        const authRecord = await getUserByEmail(email.trim().toLowerCase());
+        if (!authRecord) {
+            return res.json({ message: 'If the email exists, a reset link has been sent' });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiry = Date.now() + RESET_TOKEN_TTL_MS;
+        await setResetToken(authRecord.uid, sha256(token), expiry);
+
+        const baseUrl = (url && url.trim()) || process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+        const resetLink = `${baseUrl.replace(/\/+$/, '')}/src/auth/reset-password.html?mode=resetPassword&oobCode=${token}`;
+
+        try {
+            await sendResetEmail(authRecord.email, resetLink);
+        } catch (mailErr) {
+            console.error('[resetPassword] Email send failed:', mailErr);
+        }
+
+        return res.json({ message: 'If the email exists, a reset link has been sent' });
     } catch (err) {
         console.error('[resetPassword] ERROR:', err);
+        return res.status(500).json({ error: err.message, code: 'auth/internal-error' });
+    }
+}
+
+async function verifyResetCode(req, res) {
+    try {
+        const { oobCode } = req.body || {};
+        if (!oobCode) {
+            return res.status(400).json({ error: 'Reset code required', code: 'auth/invalid-action-code' });
+        }
+
+        const authRecord = await getUserByResetToken(sha256(oobCode));
+        if (!authRecord) {
+            return res.status(400).json({ error: 'Reset link is invalid', code: 'auth/invalid-action-code' });
+        }
+        if (!authRecord.resetTokenExpiry || Date.now() > authRecord.resetTokenExpiry) {
+            return res.status(400).json({ error: 'Reset link has expired', code: 'auth/expired-action-code' });
+        }
+
+        return res.json({ email: authRecord.email });
+    } catch (err) {
+        console.error('[verifyResetCode] ERROR:', err);
+        return res.status(500).json({ error: err.message, code: 'auth/internal-error' });
+    }
+}
+
+async function confirmResetPassword(req, res) {
+    try {
+        const { oobCode, newPassword } = req.body || {};
+        if (!oobCode || !newPassword) {
+            return res.status(400).json({ error: 'Reset code and new password required', code: 'auth/missing-credentials' });
+        }
+        if (newPassword.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters', code: 'auth/weak-password' });
+        }
+
+        const authRecord = await getUserByResetToken(sha256(oobCode));
+        if (!authRecord) {
+            return res.status(400).json({ error: 'Reset link is invalid', code: 'auth/invalid-action-code' });
+        }
+        if (!authRecord.resetTokenExpiry || Date.now() > authRecord.resetTokenExpiry) {
+            return res.status(400).json({ error: 'Reset link has expired', code: 'auth/expired-action-code' });
+        }
+
+        await updateAuthUser(authRecord.uid, { password: newPassword });
+        await clearResetToken(authRecord.uid);
+
+        try {
+            await admin.auth().updateUser(authRecord.uid, { password: newPassword });
+        } catch (e) {
+            console.warn('[confirmResetPassword] Firebase Auth password update skipped:', e.message);
+        }
+
+        return res.json({ message: 'Password reset successful' });
+    } catch (err) {
+        console.error('[confirmResetPassword] ERROR:', err);
         return res.status(500).json({ error: err.message, code: 'auth/internal-error' });
     }
 }
@@ -303,4 +384,4 @@ async function lookupById(req, res) {
     }
 }
 
-module.exports = { signin, signup, me, refreshToken, resetPassword, changePassword, deleteAccount, lookupById, adminCreateUser, exchangeToken };
+module.exports = { signin, signup, me, refreshToken, resetPassword, verifyResetCode, confirmResetPassword, changePassword, deleteAccount, lookupById, adminCreateUser, exchangeToken };

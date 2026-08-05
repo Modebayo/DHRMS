@@ -29,6 +29,8 @@ app.post('/api/auth/admin-create', authMiddleware, requireRole('admin', 'adminis
 app.get('/api/auth/me', authMiddleware, authRoutes.me);
 app.post('/api/auth/refresh', authRoutes.refreshToken);
 app.post('/api/auth/reset-password', authRoutes.resetPassword);
+app.post('/api/auth/verify-reset-code', authRoutes.verifyResetCode);
+app.post('/api/auth/confirm-reset-password', authRoutes.confirmResetPassword);
 app.post('/api/auth/change-password', authMiddleware, authRoutes.changePassword);
 app.post('/api/auth/delete-account', authMiddleware, authRoutes.deleteAccount);
 

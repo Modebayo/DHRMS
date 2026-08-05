@@ -349,10 +349,29 @@
             });
         },
 
-        sendPasswordResetEmail: function (email) {
+        sendPasswordResetEmail: function (email, actionCodeSettings) {
             return api('/api/auth/reset-password', {
                 method: 'POST',
-                body: { email: email }
+                body: {
+                    email: email,
+                    url: actionCodeSettings && actionCodeSettings.url ? actionCodeSettings.url : null
+                }
+            });
+        },
+
+        verifyPasswordResetCode: function (oobCode) {
+            return api('/api/auth/verify-reset-code', {
+                method: 'POST',
+                body: { oobCode: oobCode }
+            }).then(function (data) {
+                return data.email;
+            });
+        },
+
+        confirmPasswordReset: function (oobCode, newPassword) {
+            return api('/api/auth/confirm-reset-password', {
+                method: 'POST',
+                body: { oobCode: oobCode, newPassword: newPassword }
             });
         },
 
