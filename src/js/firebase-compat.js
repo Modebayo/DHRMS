@@ -326,6 +326,15 @@
             return Promise.resolve();
         },
 
+        deleteUser: function (uid) {
+            return api('/api/auth/delete-account', {
+                method: 'POST',
+                body: { uid: uid || null }
+            }).then(function () {
+                return Promise.resolve({ message: 'Account deleted successfully' });
+            });
+        },
+
         onAuthStateChanged: function (callback) {
             authStateListeners.push(callback);
             if (!authStateInterval) {

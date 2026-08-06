@@ -529,21 +529,34 @@ window.suspendUser = function(id) {
     }).catch(() => showToast('Error suspending user', 'error'));
 };
 
-window.deleteUser = function(id) {
+window.deleteUser = async function(id) {
     if (!confirm('Are you sure you want to delete this user? This cannot be undone!')) return;
-    db.collection('users').doc(id).delete().then(async () => {
+    try {
+        if (auth && auth.deleteUser) {
+            await auth.deleteUser(id);
+        } else {
+            await db.collection('users').doc(id).delete();
+        }
         await logActivity(currentUser.uid, 'user_delete', `Deleted user: ${id}`);
         showToast('User deleted', 'success');
-    }).catch(() => showToast('Error deleting user', 'error'));
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        showToast('Error deleting user', 'error');
+    }
 };
 
 window.rejectUser = async function(id) {
     if (!confirm('Reject this user? The user account will be deleted.')) return;
     try {
-        await db.collection('users').doc(id).delete();
+        if (auth && auth.deleteUser) {
+            await auth.deleteUser(id);
+        } else {
+            await db.collection('users').doc(id).delete();
+        }
         await logActivity(currentUser.uid, 'user_reject', `Rejected user: ${id}`);
         showToast('User rejected and removed', 'success');
     } catch (error) {
+        console.error('Error rejecting user:', error);
         showToast('Error rejecting user', 'error');
     }
 };
@@ -570,11 +583,20 @@ window.bulkSuspend = async function() {
 
 window.bulkDelete = async function() {
     if (!confirm(`Delete ${selectedUsers.length} users? This cannot be undone!`)) return;
-    for (const id of selectedUsers) {
-        await db.collection('users').doc(id).delete();
+    try {
+        for (const id of selectedUsers) {
+            if (auth && auth.deleteUser) {
+                await auth.deleteUser(id);
+            } else {
+                await db.collection('users').doc(id).delete();
+            }
+        }
+        await logActivity(currentUser.uid, 'bulk_delete', `Deleted ${selectedUsers.length} users`);
+        showToast(`${selectedUsers.length} users deleted`, 'success');
+        selectedUsers = [];
+        updateBulkActions();
+    } catch (error) {
+        console.error('Error deleting users:', error);
+        showToast('Error deleting users', 'error');
     }
-    await logActivity(currentUser.uid, 'bulk_delete', `Deleted ${selectedUsers.length} users`);
-    showToast(`${selectedUsers.length} users deleted`, 'success');
-    selectedUsers = [];
-    updateBulkActions();
 };

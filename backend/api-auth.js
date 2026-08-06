@@ -291,13 +291,18 @@ async function changePassword(req, res) {
 
 async function deleteAccount(req, res) {
     try {
-        const user = await getUserById(req.user.uid);
+        const targetUid = (req.body && req.body.uid) || req.user.uid;
+        if (targetUid !== req.user.uid && req.user.role !== 'admin' && req.user.role !== 'administrator') {
+            return res.status(403).json({ error: 'Forbidden: admins only', code: 'auth/forbidden' });
+        }
+        const user = await getUserById(targetUid);
         if (!user) {
             return res.status(404).json({ error: 'User not found', code: 'auth/user-not-found' });
         }
         const { deleteAuthUser, deleteDocument } = require('./database');
-        await deleteDocument('users', user.uid);
-        await deleteAuthUser(user.uid);
+        await deleteDocument('users', targetUid);
+        await deleteAuthUser(targetUid);
+        try { await admin.auth().deleteUser(targetUid); } catch (e) {}
         return res.json({ message: 'Account deleted successfully' });
     } catch (err) {
         console.error('[deleteAccount] ERROR:', err);
